@@ -42,5 +42,11 @@
 		<artifactId>Commonutilities</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</dependency>
+	<!-- Gozirra Libraries -->
+  	<dependency>
+  		<groupId>germane-software</groupId>
+  		<artifactId>gozirra-extended</artifactId>
+  		<version>0.5-SNAPSHOT</version>
+  	</dependency>
   </dependencies>
 </project>
