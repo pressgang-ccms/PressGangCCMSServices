@@ -1,0 +1,95 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+	<artifactId>topicindex</artifactId>
+	<groupId>com.redhat</groupId>
+	<version>0.0.1-SNAPSHOT</version>
+	<relativePath>..</relativePath>
+  </parent>
+  <groupId>com.redhat.topicindex</groupId>
+  <artifactId>zanata-sync-service</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>Zanata Sync Service</name>
+  
+  <build>
+    <plugins>
+        <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+                <archive>
+                    <manifest>
+                        <mainClass>Main</mainClass>
+                    </manifest>
+                </archive>
+                <descriptorRefs>
+                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                </descriptorRefs>
+            </configuration>
+        </plugin>
+    </plugins>
+  </build>
+  
+  <dependencies>
+  	<dependency>
+		<groupId>org.codehaus.jackson</groupId>
+		<artifactId>jackson-mapper-asl</artifactId>
+		<version>1.9.6</version>
+	</dependency>
+  	<dependency>
+  		<groupId>commons-codec</groupId>
+  		<artifactId>commons-codec</artifactId>
+  		<version>1.6</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>commons-io</groupId>
+  		<artifactId>commons-io</artifactId>
+  		<version>2.1</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.apache.directory.studio</groupId>
+  		<artifactId>org.apache.commons.lang</artifactId>
+  		<version>2.6</version>
+  	</dependency>
+	
+	<!-- RESTEasy libraries -->
+  	<dependency>
+  		<groupId>org.jboss.resteasy</groupId>
+  		<artifactId>resteasy-atom-provider</artifactId>
+  		<version>2.2.3.GA</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.jboss.resteasy</groupId>
+  		<artifactId>resteasy-jaxrs</artifactId>
+  		<version>2.2.3.GA</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>javax.ws.rs</groupId>
+  		<artifactId>javax.ws.rs-api</artifactId>
+  		<version>2.0-m04</version>
+  	</dependency>
+  	
+  	<!-- Logging Libraries -->
+  	<dependency>
+		<groupId>log4j</groupId>
+		<artifactId>log4j</artifactId>
+		<version>1.2.16</version>
+	</dependency>
+		
+	<!-- Zanata Libraries -->
+  	<dependency>
+  		<groupId>org.zanata</groupId>
+  		<artifactId>zanata-common-api</artifactId>
+  		<version>1.5.0</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.zanata</groupId>
+  		<artifactId>zanata-common-util</artifactId>
+  		<version>1.5.0</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.zanata</groupId>
+  		<artifactId>zanata-rest-client</artifactId>
+  		<version>1.5.0</version>
+  	</dependency>
+  </dependencies>
+</project>
