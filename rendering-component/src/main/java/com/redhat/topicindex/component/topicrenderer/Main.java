@@ -38,7 +38,7 @@ public class Main
 	public static final String NAME  = "Skynet Topic Renderer Service";
 	
 	/** The build version */
-	public static final String BUILD = "20120306-1451";
+	public static final String BUILD = "20120509-0936";
 
 	public static void main(final String[] args)
 	{

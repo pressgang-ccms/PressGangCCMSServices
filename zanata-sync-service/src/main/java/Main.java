@@ -1,6 +1,8 @@
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -12,7 +14,6 @@ import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
 import com.redhat.topicindex.rest.entities.TopicV1;
-import com.redhat.topicindex.rest.entities.TranslatedTopicDataV1;
 import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
@@ -62,9 +63,11 @@ public class Main {
 			/* get the translated data */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
 			final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails("translatedtopics"));
-			final ExpandDataTrunk expandTranslatedTopicData = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TRANSLATEDTOPICDATA_NAME));
-			expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopicData));
+			final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TOPIC_NAME));
+			final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.TRANSLATEDTOPICS_NAME));
 			
+			expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
+			expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopic));
 			expand.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopic));
 			
 			/* convert the ExpandDataTrunk to an encoded JSON String */
@@ -75,16 +78,28 @@ public class Main {
 			List<ResourceMeta> zanataResources = ZanataInterface.getZanataResources();
 			List<String> existingZanataResources = new ArrayList<String>();
 			
+			/* Loop through and find the zanata ID and relevant original topics */
+			final Map<String, TopicV1> translatedTopicsMap = new HashMap<String, TopicV1>(); 
 			if (translatedTopics != null && translatedTopics.getItems() != null)
 			{
 				for (final TranslatedTopicV1 translatedTopic: translatedTopics.getItems())
 				{
-					/* Pull each topic in a separate thread to decrease total processing time */
-					ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(translatedTopic, skynetServer));
+					final String zanataId = translatedTopic.getZanataId();
 					
-					/* add the zanata id to the list of existing resources*/
-					existingZanataResources.add(translatedTopic.getZanataId());
+					if (!translatedTopicsMap.containsKey(zanataId))
+					{
+						translatedTopicsMap.put(zanataId, translatedTopic.getTopic());
+					}
 				}
+			}
+			
+			for (String zanataId : translatedTopicsMap.keySet())
+			{	
+				/* Pull each topic in a separate thread to decrease total processing time */
+				ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(translatedTopicsMap.get(zanataId), skynetServer));
+				
+				/* add the zanata id to the list of existing resources*/
+				existingZanataResources.add(zanataId);
 			}
 			
 			/* create the missing translated topics */
@@ -151,20 +166,22 @@ public class Main {
 				newTranslatedTopic.setTopicRevisionExplicit(revision);
 				
 				/* create the base language data */
-				final BaseRestCollectionV1<TranslatedTopicDataV1> translatedTopicDatas = new BaseRestCollectionV1<TranslatedTopicDataV1>();
-				final TranslatedTopicDataV1 translatedTopicData = new TranslatedTopicDataV1();
-				translatedTopicData.setAddItem(true);
-				translatedTopicData.setTranslatedXmlExplicit(historicalTopic.getXml());
-				translatedTopicData.setTranslationLocaleExplicit(resource.getLang().toString());
-				translatedTopicDatas.addItem(translatedTopicData);
-				newTranslatedTopic.setTranslatedTopicDataExplicit_OTM(translatedTopicDatas);
+				newTranslatedTopic.setAddItem(true);
+				newTranslatedTopic.setXmlExplicit(historicalTopic.getXml());
+				newTranslatedTopic.setLocaleExplicit(resource.getLang().toString());
+				newTranslatedTopic.setTranslationPercentageExplicit(100);
 				
 				newTranslatedTopic = client.createJSONTranslatedTopic("", newTranslatedTopic);
+				
+				BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
+				translatedTopics.addItem(newTranslatedTopic);
+				
+				historicalTopic.setTranslatedTopics_OTM(translatedTopics);
 				
 				if (newTranslatedTopic != null)
 				{
 					/* Pull the data from zanata for the new translated topic */
-					ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(newTranslatedTopic, skynetServer));
+					ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(historicalTopic, skynetServer));
 				}
 			}
 		}

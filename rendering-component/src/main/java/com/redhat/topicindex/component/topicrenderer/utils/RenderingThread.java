@@ -1,6 +1,7 @@
 package com.redhat.topicindex.component.topicrenderer.utils;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,23 +16,24 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.resteasy.client.ProxyFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 import com.redhat.ecs.commonstructures.Pair;
 import com.redhat.ecs.commonutils.CollectionUtilities;
+import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.commonutils.NotificationUtilities;
 import com.redhat.ecs.commonutils.XMLUtilities;
 import com.redhat.ecs.commonutils.XMLValidator;
 import com.redhat.ecs.servicepojo.ServiceStarter;
 import com.redhat.ecs.services.commonstomp.BaseStompRunnable;
 import com.redhat.ecs.services.docbookcompiling.DocbookBuilderConstants;
-import com.redhat.ecs.services.docbookcompiling.xmlprocessing.TranslatedXMLPreProcessor;
 import com.redhat.ecs.services.docbookcompiling.xmlprocessing.XMLPreProcessor;
 import com.redhat.topicindex.component.topicrenderer.Main;
 import com.redhat.topicindex.messaging.DocbookRendererMessage;
 import com.redhat.topicindex.messaging.TopicRendererType;
 import com.redhat.topicindex.rest.entities.BlobConstantV1;
+import com.redhat.topicindex.rest.entities.TagV1;
 import com.redhat.topicindex.rest.entities.TopicV1;
-import com.redhat.topicindex.rest.entities.TranslatedTopicDataV1;
 import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
 import com.redhat.topicindex.rest.exceptions.InternalProcessingException;
 import com.redhat.topicindex.rest.exceptions.InvalidParameterException;
@@ -102,51 +104,39 @@ public class RenderingThread extends BaseStompRunnable
 	
 	private void renderTranslatedTopic(final RESTInterfaceV1 client, final int translatedTopicDataId) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
 	{
-		/* get the translated data */
-		final ExpandDataTrunk expand = new ExpandDataTrunk();
-		final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicDataV1.TRANSLATEDTOPIC_NAME));
-		final ExpandDataTrunk expandOutgoingRelationship = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicDataV1.OUTGOING_TRANSLATIONS_NAME));
-		final ExpandDataTrunk expandIncomingRelationship = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicDataV1.INCOMING_TRANSLATIONS_NAME));
+		/*
+		 * create an ExpandDataTrunk to expand the topics, the tags within the
+		 * topics, and the categories and parenttags within the tags
+		 */
+		ExpandDataTrunk expand = new ExpandDataTrunk();
+
+		final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TOPIC_NAME));
+		final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.TRANSLATEDTOPICS_NAME));
+		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails(TagV1.CATEGORIES_NAME));
+		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.PROPERTIES_NAME));
+
+		outgoingRelationships.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTags, expandTopic));
+		outgoingRelationshipsTags.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTagsCategories));
 		
-		expand.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopic, expandOutgoingRelationship, expandIncomingRelationship));
-		
+		expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
+
+		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk tagsCategories = new ExpandDataTrunk(new ExpandDataDetails(TagV1.CATEGORIES_NAME));
+
+		tags.setBranches(CollectionUtilities.toArrayList(tagsCategories, propertyTags));
+
+		expand.setBranches(CollectionUtilities.toArrayList(outgoingRelationships, tags, expandTopic));
+
 		/* convert the ExpandDataTrunk to an encoded JSON String */
 		final String expandString = mapper.writeValueAsString(expand);
 		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 		
-		final TranslatedTopicDataV1 translatedTopicData = client.getJSONTranslatedTopicData(translatedTopicDataId, expandEncodedString);
+		final TranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandEncodedString);
 
-		if (translatedTopicData != null && translatedTopicData.getTranslatedTopic() != null)
+		if (translatedTopic != null)
 		{
-			final TranslatedTopicV1 translatedTopic = translatedTopicData.getTranslatedTopic();
-			
-			/*
-			 * create an ExpandDataTrunk to expand the topics, the tags within the
-			 * topics, and the categories and parenttags within the tags
-			 */
-			ExpandDataTrunk expandTopic = new ExpandDataTrunk();
-
-			final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails("outgoingRelationships"));
-			final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails("tags"));
-			final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails("categories"));
-			final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails("properties"));
-
-			outgoingRelationships.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTags));
-			outgoingRelationshipsTags.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTagsCategories));
-
-			final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails("tags"));
-			final ExpandDataTrunk tagsCategories = new ExpandDataTrunk(new ExpandDataDetails("categories"));
-
-			tags.setBranches(CollectionUtilities.toArrayList(tagsCategories, propertyTags));
-
-			expandTopic.setBranches(CollectionUtilities.toArrayList(outgoingRelationships, tags));
-
-			/* convert the ExpandDataTrunk to an encoded JSON String */
-			final String expandTopicString = mapper.writeValueAsString(expandTopic);
-			final String expandTopicEncodedString = URLEncoder.encode(expandTopicString, "UTF-8");
-
-			/* get the topic list */
-			final TopicV1 topic = client.getJSONTopicRevision(translatedTopic.getTopicId(), translatedTopic.getTopicRevision(), expandTopicEncodedString);
 			
 			/* early exit if shutdown has been requested */
 			if (this.isShutdownRequested())
@@ -155,85 +145,162 @@ public class RenderingThread extends BaseStompRunnable
 				return;
 			}
 
-			NotificationUtilities.dumpMessageToStdOut("Processing TranslatedTopic " + translatedTopic.getId() + "-" + translatedTopicData.getTranslationLocale() + ": " + topic.getTitle());
+			/* Get the translated topic id for easier debugging */
+			Integer translatedTopicId = null;
+			final Field translatedTopicIdField;
+			try {
+				translatedTopicIdField = translatedTopic.getClass().getDeclaredField("translatedTopicId");
+				translatedTopicIdField.setAccessible(true);
+				translatedTopicId = (Integer)translatedTopicIdField.get(translatedTopic);
+			} catch (Exception ex) {
+				ExceptionUtilities.handleException(ex);
+			}
 			
-			if (topic != null) {
+			NotificationUtilities.dumpMessageToStdOut("Processing TranslatedTopic " + translatedTopicId + "-" + translatedTopic.getLocale() + ": " + translatedTopic.getTitle());
 				
-				/* the object we will send back to do the update */
-				final TranslatedTopicDataV1 updatedTranslatedTopicV1 = new TranslatedTopicDataV1();
-				updatedTranslatedTopicV1.setId(translatedTopicData.getId());
-				updatedTranslatedTopicV1.setTranslatedTopic(translatedTopic);
+			/* the object we will send back to do the update */
+			final TranslatedTopicV1 updatedTranslatedTopicV1 = new TranslatedTopicV1();
+			updatedTranslatedTopicV1.setId(translatedTopic.getId());
+			
+			final XMLValidator validator = new XMLValidator();
+
+			final Document doc = XMLUtilities.convertStringToDocument(translatedTopic.getXml());
+			if (doc != null)
+			{
 				
-				final XMLValidator validator = new XMLValidator();
-	
-				final Document doc = XMLUtilities.convertStringToDocument(translatedTopicData.getTranslatedXml());
-				if (doc != null)
+				/*
+				 * create a collection of the tags that make up the topics types
+				 * that will be included in generic injection points
+				 */
+				final List<Pair<Integer, String>> topicTypeTagDetails = new ArrayList<Pair<Integer, String>>();
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.TASK_TAG_ID, DocbookBuilderConstants.TASK_TAG_NAME));
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.REFERENCE_TAG_ID, DocbookBuilderConstants.REFERENCE_TAG_NAME));
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
+				
+				final XMLPreProcessor<TranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<TranslatedTopicV1>();
+				
+				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
+				xmlPreProcessor.processInjections(null, translatedTopic, customInjectionIds, doc, null, false);
+				xmlPreProcessor.processGenericInjections(null, translatedTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
+				XMLPreProcessor.processInternalImageFiles(doc);
+
+				xmlPreProcessor.processTopicContentFragments(translatedTopic, doc, null);
+				xmlPreProcessor.processTopicTitleFragments(translatedTopic, doc, null);
+				
+				/*
+				 * Validate the topic after injections as Injections such as
+				 * "InjectListItems" won't validate until after injections
+				 */
+				if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
 				{
-					
-					/*
-					 * create a collection of the tags that make up the topics types
-					 * that will be included in generic injection points
-					 */
-					final List<Pair<Integer, String>> topicTypeTagDetails = new ArrayList<Pair<Integer, String>>();
-					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.TASK_TAG_ID, DocbookBuilderConstants.TASK_TAG_NAME));
-					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.REFERENCE_TAG_ID, DocbookBuilderConstants.REFERENCE_TAG_NAME));
-					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
-					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
-
-					final TranslatedXMLPreProcessor translatedXMLPreProcessor = new TranslatedXMLPreProcessor();
-					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
-					translatedXMLPreProcessor.processInjections(true, translatedTopicData, topic, customInjectionIds, doc, null, null, false);
-					translatedXMLPreProcessor.processGenericInjections(true,translatedTopicData, topic, doc, customInjectionIds, topicTypeTagDetails, null, null, false);
-					XMLPreProcessor.processInternalImageFiles(doc);
-
-					translatedXMLPreProcessor.processTopicContentFragments(translatedTopicData, topic, doc, null);
-					translatedXMLPreProcessor.processTopicTitleFragments(translatedTopicData, topic, doc, null);
-					
-					translatedXMLPreProcessor.processTitleErrors(doc);
-					
-					/*
-					 * Validate the topic after injections as Injections such as
-					 * "InjectListItems" won't validate until after injections
-					 */
-					if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
-					{
-						updatedTranslatedTopicV1.setTranslatedXmlRenderedExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-					}
-					else
-					{
-						/* add the standard boilerplate xml */
-						/* currently disabled until how the additions should be displayed are figured out */
-						XMLPreProcessor.processTopicAdditionalInfo(topic, doc, null, Main.NAME + " " + Main.BUILD, null);
-	
-						/* render the topic html */
-						final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
-						final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
-	
-						try
-						{
-							final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
-	
-							updatedTranslatedTopicV1.setTranslatedXmlRenderedExplicit(transformedXml);
-						}
-						catch (final TransformerException ex)
-						{
-							updatedTranslatedTopicV1.setTranslatedXmlRenderedExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-						}
-					}
+					updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+					updatedTranslatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
 				}
 				else
 				{
-					updatedTranslatedTopicV1.setTranslatedXmlRenderedExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-				}
-				
-				/* Set the last changed date to the current date/time */
-				updatedTranslatedTopicV1.setUpdatedExplicit(new Date());
-				
-				client.updateJSONTranslatedTopicData(expandEncodedString, updatedTranslatedTopicV1);
+					/* add the standard boilerplate xml */
+					/* currently disabled until how the additions should be displayed are figured out */
+					xmlPreProcessor.processTopicAdditionalInfo(translatedTopic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
 
-				NotificationUtilities.dumpMessageToStdOut("TranslatedTopic " + translatedTopic.getId() + "-" + translatedTopicData.getTranslationLocale() + " has been updated");
+					/* Generate the note for the translated topics relationships that haven't been translated */
+					if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
+					{
+						final List<TranslatedTopicV1> nonTranslatedTopics = new ArrayList<TranslatedTopicV1>();
+						for (TranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
+						{
+							if (relatedTranslatedTopic.isDummyTopic())
+								nonTranslatedTopics.add(relatedTranslatedTopic);
+						}
+						
+						processTranslatedTitleErrors(doc, nonTranslatedTopics);
+					}
+					
+					/* render the topic html */
+					final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
+					final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
+
+					try
+					{
+						final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
+
+						updatedTranslatedTopicV1.setHtmlExplicit(transformedXml);
+					}
+					catch (final TransformerException ex)
+					{
+						updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+						updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.toString());
+					}
+				}
+			}
+			else
+			{
+				updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+				updatedTranslatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+			}
+			
+			/* Set the last changed date to the current date/time */
+			updatedTranslatedTopicV1.setHtmlUpdatedExplicit(new Date());
+			
+			client.updateJSONTranslatedTopic(expandEncodedString, updatedTranslatedTopicV1);
+
+			NotificationUtilities.dumpMessageToStdOut("TranslatedTopic " + translatedTopicId + "-" + translatedTopic.getLocale() + " has been updated");
+		}
+	}
+	
+	/**
+	 * Add the list of Translated Topics who referenced 
+	 * another topic that hasn't been translated.
+	 */
+	private void processTranslatedTitleErrors(final Document xmlDoc, final List<TranslatedTopicV1> errorTopics)
+	{
+		/* Check that there are errors */
+		if (errorTopics.isEmpty()) return;
+
+		/* Create the itemized list to hold the translations */
+		final Element errorUntranslatedSection = xmlDoc.createElement("itemizedlist");
+		boolean untranslatedErrors = false;
+
+		/* Create the title for the list */
+		final Element errorUntranslatedSectionTitle = xmlDoc.createElement("title");
+		errorUntranslatedSectionTitle.setTextContent("The following links in this topic reference untranslated resources:");
+		errorUntranslatedSection.appendChild(errorUntranslatedSectionTitle);
+		
+		/* Create the itemized list to hold the translations */
+		final Element errorNonPushedSection = xmlDoc.createElement("itemizedlist");
+		boolean nonPushedErrors = false;
+		
+		/* Create the title for the list */
+		final Element errorNonPushedSectionTitle = xmlDoc.createElement("title");
+		errorNonPushedSectionTitle.setTextContent("The following links in this topic references a topic that hasn't been pushed for translation:");
+		errorNonPushedSection.appendChild(errorNonPushedSectionTitle);
+
+		/* Add all of the topic titles that had errors to the list */
+		for (TranslatedTopicV1 topic: errorTopics)
+		{
+			Element errorTitleListItem = xmlDoc.createElement("listitem");
+			Element errorTitlePara = xmlDoc.createElement("para");
+			errorTitlePara.setTextContent(topic.getTitle());
+			errorTitleListItem.appendChild(errorTitlePara);
+			
+			if (topic.hasBeenPushedForTranslation())
+			{
+				errorUntranslatedSection.appendChild(errorTitleListItem);
+				untranslatedErrors = true;
+			}
+			else
+			{
+				errorNonPushedSection.appendChild(errorTitleListItem);
+				nonPushedErrors = true;
 			}
 		}
+		
+		/* Add the sections that have errors added to them */
+		if (untranslatedErrors)
+			xmlDoc.getDocumentElement().appendChild(errorUntranslatedSection);
+		
+		if (nonPushedErrors)
+			xmlDoc.getDocumentElement().appendChild(errorNonPushedSection);
 	}
 
 	private void renderTopic(final RESTInterfaceV1 client, final int topicId) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
@@ -294,12 +361,15 @@ public class RenderingThread extends BaseStompRunnable
 			topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 
 			final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
-			XMLPreProcessor.processInjections(true, topic, customInjectionIds, doc, null, null, false);
-			XMLPreProcessor.processGenericInjections(true, topic, doc, customInjectionIds, topicTypeTagDetails, null, null, false);
+			
+			final XMLPreProcessor<TopicV1> xmlPreProcessor = new XMLPreProcessor<TopicV1>();
+			
+			xmlPreProcessor.processInjections(null, topic, customInjectionIds, doc, null, false);
+			xmlPreProcessor.processGenericInjections(null, topic, doc, customInjectionIds, topicTypeTagDetails, null, false);
 			XMLPreProcessor.processInternalImageFiles(doc);
 
-			XMLPreProcessor.processTopicContentFragments(topic, doc, null);
-			XMLPreProcessor.processTopicTitleFragments(topic, doc, null);
+			xmlPreProcessor.processTopicContentFragments(topic, doc, null);
+			xmlPreProcessor.processTopicTitleFragments(topic, doc, null);
 
 			/*
 			 * Validate the topic after injections as Injections such as
@@ -313,7 +383,7 @@ public class RenderingThread extends BaseStompRunnable
 			else
 			{
 				/* add the standard boilerplate xml */
-				XMLPreProcessor.processTopicAdditionalInfo(topic, doc, null, Main.NAME + " " + Main.BUILD, null);
+				xmlPreProcessor.processTopicAdditionalInfo(topic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
 
 				/* render the topic html */
 				final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);

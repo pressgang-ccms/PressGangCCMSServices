@@ -18,7 +18,7 @@ class ServiceThread extends BaseStompServiceThread
 		super(serviceStarter);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public void message(final Map headers, final String message)
 	{
@@ -37,7 +37,7 @@ public class Main
 	public static final String NAME  = "Skynet Docbook Building Service";
 	
 	/** The build version */
-	public static final String BUILD = "20120222-1110";
+	public static final String BUILD = "20120508-1101";
 
 	public static void main(final String[] args)
 	{
