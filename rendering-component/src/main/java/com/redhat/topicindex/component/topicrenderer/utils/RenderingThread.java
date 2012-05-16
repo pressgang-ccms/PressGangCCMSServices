@@ -18,6 +18,7 @@ import org.jboss.resteasy.client.ProxyFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import com.redhat.contentspec.SpecTopic;
 import com.redhat.ecs.commonstructures.Pair;
 import com.redhat.ecs.commonutils.CollectionUtilities;
 import com.redhat.ecs.commonutils.ExceptionUtilities;
@@ -179,14 +180,16 @@ public class RenderingThread extends BaseStompRunnable
 				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 				
 				final XMLPreProcessor<TranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<TranslatedTopicV1>();
+				final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
+				specTopic.setTopic(translatedTopic);
 				
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
-				xmlPreProcessor.processInjections(null, translatedTopic, customInjectionIds, doc, null, false);
-				xmlPreProcessor.processGenericInjections(null, translatedTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
+				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
+				xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
 				XMLPreProcessor.processInternalImageFiles(doc);
 
-				xmlPreProcessor.processTopicContentFragments(translatedTopic, doc, null);
-				xmlPreProcessor.processTopicTitleFragments(translatedTopic, doc, null);
+				xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
+				xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
 				
 				/*
 				 * Validate the topic after injections as Injections such as
@@ -201,7 +204,7 @@ public class RenderingThread extends BaseStompRunnable
 				{
 					/* add the standard boilerplate xml */
 					/* currently disabled until how the additions should be displayed are figured out */
-					xmlPreProcessor.processTopicAdditionalInfo(translatedTopic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
+					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
 
 					/* Generate the note for the translated topics relationships that haven't been translated */
 					if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
@@ -363,13 +366,15 @@ public class RenderingThread extends BaseStompRunnable
 			final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 			
 			final XMLPreProcessor<TopicV1> xmlPreProcessor = new XMLPreProcessor<TopicV1>();
+			final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
+			specTopic.setTopic(topic);
 			
-			xmlPreProcessor.processInjections(null, topic, customInjectionIds, doc, null, false);
-			xmlPreProcessor.processGenericInjections(null, topic, doc, customInjectionIds, topicTypeTagDetails, null, false);
+			xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
+			xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
 			XMLPreProcessor.processInternalImageFiles(doc);
 
-			xmlPreProcessor.processTopicContentFragments(topic, doc, null);
-			xmlPreProcessor.processTopicTitleFragments(topic, doc, null);
+			xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
+			xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
 
 			/*
 			 * Validate the topic after injections as Injections such as
@@ -383,7 +388,7 @@ public class RenderingThread extends BaseStompRunnable
 			else
 			{
 				/* add the standard boilerplate xml */
-				xmlPreProcessor.processTopicAdditionalInfo(topic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
+				xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
 
 				/* render the topic html */
 				final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);

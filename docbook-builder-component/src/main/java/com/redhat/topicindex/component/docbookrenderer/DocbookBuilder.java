@@ -1,10 +1,12 @@
 package com.redhat.topicindex.component.docbookrenderer;
 
+
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -24,11 +26,18 @@ import javax.mail.internet.MimeMultipart;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.text.RuleBasedNumberFormat;
+import com.redhat.contentspec.Chapter;
+import com.redhat.contentspec.ContentSpec;
+import com.redhat.contentspec.Level;
+import com.redhat.contentspec.Section;
+import com.redhat.contentspec.SpecTopic;
+import com.redhat.contentspec.constants.CSConstants;
 import com.redhat.ecs.commonstructures.Pair;
 import com.redhat.ecs.commonutils.CollectionUtilities;
 import com.redhat.ecs.commonutils.ExceptionUtilities;
@@ -48,7 +57,6 @@ import com.redhat.topicindex.component.docbookrenderer.structures.TopicErrorData
 import com.redhat.topicindex.component.docbookrenderer.structures.TopicErrorDatabase;
 import com.redhat.topicindex.component.docbookrenderer.structures.TopicImageData;
 import com.redhat.topicindex.component.docbookrenderer.structures.tocformat.TagRequirements;
-import com.redhat.topicindex.component.docbookrenderer.structures.tocformat.TocFormatBranch;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
 import com.redhat.topicindex.rest.entities.BaseTopicV1;
 import com.redhat.topicindex.rest.entities.BlobConstantV1;
@@ -195,7 +203,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 				groupedLocaleTopics.get(topic.getLocale()).addItem(topic);
 			}
 
-			final Map<String, TocFormatBranch<T>> localeGroupedTocs = new HashMap<String, TocFormatBranch<T>>();
+			final Map<String, ContentSpec> localeGroupedTocs = new HashMap<String, ContentSpec>();
 			for (final String locale: groupedLocaleTopics.keySet())
 			{
 				final BaseRestCollectionV1<T> localeTopics = groupedLocaleTopics.get(locale);
@@ -219,16 +227,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 				}
 	
 				/* build up the toc format */
-				final TocFormatBranch<T> toc = doFormattedTocPass();
-	
-				/* early exit if shutdown has been requested */
-				if (builderThread.isShutdownRequested())
-				{
-					return false;
-				}
-	
-				/* add the topic to the toc */
-				doPopulateTocPass(toc);
+				final ContentSpec contentSpec = doFormattedTocPass(locale);
 	
 				/* early exit if shutdown has been requested */
 				if (builderThread.isShutdownRequested())
@@ -237,7 +236,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 				}
 	
 				/* make sure duplicate topics have unique ids in their xml */
-				toc.setUniqueIds();
+				doSetUniqueIdPass(contentSpec);
 	
 				/* early exit if shutdown has been requested */
 				if (builderThread.isShutdownRequested())
@@ -245,7 +244,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 					return false;
 				}
 	
-				doProcessingPass(toc, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, DocbookBuilder.BUILD_NAME, fixedUrlsSuccess, locale);
+				doProcessingPass(contentSpec.getBaseLevel(), buildDocbookMessage.getDocbookOptions(), searchTagsUrl, DocbookBuilder.BUILD_NAME, fixedUrlsSuccess, locale);
 	
 				/* early exit if shutdown has been requested */
 				if (builderThread.isShutdownRequested())
@@ -253,7 +252,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 					return false;
 				}
 				
-				localeGroupedTocs.put(locale, toc);
+				localeGroupedTocs.put(locale, contentSpec);
 			}
 
 			final byte[] zip = doBuildZipPass(localeGroupedTocs, buildDocbookMessage.getDocbookOptions(), fixedUrlsSuccess);
@@ -274,6 +273,93 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Sets the "id" attributes within each topics XML so that 
+	 * 
+	 * @param contentSpec
+	 */
+	private void doSetUniqueIdPass(final ContentSpec contentSpec)
+	{
+		for (final SpecTopic specTopic : contentSpec.getSpecTopics())
+		{
+			setUniqueIds(specTopic, specTopic.getXmlDocument());
+		}
+	}
+	
+	/**
+	 * Sets the "id" attributes in the supplied XML node so that they will be
+	 * unique within the book.
+	 * 
+	 * @param specTopic The topic the node belongs to.
+	 * @param node The node to process for id attributes.
+	 * @param usedIdAttributes The list of usedIdAttributes.
+	 */
+	private void setUniqueIds(final SpecTopic specTopic, final Node node)
+	{	
+		if (builderThread.isShutdownRequested())
+		{
+			return;
+		}
+		
+		final NamedNodeMap attributes = node.getAttributes();
+		if (attributes != null)
+		{
+			final Node idAttribute = attributes.getNamedItem("id");
+			if (idAttribute != null)
+			{
+				String idAttributeValue = idAttribute.getNodeValue();
+				
+				if (specTopic.getDuplicateId() != null)
+					idAttributeValue += "-" + specTopic.getDuplicateId();
+				
+				setUniqueIdReferences(node, idAttribute.getNodeValue(), idAttributeValue);
+				
+				idAttribute.setNodeValue(idAttributeValue);
+			}
+		}
+
+		final NodeList elements = node.getChildNodes();
+		for (int i = 0; i < elements.getLength(); ++i)
+			setUniqueIds(specTopic, elements.item(i));
+	}
+	
+	/**
+	 * ID attributes modified in the setUniqueIds() method may have been referenced
+	 * locally in the XML. When an ID is updated, and attribute that referenced
+	 * that ID is also updated.
+	 * 
+	 * @param node
+	 *            The node to check for attributes
+	 * @param id
+	 *            The old ID attribute value
+	 * @param fixedId
+	 *            The new ID attribute
+	 */
+	private void setUniqueIdReferences(final Node node, final String id, final String fixedId)
+	{
+		if (builderThread.isShutdownRequested())
+		{
+			return;
+		}
+		
+		final NamedNodeMap attributes = node.getAttributes();
+		if (attributes != null)
+		{
+			for (int i = 0; i < attributes.getLength(); ++i)
+			{
+				final String attibuteValue = attributes.item(i).getNodeValue();
+				if (attibuteValue.equals(id))
+				{
+					attributes.item(i).setNodeValue(fixedId);
+				}
+			}
+		}
+
+		final NodeList elements = node.getChildNodes();
+		for (int i = 0; i < elements.getLength(); ++i)
+			setUniqueIdReferences(elements.item(i), id, fixedId);
 	}
 
 	/**
@@ -301,15 +387,18 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 	 *            The TopicProcessingData that is associated with the Topic that
 	 *            has an error
 	 */
-	private void setTopicXMLForError(final TocFormatBranch<T> toc, final T topic, final String template, final boolean fixedUrlsSuccess)
+	@SuppressWarnings("unchecked")
+	private void setTopicXMLForError(final SpecTopic specTopic, final String template, final boolean fixedUrlsSuccess)
 	{
+		final T topic = (T) specTopic.getTopic();
+		
 		/* replace any markers with the topic sepecific text */
 		final String fixedTemplate = template.replaceAll(DocbookBuilderConstants.TOPIC_ERROR_LINK_MARKER, topic.getErrorXRefID());
 
 		final Document doc = XMLUtilities.convertStringToDocument(fixedTemplate);
-		toc.setXMLDocument(topic, doc);
+		specTopic.setXmlDocument(doc);
 		DocbookUtils.setSectionTitle(topic.getTitle(), doc);
-		processTopicID(toc, topic, fixedUrlsSuccess);
+		processTopicID(topic, fixedUrlsSuccess);
 	}
 
 	/**
@@ -324,24 +413,6 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 		else
 		{
 			topicXMLDocuments.get(topic).getDocumentElement().setAttribute("id", topic.getXRefID());
-		}
-	}
-
-	/**
-	 * Sets the topic xref id to the topic database id, including the toc branch
-	 * id that uniquely identifies the topic in the document
-	 */
-	private void processTopicID(final TocFormatBranch<T> toc, final T topic, final boolean fixedUrlsSuccess)
-	{
-		final TocFormatBranch<T> branch = toc.getBranchThatContainsTopic(topic);
-
-		if (fixedUrlsSuccess)
-		{
-			toc.getXMLDocument(topic).getDocumentElement().setAttribute("id", topic.getXrefPropertyOrId(CommonConstants.FIXED_URL_PROP_TAG_ID) + branch.getTOCBranchID());
-		}
-		else
-		{
-			toc.getXMLDocument(topic).getDocumentElement().setAttribute("id", topic.getXRefID() + branch.getTOCBranchID());
 		}
 	}
 
@@ -585,17 +656,18 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 	 * @throws InternalProcessingException
 	 * @throws InvalidParameterException
 	 */
-	private void doProcessingPass(final TocFormatBranch<T> toc, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String buildName, 
+	@SuppressWarnings("unchecked")
+	private void doProcessingPass(final Level level, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String buildName, 
 			final boolean fixedUrlsSuccess, final String locale) throws InvalidParameterException, InternalProcessingException
 	{
 		NotificationUtilities.dumpMessageToStdOut("Doing " + locale + " Processing Pass");
 
 		final int showPercent = 5;
-		final float total = toc.getTopicCount();
+		final float total = level.getNumberOfSpecTopics();
 		float current = 0;
 		int lastPercent = 0;
 
-		for (final T topic : toc.getAllTopics())
+		for (final SpecTopic specTopic : level.getSpecTopics())
 		{
 			if (builderThread.isShutdownRequested())
 			{
@@ -611,7 +683,8 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 				NotificationUtilities.dumpMessageToStdOut("\tProcessing Pass " + percent + "% Done");
 			}
 
-			final Document doc = toc.getXMLDocument(topic);
+			final Document doc = specTopic.getXmlDocument();
+			final T topic = (T) specTopic.getTopic();
 
 			if (doc != null)
 			{
@@ -630,10 +703,10 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				final XMLPreProcessor<T> xmlPreProcessor = new XMLPreProcessor<T>();
 				
-				final List<Integer> customInjectionErrors = xmlPreProcessor.processInjections(toc, topic, customInjectionIds, doc, docbookBuildingOptions, fixedUrlsSuccess);
-				final List<Integer> genericInjectionErrors = xmlPreProcessor.processGenericInjections(toc, topic, doc, customInjectionIds, topicTypeTagDetails, docbookBuildingOptions, fixedUrlsSuccess);
-				final List<Integer> topicContentFragmentsErrors = xmlPreProcessor.processTopicContentFragments(topic, doc, docbookBuildingOptions);
-				final List<Integer> topicTitleFragmentsErrors = xmlPreProcessor.processTopicTitleFragments(topic, doc, docbookBuildingOptions);
+				final List<Integer> customInjectionErrors = xmlPreProcessor.processInjections(level, specTopic, customInjectionIds, doc, docbookBuildingOptions, fixedUrlsSuccess);
+				final List<Integer> genericInjectionErrors = xmlPreProcessor.processGenericInjections(level, specTopic, doc, customInjectionIds, topicTypeTagDetails, docbookBuildingOptions, fixedUrlsSuccess);
+				final List<Integer> topicContentFragmentsErrors = xmlPreProcessor.processTopicContentFragments(specTopic, doc, docbookBuildingOptions);
+				final List<Integer> topicTitleFragmentsErrors = xmlPreProcessor.processTopicTitleFragments(specTopic, doc, docbookBuildingOptions);
 
 				boolean valid = true;
 				final boolean ignoringInjectionErrors = docbookBuildingOptions == null || docbookBuildingOptions.getIgnoreMissingCustomInjections();
@@ -707,7 +780,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 							/* Only show errors for topics that weren't included in the injections */
 							if (!customInjectionErrors.contains(relatedTranslatedTopic.getTopicId()) && !genericInjectionErrors.contains(relatedTopic.getId()))
 							{
-								if ((!toc.isInToc(relatedTranslatedTopic.getTopicId()) && (docbookBuildingOptions != null && !docbookBuildingOptions.getIgnoreMissingCustomInjections())) || toc.isInToc(relatedTranslatedTopic.getTopicId()))
+								if ((!level.isSpecTopicInLevelByTopicID(relatedTranslatedTopic.getTopicId()) && (docbookBuildingOptions != null && !docbookBuildingOptions.getIgnoreMissingCustomInjections())) || level.isSpecTopicInLevelByTopicID(relatedTranslatedTopic.getTopicId()))
 								{
 									if (relatedTopic.isDummyTopic() && relatedTranslatedTopic.hasBeenPushedForTranslation())
 										errorDatabase.addWarning(topic, "Topic ID " + relatedTranslatedTopic.getTopicId() + ", Revision " + relatedTranslatedTopic.getTopicRevision() + ", Title \"" + relatedTopic.getTitle() + "\" is an untranslated topic.");
@@ -732,7 +805,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 				else
 				{
 					/* add the standard boilerplate xml */
-					xmlPreProcessor.processTopicAdditionalInfo(topic, doc, docbookBuildingOptions, searchTagsUrl, buildName, buildDate);
+					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, searchTagsUrl, buildName, buildDate);
 					
 					/*
 					 * make sure the XML is valid docbook after the standard
@@ -752,26 +825,26 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 
 						final String xmlStringInCDATA = XMLUtilities.wrapStringInCDATA(xmlString);
 						errorDatabase.addError(topic, "Topic has invalid Docbook XML. The error is <emphasis>" + xmlValidator.getErrorText() + "</emphasis>. The processed XML is <programlisting>" + xmlStringInCDATA + "</programlisting>");
-						setTopicXMLForError(toc, topic, ERROR_XML_TEMPLATE, fixedUrlsSuccess);
+						setTopicXMLForError(specTopic, ERROR_XML_TEMPLATE, fixedUrlsSuccess);
 					}
 				}
 			}
 		}
 	}
 
-	private void doPopulateTocPass(final TocFormatBranch<T> toc)
+	private void populateTocLevel(final Level level, final TagRequirements childRequirements, final TagRequirements displayRequirements)
 	{
 		/*
 		 * If this branch has no parent, then it is the top level and we don't
 		 * add topics to it
 		 */
-		if (toc.getParent() != null && toc.getDisplayTags().hasRequirements())
+		if (level.getParent() != null && childRequirements != null && displayRequirements != null && displayRequirements.hasRequirements())
 		{
 			final TagRequirements requirements = new TagRequirements();
 			/* get the tags required to be a child of the parent toc levels */
-			toc.getTagsWithParent(requirements);
+			requirements.merge(childRequirements);
 			/* and add the tags required to be displayed at this level */
-			requirements.merge(toc.getDisplayTags());
+			requirements.merge(displayRequirements);
 
 			for (final T topic : topicXMLDocuments.keySet())
 			{
@@ -812,13 +885,27 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 
 				if (doesMatch)
 				{
-					toc.getTopics().put(topic.clone(false), (Document) topicXMLDocuments.get(topic).cloneNode(true));
+					final Integer topicId;
+					final String topicTitle;
+					if (topic instanceof TranslatedTopicV1)
+					{
+						topicId = ((TranslatedTopicV1) topic).getTopicId();
+						topicTitle = ((TranslatedTopicV1) topic).getTopic().getTitle();
+					}
+					else
+					{
+						topicId = topic.getId();
+						topicTitle = topic.getTitle();
+					}
+					
+					final SpecTopic specTopic = new SpecTopic(topicId, topicTitle);
+					specTopic.setTopic(topic.clone(false));
+					specTopic.setDuplicateId(level.getParent().getDuplicateId());
+					specTopic.setXmlDocument( (Document) topicXMLDocuments.get(topic).cloneNode(true));
+					level.appendSpecTopic(specTopic);
 				}
 			}
 		}
-
-		for (final TocFormatBranch<T> child : toc.getChildren())
-			doPopulateTocPass(child);
 	}
 
 	/**
@@ -830,15 +917,30 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 	 * the topics that fall under each level of the TOC, just the tags that a
 	 * topic needs to have in order to appear in each level of the TOC.
 	 * 
-	 * @return a collection of TocFormatBranch objects that represent the top
+	 * @return a Content Specification object that represent the top
 	 *         level of the TOC.
 	 */
-	private TocFormatBranch<T> doFormattedTocPass()
+	private ContentSpec doFormattedTocPass(final String locale)
 	{
 		try
 		{
-			/* The return value is a collection of the top level TOC branches */
-			final TocFormatBranch<T> retValue = new TocFormatBranch<T>();
+			/* The return value is a content specification. The 
+			 * content specification defines the structure and 
+			 * contents of the TOC.
+			 */
+			final ContentSpec retValue = new ContentSpec();
+			
+			/* Setup the basic content specification data */
+			retValue.setTitle("Book");
+			retValue.setBrand("JBoss-EAP6");
+			retValue.setProduct("Documentation 0.1");
+			retValue.setVersion("0.1");
+			retValue.setDtd("Docbook 4.5");
+			retValue.setOutputStyle(CSConstants.SKYNET_OUTPUT_FORMAT);
+			retValue.setCopyrightHolder("Red Hat, Inc");
+			
+			if (clazz == TranslatedTopicV1.class)
+				retValue.setLocale(locale);
 
 			/* Create an expand block for the tag parent tags */
 			final ExpandDataTrunk parentTags = new ExpandDataTrunk(new ExpandDataDetails("parenttags"));
@@ -910,11 +1012,11 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 			/* Get the technology and common names categories */
 			final CategoryV1 concernCategory = restClient.getJSONCategory(DocbookBuilderConstants.CONCERN_CATEGORY_ID, concernCategoryExpandStringEncoded);
 
-			/* Get the task, reference, concern and */
-			final TagV1 taskTag = restClient.getJSONTag(DocbookBuilderConstants.TASK_TAG_ID, "");
+			/* Get the task reference and concept tag*/
 			final TagV1 referenceTag = restClient.getJSONTag(DocbookBuilderConstants.REFERENCE_TAG_ID, "");
 			final TagV1 conceptTag = restClient.getJSONTag(DocbookBuilderConstants.CONCEPT_TAG_ID, "");
 			final TagV1 conceptualOverviewTag = restClient.getJSONTag(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, "");
+			final TagV1 taskTag = restClient.getJSONTag(DocbookBuilderConstants.TASK_TAG_ID, "");
 
 			/* add TocFormatBranch objects for each top level tag */
 			for (final TagV1 tag : topLevelTags)
@@ -934,7 +1036,11 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 					}
 				});
 
-				final TocFormatBranch<T> topLevelTag = new TocFormatBranch<T>(tag, retValue, topLevelBranchTags, null);
+				final Chapter topLevelTagChapter = new Chapter(tag.getName());
+				topLevelTagChapter.setDuplicateId(tag.getId().toString());
+				retValue.appendChapter(topLevelTagChapter);
+				
+				populateTocLevel(topLevelTagChapter, topLevelBranchTags, null);
 
 				for (final TagV1 concernTag : concernCategory.getTags().getItems())
 				{
@@ -942,14 +1048,33 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 					 * the second level of the toc are the concerns, which will
 					 * display the tasks and conceptual overviews beneath them
 					 */
-					final TocFormatBranch<T> concernLevelTocBranch = new TocFormatBranch<T>(concernTag, topLevelTag, new TagRequirements(concernTag, (TagV1) null), new TagRequirements((TagV1) null, CollectionUtilities.toArrayList(conceptualOverviewTag, taskTag)));
-
+					final TagRequirements concernLevelChildTags = new TagRequirements(concernTag, (TagV1) null);
+					concernLevelChildTags.merge(topLevelBranchTags);
+					final TagRequirements concernLevelDisplayTags = new TagRequirements((TagV1) null,CollectionUtilities.toArrayList(conceptualOverviewTag, taskTag));
+					
+					final Section concernSection = new Section(concernTag.getName());
+					concernSection.setDuplicateId(tag.getId() + "-" + concernTag.getId());
+					topLevelTagChapter.appendChild(concernSection);
+					
+					populateTocLevel(concernSection, concernLevelChildTags, concernLevelDisplayTags);
+					
 					/*
 					 * the third levels of the TOC are the concept and reference
 					 * topics
 					 */
-					new TocFormatBranch<T>(conceptTag, concernLevelTocBranch, null, new TagRequirements(conceptTag, (TagV1) null));
-					new TocFormatBranch<T>(referenceTag, concernLevelTocBranch, null, new TagRequirements(referenceTag, (TagV1) null));
+					final Section conceptSection = new Section(conceptTag.getName());
+					conceptSection.setDuplicateId(tag.getId() + "-" + concernTag.getId() + "-" + conceptTag.getId());
+					final Section referenceSection = new Section(referenceTag.getName());
+					referenceSection.setDuplicateId(tag.getId() + "-" + concernTag.getId() + "-" + referenceTag.getId());
+					
+					if (concernSection.getChildNodes().isEmpty())
+						concernSection.appendChild(referenceSection);
+					else
+						concernSection.insertBefore(referenceSection, concernSection.getFirstSpecNode());
+					concernSection.insertBefore(conceptSection, referenceSection);
+					
+					populateTocLevel(conceptSection, concernLevelChildTags, new TagRequirements(conceptTag, (TagV1) null));
+					populateTocLevel(referenceSection, concernLevelChildTags, new TagRequirements(referenceTag, (TagV1) null));
 				}
 			}
 
@@ -1161,7 +1286,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 		return success;
 	}
 
-	private byte[] doBuildZipPass(final Map<String, TocFormatBranch<T>> groupedLocaleTocs, final DocbookBuildingOptions docbookBuildingOptions, final boolean fixedUrlsSuccess) throws InvalidParameterException, InternalProcessingException
+	private byte[] doBuildZipPass(final Map<String, ContentSpec> groupedLocaleTocs, final DocbookBuildingOptions docbookBuildingOptions, final boolean fixedUrlsSuccess) throws InvalidParameterException, InternalProcessingException
 	{
 		NotificationUtilities.dumpMessageToStdOut("Doing Build ZIP Pass");
 
@@ -1193,7 +1318,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 		final HashMap<String, byte[]> files = new HashMap<String, byte[]>();
 
 		/* add the images to the zip file */
-		addImagesToBook(files);
+		addImagesToBook(files, CollectionUtilities.toArrayList(groupedLocaleTocs.keySet()));
 		
 		/*
 		 * the narrative style will not include a TOC or Eclipse plugin, and
@@ -1226,7 +1351,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 			else
 				files.put("Book/publican.cfg", StringUtilities.getStringBytes(StringUtilities.convertToLinuxLineEndings(publicanCfgLocaleFixed)));
 			
-			final TocFormatBranch<T> toc = groupedLocaleTocs.get(locale);
+			final ContentSpec contentSpec = groupedLocaleTocs.get(locale);
 	
 			// replace the date marker in the Book.XML file
 			files.put("Book/" + locale + "/Book_Info.xml", bookInfoXml.replace(DocbookBuilderConstants.DATE_YYMMDD_TEXT_MARKER, new StringBuilder(new SimpleDateFormat("yyMMdd").format(new Date()))).getBytes());
@@ -1253,15 +1378,15 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 			 * build the middle of the Book.xml file, where we include references to
 			 * the topic type pages that were built above
 			 */
-			String bookXmlXiIncludes = "";
+			StringBuilder bookXmlXiIncludes = new StringBuilder("");
 	
-			/* add an xml file for each topic */
+			/* add an xml file for each topic & chapter */
 			NotificationUtilities.dumpMessageToStdOut("\tAdding " + locale + " Topics files to Publican ZIP file");
-			toc.addTopicsToZIPFile(files, fixedUrlsSuccess);
-	
-			/* build the topics file, which defines the toc */
-			NotificationUtilities.dumpMessageToStdOut("\tBuilding " + locale + " Topics.xml");
-			bookXmlXiIncludes += toc.buildDocbook(fixedUrlsSuccess);
+			for (final Level level : contentSpec.getBaseLevel().getChildLevels())
+			{
+				if (level.hasSpecTopics())
+					createChapterXML(files, bookXmlXiIncludes, level, "<chapter></chapter>", fixedUrlsSuccess, locale);
+			}
 	
 			/* build the chapter containing the compiler errors */
 			if (!docbookBuildingOptions.getSuppressErrorsPage())
@@ -1270,7 +1395,16 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 				final String compilerOutput = buildErrorChapter(locale);
 	
 				files.put("Book/" + locale + "/Errors.xml", StringUtilities.getStringBytes(StringUtilities.cleanTextForXML(compilerOutput == null ? "" : compilerOutput)));
-				bookXmlXiIncludes += "	<xi:include href=\"Errors.xml\" xmlns:xi=\"http://www.w3.org/2001/XInclude\" />\n";
+				bookXmlXiIncludes.append("	<xi:include href=\"Errors.xml\" xmlns:xi=\"http://www.w3.org/2001/XInclude\" />\n");
+			}
+			
+			/* build the content specification page */
+			if (!docbookBuildingOptions.getSuppressContentSpecPage())
+			{
+				NotificationUtilities.dumpMessageToStdOut("\tBuilding " + locale + " Content Specification Appendix");
+				
+				files.put("Book/" + locale + "/Build_Content_Specification.xml", DocbookUtils.buildAppendix(DocbookUtils.wrapInPara("<programlisting>" + XMLUtilities.wrapStringInCDATA(contentSpec.toString()) + "</programlisting>"), "Build Content Specification").getBytes());
+				bookXmlXiIncludes.append("	<xi:include href=\"Build_Content_Specification.xml\" xmlns:xi=\"http://www.w3.org/2001/XInclude\" />\n");
 			}
 	
 			// replace the marker in the book.xml template
@@ -1294,6 +1428,102 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 		}
 
 		return zipFile;
+	}
+	
+	/**
+	 * Creates all the chapters/appendixes for a book and generates the section/topic data inside of each chapter.
+	 * 
+	 * @param bookXIncludes The string based list of XIncludes to be used in the book.xml
+	 * @param level The level to build the chapter from.
+	 * @param basicChapter A string representation of a basic chapter.
+	 */
+	private void createChapterXML(final Map<String, byte[]> files, final StringBuilder bookXIncludes, final Level level, final String basicChapter, final boolean fixedUrlsSuccess, final String locale)
+	{
+		if (builderThread.isShutdownRequested())
+		{
+			return;
+		}
+		
+		Document chapter = XMLUtilities.convertStringToDocument(basicChapter);
+		
+		// Create the title
+		String chapterName = level.getUniqueLinkId(fixedUrlsSuccess) + ".xml";
+		
+		// Add to the list of XIncludes that will get set in the book.xml
+		bookXIncludes.append("\t<xi:include href=\"" + chapterName + "\" xmlns:xi=\"http://www.w3.org/2001/XInclude\" />\n");
+		
+		//Create the chapter.xml
+		Element titleNode = chapter.createElement("title");
+		titleNode.setTextContent(level.getTitle());
+		chapter.getDocumentElement().appendChild(titleNode);
+		chapter.getDocumentElement().setAttribute("id", level.getUniqueLinkId(fixedUrlsSuccess));
+		
+		createSectionXML(files, level, chapter, chapter.getDocumentElement(), fixedUrlsSuccess, locale);
+		
+		// Add the boiler plate text and add the chapter to the book
+		String chapterString = DocbookUtils.addXMLBoilerplate(XMLUtilities.convertNodeToString(chapter, verbatimElements, inlineElements, contentsInlineElements, true));
+		files.put("Book/" + locale + "/" + chapterName, chapterString.getBytes());
+	}
+	
+	/**
+	 * Creates the section component of a chapter.xml for a specific ContentLevel.
+	 * 
+	 * @param levelData A map containing the data for this Section's level ordered by a step.
+	 * @param chapter The chapter document object that this section is to be added to.
+	 * @param parentNode The parent XML node of this section.
+	 */
+	private void createSectionXML(final Map<String, byte[]> files, final Level level, final Document chapter, final Element parentNode, final boolean fixedUrlsSuccess, final String locale) {
+		LinkedList<com.redhat.contentspec.Node> levelData = level.getChildNodes();
+		
+		// Add the section and topics for this level to the chapter.xml
+		for (com.redhat.contentspec.Node node: levelData) {
+			
+			// Check if the app should be shutdown
+			if (builderThread.isShutdownRequested()) {
+				return;
+			}
+			
+			if (node instanceof Level) {
+				Level childLevel = (Level)node;
+				
+				// Ignore sections that have no spec topics
+				if (!childLevel.hasSpecTopics())
+					continue;
+				
+				// Create the section and its title
+				Element sectionNode = chapter.createElement("section");
+				Element sectionTitleNode = chapter.createElement("title");
+				sectionTitleNode.setTextContent(childLevel.getTitle());
+				sectionNode.appendChild(sectionTitleNode);
+				sectionNode.setAttribute("id", childLevel.getUniqueLinkId(fixedUrlsSuccess));
+				
+				// Add this sections child sections/topics
+				createSectionXML(files, childLevel, chapter, sectionNode, fixedUrlsSuccess, locale);
+
+				parentNode.appendChild(sectionNode);
+			} else if (node instanceof SpecTopic) {
+				SpecTopic specTopic = (SpecTopic)node;
+				String topicFileName;
+				
+				if (fixedUrlsSuccess)
+					topicFileName = specTopic.getTopic().getXrefPropertyOrId(CommonConstants.FIXED_URL_PROP_TAG_ID);
+				else
+					topicFileName = specTopic.getTopic().getXRefID();
+				
+				if (specTopic.getDuplicateId() != null)
+					topicFileName += "-" + specTopic.getDuplicateId();			
+					
+				topicFileName += ".xml";
+				
+				Element topicNode = chapter.createElement("xi:include");
+				topicNode.setAttribute("href", "topics/" + topicFileName);
+				topicNode.setAttribute("xmlns:xi", "http://www.w3.org/2001/XInclude");
+				parentNode.appendChild(topicNode);
+				
+				String topicXML = DocbookUtils.addXMLBoilerplate(XMLUtilities.convertNodeToString(specTopic.getXmlDocument(), verbatimElements, inlineElements, contentsInlineElements, true));
+				files.put("Book/" + locale + "/topics/" + topicFileName, topicXML.getBytes());
+			}
+		}
 	}
 
 	/**
@@ -1424,7 +1654,7 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 		return DocbookUtils.buildChapter(errorItemizedLists, "Compiler Output");
 	}
 
-	private void addImagesToBook(final HashMap<String, byte[]> files) throws InvalidParameterException, InternalProcessingException
+	private void addImagesToBook(final HashMap<String, byte[]> files, final List<String> locales) throws InvalidParameterException, InternalProcessingException
 	{
 		/* Load the database constants */
 		final byte[] failpenguinPng = restClient.getJSONBlobConstant(DocbookBuilderConstants.FAILPENGUIN_PNG_ID, "").getValue();
@@ -1457,7 +1687,10 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 					if (imageFile != null)
 					{
 						success = true;
-						files.put("Book/en-US/" + imageLocation.getImageName(), imageFile.getImageData());
+						for (final String locale: locales)
+						{
+							files.put("Book/" + locale + "/" + imageLocation.getImageName(), imageFile.getImageData());
+						}
 					}
 					else
 					{
@@ -1476,7 +1709,10 @@ public class DocbookBuilder<T extends BaseTopicV1<T>> {
 			/* put in a place holder */
 			if (!success)
 			{
-				files.put("Book/en-US/" + imageLocation.getImageName(), failpenguinPng);
+				for (final String locale: locales)
+				{
+					files.put("Book/" + locale + "/" + imageLocation.getImageName(), failpenguinPng);
+				}
 			}
 
 			final float progress = (float) imageProgress / (float) imageTotal * 100;
