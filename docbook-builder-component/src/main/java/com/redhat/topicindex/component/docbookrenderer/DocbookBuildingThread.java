@@ -235,6 +235,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			if (buildDocbookMessage.getDocbookOptions().getIncludeUntranslatedTopics() != null && buildDocbookMessage.getDocbookOptions().getIncludeUntranslatedTopics())
 				addDummyRelatedTranslatedTopics(topics, buildDocbookMessage.getQuery());
 			
+			if (this.isShutdownRequested())
+			{
+				return;
+			}
+			
 			buildAndEmailFromTopics(TranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl);
 		}
 		else
@@ -292,6 +297,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final Map<Integer, TranslatedTopicV1> translatedTopicsMap = groupedLocaleTopics.get(locale);
 			for (final TopicV1 topic: topics.getItems())
 			{
+				if (this.isShutdownRequested())
+				{
+					return;
+				}
+				
 				if (!translatedTopicsMap.containsKey(topic.getId()))
 				{
 					final TranslatedTopicV1 dummyTopic = createDummyTranslatedTopic(translatedTopicsMap, topic, true, locale);
@@ -314,6 +324,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 	 */
 	private TranslatedTopicV1 createDummyTranslatedTopic(final Map<Integer, TranslatedTopicV1> translatedTopicsMap, final TopicV1 topic, final boolean expandRelationships, final String locale)
 	{
+		if (this.isShutdownRequested())
+		{
+			return null;
+		}
+		
 		final TranslatedTopicV1 translatedTopic = new TranslatedTopicV1();
 		
 		translatedTopic.setId(topic.getId() * -1);
@@ -337,6 +352,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final BaseRestCollectionV1<TranslatedTopicV1> outgoingRelationships = new BaseRestCollectionV1<TranslatedTopicV1>();
 			for (final TopicV1 relatedTopic : topic.getOutgoingRelationships().getItems())
 			{
+				if (this.isShutdownRequested())
+				{
+					return null;
+				}
+				
 				/* check to see if the translated topic already exists */
 				if (translatedTopicsMap.containsKey(relatedTopic.getId()))
 				{
@@ -356,6 +376,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final BaseRestCollectionV1<TranslatedTopicV1> incomingRelationships = new BaseRestCollectionV1<TranslatedTopicV1>();
 			for (final TopicV1 relatedTopic : topic.getIncomingRelationships().getItems())
 			{
+				if (this.isShutdownRequested())
+				{
+					return null;
+				}
+				
 				/* check to see if the translated topic already exists */
 				if (translatedTopicsMap.containsKey(relatedTopic.getId()))
 				{
@@ -374,6 +399,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 	
 	private <T extends BaseTopicV1<T>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl)
 	{
+		if (this.isShutdownRequested())
+		{
+			return;
+		}
+		
 		if (topics != null && topics.getItems() != null)
 		{
 			/* Split the topics up into their different locales */
@@ -389,6 +419,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			boolean success = true;
 			for (final String locale: groupedLocaleTopics.keySet())
 			{
+				if (this.isShutdownRequested())
+				{
+					return;
+				}
+				
 				final ErrorLoggerManager elm = new ErrorLoggerManager();
 				final RESTManager restManager = new RESTManager(elm, getServiceStarter().getSkynetServer());
 				final ContentSpecGenerator csGenerator = new ContentSpecGenerator(restClient);
@@ -398,15 +433,20 @@ public class DocbookBuildingThread extends BaseStompRunnable
 				
 				final ContentSpec contentSpec = csGenerator.generateContentSpecFromTopics(clazz, topics, locale, docbookBuildingOptions);
 				
+				if (this.isShutdownRequested())
+				{
+					return;
+				}
+				
 				try {
-					final DocbookBuilder<TopicV1> builder = new DocbookBuilder<TopicV1>(restManager, rocbookdtd, locale);
+					final DocbookBuilder<TopicV1> builder = new DocbookBuilder<TopicV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
 					final HashMap<String, byte[]> buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl);
 					
 					/* change the publican.cfg since we have multiple langs */
 					if (groupedLocaleTopics.keySet().size() > 1)
 					{
-						final String publicanFileName = DocBookUtilities.escapeTitle(contentSpec.getTitle()) + "/" + locale + "/publican.cfg";
-						final String newPublicanFileName = DocBookUtilities.escapeTitle(contentSpec.getTitle()) + "/" + locale + "/publican-" + locale + ".cfg";
+						final String publicanFileName = DocBookUtilities.escapeTitle(contentSpec.getTitle()) + "/publican.cfg";
+						final String newPublicanFileName = DocBookUtilities.escapeTitle(contentSpec.getTitle()) + "/publican-" + locale + ".cfg";
 						byte[] publicanCfg = buildFiles.get(publicanFileName);
 						
 						/* remove the old file */
@@ -421,9 +461,14 @@ public class DocbookBuildingThread extends BaseStompRunnable
 					 * null is by a reset message.
 					 */
 					if (buildFiles == null)
+					{
 						this.resendMessage();
+						return;
+					}
 					else
+					{
 						files.putAll(buildFiles);
+					}
 						
 				} catch (Exception ex) {
 					ExceptionUtilities.handleException(ex);
@@ -431,7 +476,12 @@ public class DocbookBuildingThread extends BaseStompRunnable
 				}
 			}
 			
-			if (success)
+			if (this.isShutdownRequested())
+			{
+				return;
+			}
+			
+			if (success && files != null && !files.isEmpty())
 			{
 				// now create the zip file
 				NotificationUtilities.dumpMessageToStdOut("\tBuilding the Publican ZIP file");

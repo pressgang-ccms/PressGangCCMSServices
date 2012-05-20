@@ -14,6 +14,7 @@ VERBATIM_XML_ELEMENTS=screen,programlisting
 INLINE_XML_ELEMENTS=code,prompt,command,firstterm,ulink,guilabel,filename,replaceable,parameter,literal,classname,sgmltag,guibutton,guimenuitem,guimenu,menuchoice,citetitle,systemitem,application
 CONTENTS_INLINE_XML_ELEMENTS=title,term
 NUMBER_OF_THREADS=1
+MAINCLASS=com.redhat.topicindex.component.docbookrenderer.Main
 
 java -Xmx1024m \
 -Dmail.smtp.host=${SMTP} \
@@ -27,4 +28,4 @@ java -Xmx1024m \
 -DtopicIndex.inlineXMLElements=${INLINE_XML_ELEMENTS} \
 -DtopicIndex.contentsInlineXMLElements=${CONTENTS_INLINE_XML_ELEMENTS} \
 -DNumberOfWorkerThreads=${NUMBER_OF_THREADS} \
--jar target/docbook-builder-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+-cp target/classes:target/lib/* ${MAINCLASS}

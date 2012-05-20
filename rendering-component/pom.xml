@@ -14,87 +14,41 @@
   <build>
     <plugins>
         <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <configuration>
-                <archive>
-                    <manifest>
-                        <mainClass>com.redhat.topicindex.component.topicrenderer.Main</mainClass>
-                    </manifest>
-                </archive>
-                <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs>
-            </configuration>
-            <executions>
-            	<execution>
-            		<id>make-assembly</id>
-            		<phase>package</phase> <!-- bind to the packaging phase -->
-            		<goals>
-              			<goal>single</goal>
-            		</goals>
-            	</execution>
-            </executions>
-        </plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-dependency-plugin</artifactId>
+			<version>2.4</version>
+			<executions>
+				<execution>
+					<id>copy-dependencies</id>
+					<phase>package</phase>
+					<goals>
+						<goal>copy-dependencies</goal>
+					</goals>
+					<configuration>
+						<outputDirectory>${project.build.directory}/lib</outputDirectory>
+						<overWriteReleases>false</overWriteReleases>
+						<overWriteSnapshots>false</overWriteSnapshots>
+						<overWriteIfNewer>true</overWriteIfNewer>
+					</configuration>
+				</execution>
+			</executions>
+		</plugin>
     </plugins>
   </build>
   
   <dependencies>
-  	<!-- RESTEasy Libraries -->
-  	<dependency>
-  		<groupId>org.jboss.resteasy</groupId>
-  		<artifactId>resteasy-atom-provider</artifactId>
-  		<version>2.2.3.GA</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.jboss.resteasy</groupId>
-  		<artifactId>resteasy-jaxrs</artifactId>
-  		<version>2.2.3.GA</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>javax.faces</groupId>
-  		<artifactId>jsf-api</artifactId>
-  		<version>1.2_15</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>javax.servlet</groupId>
-  		<artifactId>servlet-api</artifactId>
-  		<version>2.5</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>javax.ws.rs</groupId>
-  		<artifactId>javax.ws.rs-api</artifactId>
-  		<version>2.0-m04</version>
-  	</dependency>
-  	
-  	<!-- Jackson Libraries -->
-  	<dependency>
-		<groupId>org.codehaus.jackson</groupId>
-		<artifactId>jackson-mapper-asl</artifactId>
-		<version>1.9.6</version>
-	</dependency>
-	
-	<!-- Apache Commons Libraries -->
-  	<dependency>
-  		<groupId>commons-codec</groupId>
-  		<artifactId>commons-codec</artifactId>
-  		<version>1.6</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>commons-io</groupId>
-  		<artifactId>commons-io</artifactId>
-  		<version>2.1</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.apache.directory.studio</groupId>
-  		<artifactId>org.apache.commons.lang</artifactId>
-  		<version>2.6</version>
-  	</dependency>
-  	
   	<!-- Gozirra Libraries -->
   	<dependency>
   		<groupId>germane-software</groupId>
   		<artifactId>gozirra-extended</artifactId>
   		<version>0.5-SNAPSHOT</version>
+  	</dependency>
+  	
+  	<dependency>
+  		<groupId>org.apache.ant</groupId>
+  		<artifactId>ant-apache-xalan2</artifactId>
+  		<version>1.8.2</version>
+  		<scope>provided</scope>
   	</dependency>
   </dependencies>
 </project>

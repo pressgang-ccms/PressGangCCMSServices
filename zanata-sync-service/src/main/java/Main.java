@@ -7,6 +7,8 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.resteasy.client.ProxyFactory;
+import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.zanata.rest.dto.resource.ResourceMeta;
 
 import com.redhat.ecs.commonutils.CollectionUtilities;
@@ -39,6 +41,9 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		
+		RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
+		
 		try
 		{			
 			log.info("Skynet REST: " + skynetServer);
@@ -75,7 +80,7 @@ public class Main {
 			final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 			
 			BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
-			List<ResourceMeta> zanataResources = ZanataInterface.getZanataResources();
+			List<ResourceMeta> zanataResources = ZanataInterface.getInstance().getZanataResources();
 			List<String> existingZanataResources = new ArrayList<String>();
 			
 			/* Loop through and find the zanata ID and relevant original topics */

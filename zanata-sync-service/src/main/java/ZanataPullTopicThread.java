@@ -30,6 +30,7 @@ public class ZanataPullTopicThread implements Runnable {
 	
 	private final TopicV1 translatedHistoricalTopic;
 	private final RESTInterfaceV1 skynetClient;
+	private final ZanataInterface zanataInterface = new ZanataInterface();
 
 	public ZanataPullTopicThread(final TopicV1 topic, final String skynetServerUrl)
 	{
@@ -53,21 +54,20 @@ public class ZanataPullTopicThread implements Runnable {
 				
 				for (String locale: CommonConstants.LOCALES)
 				{
-					if (ZanataInterface.getTranslationsExists(zanataId, LocaleId.fromJavaName(locale)))
+					if (zanataInterface.getTranslationsExists(zanataId, LocaleId.fromJavaName(locale)))
 					{
-					
 						/* find a translation */
-						final TranslationsResource translationsResource = ZanataInterface.getTranslations(zanataId, LocaleId.fromJavaName(locale));
+						final TranslationsResource translationsResource = zanataInterface.getTranslations(zanataId, LocaleId.fromJavaName(locale));
 						/* and find the original resource */
-						final Resource originalTextResource = ZanataInterface.getZanataResource(zanataId);
+						final Resource originalTextResource = zanataInterface.getZanataResource(zanataId);
 		
 						if (translationsResource != null && originalTextResource != null)
 						{
-		
-							log.info("Starting to pull translations for locale " + locale);
+							log.info("Starting to pull translations for " + zanataId + " locale " + locale);
 							
 							/* attempt to find an existing TranslatedTopicData entity */
 							TranslatedTopicV1 translatedTopic = null;
+							boolean newTranslation = true;
 		
 							if (translatedTopics != null && translatedTopics.getItems() != null)
 							{
@@ -76,6 +76,7 @@ public class ZanataPullTopicThread implements Runnable {
 									if (myTranslatedTopic.getLocale().equals(locale))
 									{
 										translatedTopic = myTranslatedTopic;
+										newTranslation = false;
 										break;
 									}
 								}
@@ -89,8 +90,10 @@ public class ZanataPullTopicThread implements Runnable {
 							{
 								translatedTopic = new TranslatedTopicV1();
 								translatedTopic.setLocaleExplicit(locale);
-								translatedTopic.setAddItem(true);
+								translatedTopic.setTopicIdExplicit(translatedHistoricalTopic.getId());
+								translatedTopic.setTopicRevisionExplicit(translatedHistoricalTopic.getRevision().intValue());
 							}
+							translatedTopic.setAddItem(true);
 							
 							/* Set the current xml of the translated topic data so we can see if it has changed */
 							final String translatedXML = translatedTopic.getXml() == null ? "" : translatedTopic.getXml();
@@ -156,10 +159,13 @@ public class ZanataPullTopicThread implements Runnable {
 								 * make a note of the TranslatedTopicData entities that
 								 * have been changed, so we can render them
 								 */
-								changedTranslatedTopics.addItem(translatedTopic);
+								if (newTranslation)
+									newTranslatedTopics.addItem(translatedTopic);
+								else
+									changedTranslatedTopics.addItem(translatedTopic);
 							}
 							
-							log.info("Finished pulling translations for locale " + locale);
+							log.info("Finished pulling translations for " + zanataId + " locale " + locale);
 						}
 					}
 				}
@@ -167,7 +173,7 @@ public class ZanataPullTopicThread implements Runnable {
 				/* Save the new Translated Topic Datas */
 				if (newTranslatedTopics.getItems() != null && !newTranslatedTopics.getItems().isEmpty())
 				{
-					skynetClient.updateJSONTranslatedTopics("", translatedTopics);
+					skynetClient.createJSONTranslatedTopics("", newTranslatedTopics);
 				}
 				
 				/* Save all the changed Translated Topic Datas */

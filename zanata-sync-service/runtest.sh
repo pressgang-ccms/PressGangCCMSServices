@@ -14,4 +14,4 @@ java -DtopicIndex.zanataServer=${ZANATA_SERVER} \
 -DtopicIndex.zanataProject=${PROJECT} \
 -DtopicIndex.zanataProjectVersion=${PROJECT_VERSION} \
 -DtopicIndex.skynetServer=${REST_SERVER} \
--jar target/zanata-sync-service-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+-cp target/classes:target/lib/* ${MAINCLASS}

@@ -14,4 +14,4 @@ java -DtopicIndex.stompMessageServer=${STOMP_SERVER} \
 -DtopicIndex.stompMessageServerPass=${PASS} \
 -DtopicIndex.stompMessageServerQueue=${QUEUE} \
 -DtopicIndex.skynetServer=${REST_SERVER} \
--jar target/renderer-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+-cp target/classes:target/lib/* ${MAINCLASS}
