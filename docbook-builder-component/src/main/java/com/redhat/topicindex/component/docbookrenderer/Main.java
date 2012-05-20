@@ -37,7 +37,7 @@ public class Main
 	public static final String NAME  = "Skynet Docbook Building Service";
 	
 	/** The build version */
-	public static final String BUILD = "20120508-1101";
+	public static final String BUILD = "20120518-1753";
 
 	public static void main(final String[] args)
 	{

@@ -10,4 +10,4 @@ SET MAINCLASS=Main
 SET PROJECT=skynet
 SET PROJECT_VERSION=1
 
-java -DNumberOfWorkerThreads=3 -DtopicIndex.zanataServer=%ZANATA_SERVER% -DtopicIndex.zanataUsername=%USERNAME% -DtopicIndex.zanataToken=%TOKEN% -DtopicIndex.zanataProject=%PROJECT% -DtopicIndex.projectVersion=%PROJECT_VERSION% -DtopicIndex.skynetServer=%REST_SERVER% -cp bin;lib/* %MAINCLASS%
+java -DNumberOfWorkerThreads=3 -DtopicIndex.zanataServer=%ZANATA_SERVER% -DtopicIndex.zanataUsername=%USERNAME% -DtopicIndex.zanataToken=%TOKEN% -DtopicIndex.zanataProject=%PROJECT% -DtopicIndex.projectVersion=%PROJECT_VERSION% -DtopicIndex.skynetServer=%REST_SERVER% -jar target\zanata-sync-service-0.0.1-SNAPSHOT-jar-with-dependencies.jar

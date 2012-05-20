@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ZANATA_SERVER=http://csprocessor.cloud.lab.eng.bne.redhat.com:8080/zanata
+ZANATA_SERVER=http://zanatatest.usersys.redhat.com/
 REST_SERVER=http://localhost:8080/TopicIndex/seam/resource/rest
 USERNAME=admin
 TOKEN=b6d7044e9ee3b2447c28fb7c50d86d98
@@ -14,4 +14,4 @@ java -DtopicIndex.zanataServer=${ZANATA_SERVER} \
 -DtopicIndex.zanataProject=${PROJECT} \
 -DtopicIndex.zanataProjectVersion=${PROJECT_VERSION} \
 -DtopicIndex.skynetServer=${REST_SERVER} \
--cp bin:lib/* ${MAINCLASS}
+-jar target/zanata-sync-service-0.0.1-SNAPSHOT-jar-with-dependencies.jar

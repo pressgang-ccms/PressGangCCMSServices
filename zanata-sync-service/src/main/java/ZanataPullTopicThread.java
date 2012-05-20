@@ -102,8 +102,7 @@ public class ZanataPullTopicThread implements Runnable {
 		
 							final List<TextFlowTarget> textFlowTargets = translationsResource.getTextFlowTargets();
 							final List<TextFlow> textFlows = originalTextResource.getTextFlows();
-							double wordCount = 0;
-							double totalWordCount = 0;
+							int i = 0;
 		
 							/* map the translation to the original resource */
 							for (final TextFlow textFlow : textFlows)
@@ -113,15 +112,14 @@ public class ZanataPullTopicThread implements Runnable {
 									if (textFlowTarget.getResId().equals(textFlow.getId()))
 									{
 										translations.put(textFlow.getContent(), textFlowTarget.getContent());
-										wordCount += textFlow.getContent().split(" ").length;
+										i++;
 										break;
 									}
 								}
-								totalWordCount += textFlow.getContent().split(" ").length;
 							}
 							
 							/* Set the translation completion status */
-							translatedTopic.setTranslationPercentageExplicit((int) ( wordCount / totalWordCount * 100.0f));
+							translatedTopic.setTranslationPercentageExplicit((int) ( i / ((double) textFlows.size()) * 100.0f));
 							
 							/* save the strings to TranslatedTopicString entities */
 							BaseRestCollectionV1<TranslatedTopicStringV1> translatedTopicStrings = new BaseRestCollectionV1<TranslatedTopicStringV1>();
