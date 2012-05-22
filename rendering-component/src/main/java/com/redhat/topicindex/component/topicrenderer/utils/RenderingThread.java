@@ -28,6 +28,7 @@ import com.redhat.ecs.commonutils.XMLValidator;
 import com.redhat.ecs.servicepojo.ServiceStarter;
 import com.redhat.ecs.services.commonstomp.BaseStompRunnable;
 import com.redhat.ecs.services.docbookcompiling.DocbookBuilderConstants;
+import com.redhat.ecs.services.docbookcompiling.DocbookBuildingOptions;
 import com.redhat.ecs.services.docbookcompiling.xmlprocessing.XMLPreProcessor;
 import com.redhat.topicindex.component.topicrenderer.Main;
 import com.redhat.topicindex.messaging.DocbookRendererMessage;
@@ -48,10 +49,13 @@ public class RenderingThread extends BaseStompRunnable
 	private final ObjectMapper mapper = new ObjectMapper();
 	/** The Rocbook DTD, to be loaded once and then shared */
 	static private BlobConstantV1 constants = null;
+	
+	private final DocbookBuildingOptions docbookBuildingOptions = new DocbookBuildingOptions();
 
 	public RenderingThread(final Client client, final String message, final Map<String, String> headers, final ServiceStarter serviceStarter, final boolean shutdownRequested)
 	{
 		super(client, serviceStarter, message, headers, shutdownRequested);
+		docbookBuildingOptions.setInsertSurveyLink(false);
 	}
 
 	public void run()
@@ -204,7 +208,7 @@ public class RenderingThread extends BaseStompRunnable
 				{
 					/* add the standard boilerplate xml */
 					/* currently disabled until how the additions should be displayed are figured out */
-					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
+					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
 
 					/* Generate the note for the translated topics relationships that haven't been translated */
 					if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
@@ -388,7 +392,7 @@ public class RenderingThread extends BaseStompRunnable
 			else
 			{
 				/* add the standard boilerplate xml */
-				xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, Main.NAME + " " + Main.BUILD, null, new Date());
+				xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
 
 				/* render the topic html */
 				final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
