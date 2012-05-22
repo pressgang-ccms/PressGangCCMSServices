@@ -84,9 +84,9 @@ public class Main
 			 * Create a query that will return all bugs whose Build ID matches
 			 * what is prepopulated by Skynet.
 			 */
-			search.addQueryParam("field0-0-0", "cf_build_id");
-			search.addQueryParam("type0-0-0", "regexp");
-			search.addQueryParam("value0-0-0", "[0-9]+" + CommonConstants.BUGZILLA_BUILD_ID_RE);
+			search.addQueryParam("f1", "cf_build_id");
+			search.addQueryParam("o1", "regexp");
+			search.addQueryParam("v1", "[0-9]+" + CommonConstants.BUGZILLA_BUILD_ID_RE);
 
 			connector.connectTo("https://" + bugzillaServer + "/xmlrpc.cgi");
 			connector.executeMethod(login);
