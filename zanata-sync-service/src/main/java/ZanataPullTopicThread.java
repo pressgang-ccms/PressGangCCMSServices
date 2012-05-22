@@ -52,7 +52,7 @@ public class ZanataPullTopicThread implements Runnable {
 				final BaseRestCollectionV1<TranslatedTopicV1> changedTranslatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
 				final BaseRestCollectionV1<TranslatedTopicV1> newTranslatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
 				
-				for (String locale: CommonConstants.LOCALES)
+				for (String locale : CommonConstants.LOCALES)
 				{
 					if (zanataInterface.getTranslationsExists(zanataId, LocaleId.fromJavaName(locale)))
 					{

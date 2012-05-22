@@ -22,13 +22,14 @@ import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
 import com.redhat.topicindex.zanata.ZanataInterface;
 
-public class Main {
-	
+public class Main
+{
+
 	private static final Logger log = Logger.getLogger("SkynetZanataSyncService");
-	
+
 	/** Jackson object mapper */
 	private final static ObjectMapper mapper = new ObjectMapper();
-	
+
 	/* Get the system properties */
 	private static final String skynetServer = System.getProperty(CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY);
 	private static final String zanataServer = System.getProperty(CommonConstants.ZANATA_SERVER_PROPERTY);
@@ -40,96 +41,106 @@ public class Main {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		
+	public static void main(String[] args)
+	{
+
 		RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
-		
+
 		try
-		{			
+		{
 			log.info("Skynet REST: " + skynetServer);
 			log.info("Zanata Server: " + zanataServer);
 			log.info("Zanata Username: " + zanataUsername);
 			log.info("Zanata Token: " + zanataToken);
 			log.info("Zanata Project: " + zanataProject);
 			log.info("Zanata Project Version: " + zanataVersion);
-			
+
 			/* Some sanity checking */
-			if (skynetServer == null || skynetServer.trim().isEmpty() || zanataServer == null || zanataServer.trim().isEmpty() || zanataToken == null || zanataToken.trim().isEmpty() || zanataUsername == null || zanataUsername.trim().isEmpty()
-					|| zanataProject == null || zanataProject.trim().isEmpty() || zanataVersion == null || zanataVersion.trim().isEmpty())
+			if (skynetServer == null || skynetServer.trim().isEmpty() || zanataServer == null || zanataServer.trim().isEmpty() || zanataToken == null || zanataToken.trim().isEmpty() || zanataUsername == null || zanataUsername.trim().isEmpty() || zanataProject == null || zanataProject.trim().isEmpty()
+					|| zanataVersion == null || zanataVersion.trim().isEmpty())
 			{
-				log.error("The " + CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY + ", " + CommonConstants.ZANATA_SERVER_PROPERTY + ", " + CommonConstants.ZANATA_TOKEN_PROPERTY + ", " + CommonConstants.ZANATA_USERNAME_PROPERTY + 
-						", " + CommonConstants.ZANATA_SERVER_PROPERTY + " and " + CommonConstants.ZANATA_PROJECT_VERSION_PROPERTY + " system properties need to be defined.");
+				log.error("The " + CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY + ", " + CommonConstants.ZANATA_SERVER_PROPERTY + ", " + CommonConstants.ZANATA_TOKEN_PROPERTY + ", " + CommonConstants.ZANATA_USERNAME_PROPERTY + ", " + CommonConstants.ZANATA_SERVER_PROPERTY + " and "
+						+ CommonConstants.ZANATA_PROJECT_VERSION_PROPERTY + " system properties need to be defined.");
 				return;
 			}
 
-			/* Setup the REST interface */ 
+			/* Setup the REST interface */
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
-			
+
 			/* get the translated data */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
 			final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails("translatedtopics"));
 			final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TOPIC_NAME));
 			final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.TRANSLATEDTOPICS_NAME));
-			
+
 			expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
 			expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopic));
 			expand.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopic));
-			
+
 			/* convert the ExpandDataTrunk to an encoded JSON String */
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
-			
+
 			BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
 			List<ResourceMeta> zanataResources = ZanataInterface.getInstance().getZanataResources();
 			List<String> existingZanataResources = new ArrayList<String>();
-			
+
 			/* Loop through and find the zanata ID and relevant original topics */
-			final Map<String, TopicV1> translatedTopicsMap = new HashMap<String, TopicV1>(); 
+			final Map<String, TopicV1> translatedTopicsMap = new HashMap<String, TopicV1>();
 			if (translatedTopics != null && translatedTopics.getItems() != null)
 			{
-				for (final TranslatedTopicV1 translatedTopic: translatedTopics.getItems())
+				for (final TranslatedTopicV1 translatedTopic : translatedTopics.getItems())
 				{
 					final String zanataId = translatedTopic.getZanataId();
-					
+
 					if (!translatedTopicsMap.containsKey(zanataId))
 					{
 						translatedTopicsMap.put(zanataId, translatedTopic.getTopic());
 					}
 				}
 			}
-			
+			else
+			{
+				/* increasing prepared-statement-cache-size may fix this */
+				System.out.println("Did not recieve expected response from REST service.");
+				System.exit(1);
+			}
+
 			for (String zanataId : translatedTopicsMap.keySet())
-			{	
-				/* Pull each topic in a separate thread to decrease total processing time */
+			{
+				/*
+				 * Pull each topic in a separate thread to decrease total
+				 * processing time
+				 */
 				ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(translatedTopicsMap.get(zanataId), skynetServer));
-				
-				/* add the zanata id to the list of existing resources*/
+
+				/* add the zanata id to the list of existing resources */
 				existingZanataResources.add(zanataId);
 			}
-			
+
 			/* create the missing translated topics */
-			if (zanataResources != null) 
+			if (zanataResources != null)
 			{
-				for (ResourceMeta resource: zanataResources) 
+				for (ResourceMeta resource : zanataResources)
 				{
 					final String resourceName = resource.getName();
-					
+
 					if (!existingZanataResources.contains(resourceName) && resourceName.indexOf("-") != -1)
 					{
 						createTranslatedTopicFromZanataResource(resource, client);
 					}
 				}
 			}
-			
+
 			/* Sleep for a little to give the threads time to start executing */
 			Thread.sleep(100);
-			
+
 			/* wait for the threads to finish and then exit */
 			while (!(ZanataPullWorkQueue.getInstance().getQueuedItemCount() == 0 && ZanataPullWorkQueue.getInstance().getRunningThreadsCount() == 0))
 			{
 				Thread.sleep(100);
 			}
-			
+
 			log.info("All Translations synced. Exiting...");
 			System.exit(0);
 		}
@@ -141,54 +152,67 @@ public class Main {
 
 	private static void createTranslatedTopicFromZanataResource(final ResourceMeta resource, final RESTInterfaceV1 client) throws Exception
 	{
-		final String resourceName = resource.getName();
-		
-		/* Get the Topic ID and Revision */
-		Integer id = null, revision = null;
 		try
 		{
-			id = Integer.parseInt(resourceName.substring(0, resourceName.indexOf("-")));
-			revision = Integer.parseInt(resourceName.substring(resourceName.indexOf("-") + 1));
-		}
-		catch (NumberFormatException ex)
-		{/* Do Nothing */}
-		
-		if (id != null && revision != null)
-		{
-			/* check that the historical topic actually exists */
-			TopicV1 historicalTopic = null;
-			try {
-				historicalTopic = client.getJSONTopicRevision(id, revision, "");
-			}
-			catch (Exception e)
-			{/* Do Nothing */}
-			
-			if (historicalTopic != null && historicalTopic.getLocale().equals(resource.getLang().toString()))
+			final String resourceName = resource.getName();
+
+			/* Get the Topic ID and Revision */
+			Integer id = null, revision = null;
+			try
 			{
-				/* create the new translated topic */
-				TranslatedTopicV1 newTranslatedTopic = new TranslatedTopicV1();
-				newTranslatedTopic.setTopicIdExplicit(id);
-				newTranslatedTopic.setTopicRevisionExplicit(revision);
-				
-				/* create the base language data */
-				newTranslatedTopic.setAddItem(true);
-				newTranslatedTopic.setXmlExplicit(historicalTopic.getXml());
-				newTranslatedTopic.setLocaleExplicit(resource.getLang().toString());
-				newTranslatedTopic.setTranslationPercentageExplicit(100);
-				
-				newTranslatedTopic = client.createJSONTranslatedTopic("", newTranslatedTopic);
-				
-				BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
-				translatedTopics.addItem(newTranslatedTopic);
-				
-				historicalTopic.setTranslatedTopics_OTM(translatedTopics);
-				
-				if (newTranslatedTopic != null)
+				id = Integer.parseInt(resourceName.substring(0, resourceName.indexOf("-")));
+				revision = Integer.parseInt(resourceName.substring(resourceName.indexOf("-") + 1));
+			}
+			catch (NumberFormatException ex)
+			{/* Do Nothing */
+			}
+
+			if (id != null && revision != null)
+			{
+				/* check that the historical topic actually exists */
+				TopicV1 historicalTopic = null;
+				try
 				{
-					/* Pull the data from zanata for the new translated topic */
-					ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(historicalTopic, skynetServer));
+					historicalTopic = client.getJSONTopicRevision(id, revision, "");
+				}
+				catch (Exception e)
+				{/* Do Nothing */
+				}
+
+				if (historicalTopic != null && historicalTopic.getLocale().equals(resource.getLang().toString()))
+				{
+					/* create the new translated topic */
+					TranslatedTopicV1 newTranslatedTopic = new TranslatedTopicV1();
+					newTranslatedTopic.setTopicIdExplicit(id);
+					newTranslatedTopic.setTopicRevisionExplicit(revision);
+
+					/* create the base language data */
+					newTranslatedTopic.setAddItem(true);
+					newTranslatedTopic.setXmlExplicit(historicalTopic.getXml());
+					newTranslatedTopic.setLocaleExplicit(resource.getLang().toString());
+					newTranslatedTopic.setTranslationPercentageExplicit(100);
+
+					newTranslatedTopic = client.createJSONTranslatedTopic("", newTranslatedTopic);
+
+					BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
+					translatedTopics.addItem(newTranslatedTopic);
+
+					historicalTopic.setTranslatedTopics_OTM(translatedTopics);
+
+					if (newTranslatedTopic != null)
+					{
+						/*
+						 * Pull the data from zanata for the new translated
+						 * topic
+						 */
+						ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(historicalTopic, skynetServer));
+					}
 				}
 			}
+		}
+		catch (final Exception ex)
+		{
+			ExceptionUtilities.handleException(ex);
 		}
 	}
 }
