@@ -17,6 +17,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.resteasy.client.ProxyFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import com.redhat.contentspec.SpecTopic;
 import com.redhat.ecs.commonstructures.Pair;
@@ -169,81 +170,88 @@ public class RenderingThread extends BaseStompRunnable
 			
 			final XMLValidator validator = new XMLValidator();
 
-			final Document doc = XMLUtilities.convertStringToDocument(translatedTopic.getXml());
-			if (doc != null)
-			{
-				
-				/*
-				 * create a collection of the tags that make up the topics types
-				 * that will be included in generic injection points
-				 */
-				final List<Pair<Integer, String>> topicTypeTagDetails = new ArrayList<Pair<Integer, String>>();
-				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.TASK_TAG_ID, DocbookBuilderConstants.TASK_TAG_NAME));
-				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.REFERENCE_TAG_ID, DocbookBuilderConstants.REFERENCE_TAG_NAME));
-				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
-				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
-				
-				final XMLPreProcessor<TranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<TranslatedTopicV1>();
-				final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
-				specTopic.setTopic(translatedTopic);
-				
-				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
-				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
-				xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
-				XMLPreProcessor.processInternalImageFiles(doc);
-
-				xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
-				xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
-				
-				/*
-				 * Validate the topic after injections as Injections such as
-				 * "InjectListItems" won't validate until after injections
-				 */
-				if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
+			try {
+				final Document doc = XMLUtilities.convertStringToDocument(translatedTopic.getXml());
+				if (doc != null)
+				{
+					
+					/*
+					 * create a collection of the tags that make up the topics types
+					 * that will be included in generic injection points
+					 */
+					final List<Pair<Integer, String>> topicTypeTagDetails = new ArrayList<Pair<Integer, String>>();
+					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.TASK_TAG_ID, DocbookBuilderConstants.TASK_TAG_NAME));
+					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.REFERENCE_TAG_ID, DocbookBuilderConstants.REFERENCE_TAG_NAME));
+					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
+					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
+					
+					final XMLPreProcessor<TranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<TranslatedTopicV1>();
+					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
+					specTopic.setTopic(translatedTopic);
+					
+					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
+					xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
+					xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
+					XMLPreProcessor.processInternalImageFiles(doc);
+	
+					xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
+					xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
+					
+					/*
+					 * Validate the topic after injections as Injections such as
+					 * "InjectListItems" won't validate until after injections
+					 */
+					if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
+					{
+						updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+						updatedTranslatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+					}
+					else
+					{
+						/* add the standard boilerplate xml */
+						/* currently disabled until how the additions should be displayed are figured out */
+						xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
+	
+						/* Generate the note for the translated topics relationships that haven't been translated */
+						if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
+						{
+							final List<TranslatedTopicV1> nonTranslatedTopics = new ArrayList<TranslatedTopicV1>();
+							for (TranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
+							{
+								if (relatedTranslatedTopic.isDummyTopic())
+									nonTranslatedTopics.add(relatedTranslatedTopic);
+							}
+							
+							processTranslatedTitleErrors(doc, nonTranslatedTopics);
+						}
+						
+						/* render the topic html */
+						final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
+						final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
+	
+						try
+						{
+							final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
+	
+							updatedTranslatedTopicV1.setHtmlExplicit(transformedXml);
+						}
+						catch (final TransformerException ex)
+						{
+							updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+							updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.toString());
+						}
+					}
+				}
+				else
 				{
 					updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
 					updatedTranslatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
 				}
-				else
-				{
-					/* add the standard boilerplate xml */
-					/* currently disabled until how the additions should be displayed are figured out */
-					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
-
-					/* Generate the note for the translated topics relationships that haven't been translated */
-					if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
-					{
-						final List<TranslatedTopicV1> nonTranslatedTopics = new ArrayList<TranslatedTopicV1>();
-						for (TranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
-						{
-							if (relatedTranslatedTopic.isDummyTopic())
-								nonTranslatedTopics.add(relatedTranslatedTopic);
-						}
-						
-						processTranslatedTitleErrors(doc, nonTranslatedTopics);
-					}
-					
-					/* render the topic html */
-					final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
-					final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
-
-					try
-					{
-						final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
-
-						updatedTranslatedTopicV1.setHtmlExplicit(transformedXml);
-					}
-					catch (final TransformerException ex)
-					{
-						updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-						updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.toString());
-					}
-				}
 			}
-			else
+			catch (SAXException ex)
 			{
 				updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-				updatedTranslatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+				updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.toString());
 			}
 			
 			/* Set the last changed date to the current date/time */
@@ -354,68 +362,76 @@ public class RenderingThread extends BaseStompRunnable
 
 		final XMLValidator validator = new XMLValidator();
 
-		final Document doc = XMLUtilities.convertStringToDocument(topic.getXml());
-		if (doc != null)
+		try
 		{
-			/*
-			 * create a collection of the tags that make up the topics types
-			 * that will be included in generic injection points
-			 */
-			final List<Pair<Integer, String>> topicTypeTagDetails = new ArrayList<Pair<Integer, String>>();
-			topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.TASK_TAG_ID, DocbookBuilderConstants.TASK_TAG_NAME));
-			topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.REFERENCE_TAG_ID, DocbookBuilderConstants.REFERENCE_TAG_NAME));
-			topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
-			topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
-
-			final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
-			
-			final XMLPreProcessor<TopicV1> xmlPreProcessor = new XMLPreProcessor<TopicV1>();
-			final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
-			specTopic.setTopic(topic);
-			
-			xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
-			xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
-			XMLPreProcessor.processInternalImageFiles(doc);
-
-			xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
-			xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
-
-			/*
-			 * Validate the topic after injections as Injections such as
-			 * "InjectListItems" won't validate until after injections
-			 */
-			if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
+			final Document doc = XMLUtilities.convertStringToDocument(topic.getXml());
+			if (doc != null)
+			{
+				/*
+				 * create a collection of the tags that make up the topics types
+				 * that will be included in generic injection points
+				 */
+				final List<Pair<Integer, String>> topicTypeTagDetails = new ArrayList<Pair<Integer, String>>();
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.TASK_TAG_ID, DocbookBuilderConstants.TASK_TAG_NAME));
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.REFERENCE_TAG_ID, DocbookBuilderConstants.REFERENCE_TAG_NAME));
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
+				topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
+	
+				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
+				
+				final XMLPreProcessor<TopicV1> xmlPreProcessor = new XMLPreProcessor<TopicV1>();
+				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
+				specTopic.setTopic(topic);
+				
+				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
+				xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
+				XMLPreProcessor.processInternalImageFiles(doc);
+	
+				xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
+				xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
+	
+				/*
+				 * Validate the topic after injections as Injections such as
+				 * "InjectListItems" won't validate until after injections
+				 */
+				if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
+				{
+					updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+					updatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+				}
+				else
+				{
+					/* add the standard boilerplate xml */
+					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
+	
+					/* render the topic html */
+					final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
+					final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
+	
+					try
+					{
+						final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
+	
+						updatedTopicV1.setHtmlExplicit(transformedXml);
+						updatedTopicV1.setXmlErrorsExplicit("");
+					}
+					catch (final TransformerException ex)
+					{
+						updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+						updatedTopicV1.setXmlErrorsExplicit(ex.toString());
+					}
+				}
+			}
+			else
 			{
 				updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
 				updatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
 			}
-			else
-			{
-				/* add the standard boilerplate xml */
-				xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
-
-				/* render the topic html */
-				final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
-				final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
-
-				try
-				{
-					final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
-
-					updatedTopicV1.setHtmlExplicit(transformedXml);
-					updatedTopicV1.setXmlErrorsExplicit("");
-				}
-				catch (final TransformerException ex)
-				{
-					updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-					updatedTopicV1.setXmlErrorsExplicit(ex.toString());
-				}
-			}
 		}
-		else
+		catch (SAXException ex)
 		{
 			updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-			updatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+			updatedTopicV1.setXmlErrorsExplicit(ex.toString());
 		}
 
 		client.updateJSONTopic("", updatedTopicV1);
