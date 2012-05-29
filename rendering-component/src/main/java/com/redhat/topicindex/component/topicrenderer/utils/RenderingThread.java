@@ -251,7 +251,7 @@ public class RenderingThread extends BaseStompRunnable
 			catch (SAXException ex)
 			{
 				updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-				updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.toString());
+				updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.getMessage());
 			}
 			
 			/* Set the last changed date to the current date/time */
@@ -431,7 +431,7 @@ public class RenderingThread extends BaseStompRunnable
 		catch (SAXException ex)
 		{
 			updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-			updatedTopicV1.setXmlErrorsExplicit(ex.toString());
+			updatedTopicV1.setXmlErrorsExplicit(ex.getMessage());
 		}
 
 		client.updateJSONTopic("", updatedTopicV1);

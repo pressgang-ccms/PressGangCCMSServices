@@ -87,6 +87,7 @@ public class Main
 			search.addQueryParam("f1", "cf_build_id");
 			search.addQueryParam("o1", "regexp");
 			search.addQueryParam("v1", "[0-9]+" + CommonConstants.BUGZILLA_BUILD_ID_RE);
+			search.addQueryParam("query_format", "advanced");
 
 			connector.connectTo("https://" + bugzillaServer + "/xmlrpc.cgi");
 			connector.executeMethod(login);
