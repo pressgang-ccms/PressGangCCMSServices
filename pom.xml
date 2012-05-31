@@ -22,7 +22,7 @@
 	</repository>
 	<repository>
 		<id>ECS Maven</id>
-		<url>http://ecsmaven.usersys.redhat.com/nexus/</url>
+		<url>http://ecsmaven.usersys.redhat.com/nexus/content/groups/public/</url>
 	</repository>
   </repositories>
   
