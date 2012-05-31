@@ -10,6 +10,7 @@ import com.redhat.ecs.servicepojo.ServiceStarter;
 import com.redhat.ecs.services.commonstomp.BaseStompServiceThread;
 import com.redhat.ecs.services.commonstomp.StompWorkQueue;
 import com.redhat.topicindex.component.topicrenderer.utils.RenderingThread;
+import com.redhat.topicindex.rest.entities.jacksonutils.JacksonContextResolver;
 
 class ServiceThread extends BaseStompServiceThread
 {
@@ -44,6 +45,8 @@ public class Main
 	{
 		NotificationUtilities.dumpMessageToStdOut("Skynet Docbook Renderer Service Build " + BUILD);
 		
+		/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
+		ResteasyProviderFactory.getInstance().registerProvider(JacksonContextResolver.class);
 		RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
 
 		/*

@@ -17,6 +17,7 @@ import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
 import com.redhat.topicindex.rest.entities.TopicV1;
 import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.jacksonutils.JacksonContextResolver;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
@@ -64,7 +65,8 @@ public class Main
 				return;
 			}
 
-			/* Setup the REST interface */
+			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
+			ResteasyProviderFactory.getInstance().registerProvider(JacksonContextResolver.class);
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
 
 			/* get the translated data */
