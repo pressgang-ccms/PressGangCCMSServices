@@ -23,6 +23,8 @@ import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
 import com.redhat.topicindex.rest.entities.BugzillaBugV1;
 import com.redhat.topicindex.rest.entities.TopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.IBugzillaBugV1;
+import com.redhat.topicindex.rest.entities.interfaces.ITopicV1;
 import com.redhat.topicindex.rest.entities.jacksonutils.JacksonContextResolver;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
@@ -73,7 +75,7 @@ public class Main
 
 			final PathSegmentImpl query = new PathSegmentImpl("query;topicHasBugzillaBugs=true", false);
 
-			final BaseRestCollectionV1<TopicV1> topicsWithBugs = client.getJSONTopicsWithQuery(query, expandEncodedStrnig);
+			final BaseRestCollectionV1<ITopicV1> topicsWithBugs = client.getJSONTopicsWithQuery(query, expandEncodedStrnig);
 
 			System.out.println("Found " + topicsWithBugs.getSize() + " topics that already have Bugzilla bugs assigned to them.");
 
@@ -128,7 +130,7 @@ public class Main
 
 					final String topicId = buildIdMatcher.group("TopicID");
 					final Integer topicIdInt = Integer.parseInt(topicId);
-					final TopicV1 existingTopic = findTopic(topicIdInt, topicsWithBugs);
+					final ITopicV1 existingTopic = findTopic(topicIdInt, topicsWithBugs);
 
 					/* This is the topics we will use to update the system */
 					TopicV1 updateTopic = null;
@@ -138,7 +140,7 @@ public class Main
 					{
 						updateTopic = new TopicV1();
 						updateTopic.setId(topicIdInt);
-						updateTopic.setBugzillaBugsExplicit_OTM(new BaseRestCollectionV1<BugzillaBugV1>());
+						updateTopic.explicitSetBugzillaBugs_OTM(new BaseRestCollectionV1<IBugzillaBugV1>());
 						processedTopics.put(topicIdInt, updateTopic);
 					}
 					else
@@ -148,7 +150,7 @@ public class Main
 
 					if (existingTopic != null)
 					{
-						final List<BugzillaBugV1> existingBugs = findBug(ecsBug.getID(), existingTopic.getBugzillaBugs_OTM());
+						final List<IBugzillaBugV1> existingBugs = findBug(ecsBug.getID(), existingTopic.getBugzillaBugs_OTM());
 
 						/* if the bug exists, make sure the values are the same */
 						if (existingBugs.size() != 0)
@@ -214,16 +216,16 @@ public class Main
 			 * hasn't been processed has bugs that for some reason no longer
 			 * exist in Bugzilla.
 			 */
-			for (final TopicV1 topic : topicsWithBugs.getItems())
+			for (final ITopicV1 topic : topicsWithBugs.getItems())
 			{
 				if (!processedTopics.keySet().contains(topic.getId()))
 				{
 					final TopicV1 updateTopic = new TopicV1();
 					updateTopic.setId(topic.getId());
-					updateTopic.setBugzillaBugsExplicit_OTM(new BaseRestCollectionV1<BugzillaBugV1>());
+					updateTopic.explicitSetBugzillaBugs_OTM(new BaseRestCollectionV1<IBugzillaBugV1>());
 					processedTopics.put(topic.getId(), updateTopic);
 
-					for (final BugzillaBugV1 bug : topic.getBugzillaBugs_OTM().getItems())
+					for (final IBugzillaBugV1 bug : topic.getBugzillaBugs_OTM().getItems())
 					{
 						final BugzillaBugV1 removeBug = new BugzillaBugV1();
 						removeBug.setId(bug.getId());
@@ -233,7 +235,7 @@ public class Main
 				}
 			}
 
-			final BaseRestCollectionV1<TopicV1> dataObjects = new BaseRestCollectionV1<TopicV1>();
+			final BaseRestCollectionV1<ITopicV1> dataObjects = new BaseRestCollectionV1<ITopicV1>();
 			for (final TopicV1 topic : processedTopics.values())
 				dataObjects.addItem(topic);
 
@@ -256,10 +258,10 @@ public class Main
 			}
 
 			/* find the TopicV1 objects that are invalid */
-			final List<TopicV1> removeList = new ArrayList<TopicV1>();
+			final List<ITopicV1> removeList = new ArrayList<ITopicV1>();
 			for (final Integer id : invalidIds)
 			{
-				for (final TopicV1 topic : dataObjects.getItems())
+				for (final ITopicV1 topic : dataObjects.getItems())
 				{
 					if (topic.getId().equals(id))
 					{
@@ -269,7 +271,7 @@ public class Main
 			}
 
 			/* remove them from the collection */
-			for (final TopicV1 topic : removeList)
+			for (final ITopicV1 topic : removeList)
 				dataObjects.getItems().remove(topic);
 
 			/* make the changes */
@@ -292,12 +294,12 @@ public class Main
 		updateTopic.getBugzillaBugs_OTM().addItem(addBug);
 	}
 
-	static private TopicV1 findTopic(final Integer topicId, final BaseRestCollectionV1<TopicV1> topicsWithBugs)
+	static private ITopicV1 findTopic(final Integer topicId, final BaseRestCollectionV1<ITopicV1> topicsWithBugs)
 	{
 		if (topicsWithBugs.getItems() == null)
 			return null;
 
-		for (final TopicV1 topic : topicsWithBugs.getItems())
+		for (final ITopicV1 topic : topicsWithBugs.getItems())
 		{
 			if (topic.getId().equals(topicId))
 				return topic;
@@ -306,14 +308,14 @@ public class Main
 		return null;
 	}
 
-	static private List<BugzillaBugV1> findBug(final Integer id, final BaseRestCollectionV1<BugzillaBugV1> collection)
+	static private List<IBugzillaBugV1> findBug(final Integer id, final BaseRestCollectionV1<IBugzillaBugV1> collection)
 	{
-		final List<BugzillaBugV1> retValue = new ArrayList<BugzillaBugV1>();
+		final List<IBugzillaBugV1> retValue = new ArrayList<IBugzillaBugV1>();
 
 		if (collection.getItems() == null)
 			return retValue;
 
-		for (final BugzillaBugV1 element : collection.getItems())
+		for (final IBugzillaBugV1 element : collection.getItems())
 		{
 			if (element.getBugId().equals(id))
 				retValue.add(element);
