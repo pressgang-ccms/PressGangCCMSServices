@@ -38,6 +38,9 @@ import com.redhat.topicindex.rest.entities.BlobConstantV1;
 import com.redhat.topicindex.rest.entities.TagV1;
 import com.redhat.topicindex.rest.entities.TopicV1;
 import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.ITagV1;
+import com.redhat.topicindex.rest.entities.interfaces.ITopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.ITranslatedTopicV1;
 import com.redhat.topicindex.rest.exceptions.InternalProcessingException;
 import com.redhat.topicindex.rest.exceptions.InvalidParameterException;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
@@ -116,12 +119,12 @@ public class RenderingThread extends BaseStompRunnable
 		 */
 		ExpandDataTrunk expand = new ExpandDataTrunk();
 
-		final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TOPIC_NAME));
-		final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.TRANSLATEDTOPICS_NAME));
-		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
-		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TAGS_NAME));
-		final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails(TagV1.CATEGORIES_NAME));
-		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.PROPERTIES_NAME));
+		final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.TOPIC_NAME));
+		final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(ITopicV1.TRANSLATEDTOPICS_NAME));
+		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails(ITagV1.CATEGORIES_NAME));
+		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.PROPERTIES_NAME));
 
 		outgoingRelationships.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTags, expandTopic));
 		outgoingRelationshipsTags.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTagsCategories));
@@ -139,7 +142,7 @@ public class RenderingThread extends BaseStompRunnable
 		final String expandString = mapper.writeValueAsString(expand);
 		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 		
-		final TranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandEncodedString);
+		final ITranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandEncodedString);
 
 		if (translatedTopic != null)
 		{
@@ -185,7 +188,7 @@ public class RenderingThread extends BaseStompRunnable
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 					
-					final XMLPreProcessor<TranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<TranslatedTopicV1>();
+					final XMLPreProcessor<ITranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<ITranslatedTopicV1>();
 					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
 					specTopic.setTopic(translatedTopic);
 					
@@ -203,8 +206,8 @@ public class RenderingThread extends BaseStompRunnable
 					 */
 					if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
 					{
-						updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-						updatedTranslatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+						updatedTranslatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+						updatedTranslatedTopicV1.explicitSetXmlErrors(validator.getErrorText());
 					}
 					else
 					{
@@ -215,10 +218,10 @@ public class RenderingThread extends BaseStompRunnable
 						/* Generate the note for the translated topics relationships that haven't been translated */
 						if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
 						{
-							final List<TranslatedTopicV1> nonTranslatedTopics = new ArrayList<TranslatedTopicV1>();
-							for (TranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
+							final List<ITranslatedTopicV1> nonTranslatedTopics = new ArrayList<ITranslatedTopicV1>();
+							for (ITranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
 							{
-								if (relatedTranslatedTopic.isDummyTopic())
+								if (relatedTranslatedTopic.returnIsDummyTopic())
 									nonTranslatedTopics.add(relatedTranslatedTopic);
 							}
 							
@@ -233,29 +236,29 @@ public class RenderingThread extends BaseStompRunnable
 						{
 							final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
 	
-							updatedTranslatedTopicV1.setHtmlExplicit(transformedXml);
+							updatedTranslatedTopicV1.explicitSetHtml(transformedXml);
 						}
 						catch (final TransformerException ex)
 						{
-							updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-							updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.toString());
+							updatedTranslatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+							updatedTranslatedTopicV1.explicitSetXmlErrors(ex.toString());
 						}
 					}
 				}
 				else
 				{
-					updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-					updatedTranslatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+					updatedTranslatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+					updatedTranslatedTopicV1.explicitSetXmlErrors(validator.getErrorText());
 				}
 			}
 			catch (SAXException ex)
 			{
-				updatedTranslatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-				updatedTranslatedTopicV1.setXmlErrorsExplicit(ex.getMessage());
+				updatedTranslatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+				updatedTranslatedTopicV1.explicitSetXmlErrors(ex.getMessage());
 			}
 			
 			/* Set the last changed date to the current date/time */
-			updatedTranslatedTopicV1.setHtmlUpdatedExplicit(new Date());
+			updatedTranslatedTopicV1.explicitSetHtmlUpdated(new Date());
 			
 			client.updateJSONTranslatedTopic(expandEncodedString, updatedTranslatedTopicV1);
 
@@ -267,7 +270,7 @@ public class RenderingThread extends BaseStompRunnable
 	 * Add the list of Translated Topics who referenced 
 	 * another topic that hasn't been translated.
 	 */
-	private void processTranslatedTitleErrors(final Document xmlDoc, final List<TranslatedTopicV1> errorTopics)
+	private void processTranslatedTitleErrors(final Document xmlDoc, final List<ITranslatedTopicV1> errorTopics)
 	{
 		/* Check that there are errors */
 		if (errorTopics.isEmpty()) return;
@@ -291,7 +294,7 @@ public class RenderingThread extends BaseStompRunnable
 		errorNonPushedSection.appendChild(errorNonPushedSectionTitle);
 
 		/* Add all of the topic titles that had errors to the list */
-		for (TranslatedTopicV1 topic: errorTopics)
+		for (ITranslatedTopicV1 topic: errorTopics)
 		{
 			Element errorTitleListItem = xmlDoc.createElement("listitem");
 			Element errorTitlePara = xmlDoc.createElement("para");
@@ -346,7 +349,7 @@ public class RenderingThread extends BaseStompRunnable
 		final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
 		/* get the topic list */
-		final TopicV1 topic = client.getJSONTopic(topicId, expandEncodedStrnig);
+		final ITopicV1 topic = client.getJSONTopic(topicId, expandEncodedStrnig);
 
 		/* early exit if shutdown has been requested */
 		if (this.isShutdownRequested())
@@ -379,7 +382,7 @@ public class RenderingThread extends BaseStompRunnable
 	
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
-				final XMLPreProcessor<TopicV1> xmlPreProcessor = new XMLPreProcessor<TopicV1>();
+				final XMLPreProcessor<ITopicV1> xmlPreProcessor = new XMLPreProcessor<ITopicV1>();
 				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
@@ -396,8 +399,8 @@ public class RenderingThread extends BaseStompRunnable
 				 */
 				if (validator.validateTopicXML(doc, constants.getName(), constants.getValue()) == null)
 				{
-					updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-					updatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+					updatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+					updatedTopicV1.explicitSetXmlErrors(validator.getErrorText());
 				}
 				else
 				{
@@ -412,26 +415,26 @@ public class RenderingThread extends BaseStompRunnable
 					{
 						final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
 	
-						updatedTopicV1.setHtmlExplicit(transformedXml);
-						updatedTopicV1.setXmlErrorsExplicit("");
+						updatedTopicV1.explicitSetHtml(transformedXml);
+						updatedTopicV1.explicitSetXmlErrors("");
 					}
 					catch (final TransformerException ex)
 					{
-						updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-						updatedTopicV1.setXmlErrorsExplicit(ex.toString());
+						updatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+						updatedTopicV1.explicitSetXmlErrors(ex.toString());
 					}
 				}
 			}
 			else
 			{
-				updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-				updatedTopicV1.setXmlErrorsExplicit(validator.getErrorText());
+				updatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+				updatedTopicV1.explicitSetXmlErrors(validator.getErrorText());
 			}
 		}
 		catch (SAXException ex)
 		{
-			updatedTopicV1.setHtmlExplicit(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-			updatedTopicV1.setXmlErrorsExplicit(ex.getMessage());
+			updatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
+			updatedTopicV1.explicitSetXmlErrors(ex.getMessage());
 		}
 
 		client.updateJSONTopic("", updatedTopicV1);
