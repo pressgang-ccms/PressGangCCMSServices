@@ -16,9 +16,9 @@ import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.commonutils.XMLUtilities;
 import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
-import com.redhat.topicindex.rest.entities.TopicV1;
-import com.redhat.topicindex.rest.entities.TranslatedTopicStringV1;
-import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicStringV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
 import com.redhat.topicindex.zanata.ZanataInterface;
 
@@ -28,11 +28,11 @@ public class ZanataPullTopicThread implements Runnable {
 
 	private static final String XML_ENCODING = "UTF-8";
 	
-	private final TopicV1 translatedHistoricalTopic;
+	private final RESTTopicV1 translatedHistoricalTopic;
 	private final RESTInterfaceV1 skynetClient;
 	private final ZanataInterface zanataInterface = new ZanataInterface();
 
-	public ZanataPullTopicThread(final TopicV1 topic, final String skynetServerUrl)
+	public ZanataPullTopicThread(final RESTTopicV1 topic, final String skynetServerUrl)
 	{
 		this.translatedHistoricalTopic = topic;
 		this.skynetClient = ProxyFactory.create(RESTInterfaceV1.class, skynetServerUrl);
@@ -47,10 +47,10 @@ public class ZanataPullTopicThread implements Runnable {
 				
 				log.info("Starting to pull translations for " + zanataId);
 				
-				final BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = translatedHistoricalTopic.getTranslatedTopics_OTM();		
+				final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = translatedHistoricalTopic.getTranslatedTopics_OTM();		
 				
-				final BaseRestCollectionV1<TranslatedTopicV1> changedTranslatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
-				final BaseRestCollectionV1<TranslatedTopicV1> newTranslatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
+				final BaseRestCollectionV1<RESTTranslatedTopicV1> changedTranslatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
+				final BaseRestCollectionV1<RESTTranslatedTopicV1> newTranslatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
 				
 				for (String locale : CommonConstants.LOCALES)
 				{
@@ -66,12 +66,12 @@ public class ZanataPullTopicThread implements Runnable {
 							log.info("Starting to pull translations for " + zanataId + " locale " + locale);
 							
 							/* attempt to find an existing TranslatedTopicData entity */
-							TranslatedTopicV1 translatedTopic = null;
+							RESTTranslatedTopicV1 translatedTopic = null;
 							boolean newTranslation = true;
 		
 							if (translatedTopics != null && translatedTopics.getItems() != null)
 							{
-								for (final TranslatedTopicV1 myTranslatedTopic : translatedTopics.getItems())
+								for (final RESTTranslatedTopicV1 myTranslatedTopic : translatedTopics.getItems())
 								{
 									if (myTranslatedTopic.getLocale().equals(locale))
 									{
@@ -88,10 +88,10 @@ public class ZanataPullTopicThread implements Runnable {
 							 */
 							if (translatedTopic == null)
 							{
-								translatedTopic = new TranslatedTopicV1();
-								translatedTopic.setLocaleExplicit(locale);
-								translatedTopic.setTopicIdExplicit(translatedHistoricalTopic.getId());
-								translatedTopic.setTopicRevisionExplicit(translatedHistoricalTopic.getRevision().intValue());
+								translatedTopic = new RESTTranslatedTopicV1();
+								translatedTopic.explicitSetLocale(locale);
+								translatedTopic.explicitSetTopicId(translatedHistoricalTopic.getId());
+								translatedTopic.explicitSetTopicRevision(translatedHistoricalTopic.getRevision().intValue());
 							}
 							translatedTopic.setAddItem(true);
 							
@@ -122,22 +122,22 @@ public class ZanataPullTopicThread implements Runnable {
 							}
 							
 							/* Set the translation completion status */
-							translatedTopic.setTranslationPercentageExplicit((int) ( i / ((double) textFlows.size()) * 100.0f));
+							translatedTopic.explicitSetTranslationPercentage((int) ( i / ((double) textFlows.size()) * 100.0f));
 							
 							/* save the strings to TranslatedTopicString entities */
-							BaseRestCollectionV1<TranslatedTopicStringV1> translatedTopicStrings = new BaseRestCollectionV1<TranslatedTopicStringV1>();
+							BaseRestCollectionV1<RESTTranslatedTopicStringV1> translatedTopicStrings = new BaseRestCollectionV1<RESTTranslatedTopicStringV1>();
 							for (final String originalText : translations.keySet())
 							{
 								final String translation = translations.get(originalText);
 								
-								final TranslatedTopicStringV1 translatedTopicString = new TranslatedTopicStringV1();
-								translatedTopicString.setOriginalStringExplicit(originalText);
-								translatedTopicString.setTranslatedStringExplicit(translation);
+								final RESTTranslatedTopicStringV1 translatedTopicString = new RESTTranslatedTopicStringV1();
+								translatedTopicString.explicitSetOriginalString(originalText);
+								translatedTopicString.explicitSetTranslatedString(translation);
 								translatedTopicString.setAddItem(true);
 								
 								translatedTopicStrings.addItem(translatedTopicString);
 							}
-							translatedTopic.setTranslatedTopicStringExplicit_OTM(translatedTopicStrings);
+							translatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopicStrings);
 		
 							/* get a Document from the stored historical XML */
 							final Document xml = XMLUtilities.convertStringToDocument(translatedHistoricalTopic.getXml());
@@ -149,7 +149,7 @@ public class ZanataPullTopicThread implements Runnable {
 							if (xml != null)
 							{
 								XMLUtilities.replaceTranslatedStrings(xml, translations);
-								translatedTopic.setXmlExplicit(XMLUtilities.convertDocumentToString(xml, XML_ENCODING));
+								translatedTopic.explicitSetXml(XMLUtilities.convertDocumentToString(xml, XML_ENCODING));
 							}
 							
 							/* Only save the data if the content has changed */

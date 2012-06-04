@@ -15,9 +15,9 @@ import com.redhat.ecs.commonutils.CollectionUtilities;
 import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
-import com.redhat.topicindex.rest.entities.TopicV1;
-import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
-import com.redhat.topicindex.rest.entities.jacksonutils.JacksonContextResolver;
+import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
@@ -66,14 +66,13 @@ public class Main
 			}
 
 			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
-			ResteasyProviderFactory.getInstance().registerProvider(JacksonContextResolver.class);
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
 
 			/* get the translated data */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
 			final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails("translatedtopics"));
-			final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TOPIC_NAME));
-			final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.TRANSLATEDTOPICS_NAME));
+			final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
+			final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TRANSLATEDTOPICS_NAME));
 
 			expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
 			expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopic));
@@ -83,17 +82,17 @@ public class Main
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-			BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
+			BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
 			List<ResourceMeta> zanataResources = ZanataInterface.getInstance().getZanataResources();
 			List<String> existingZanataResources = new ArrayList<String>();
 
 			/* Loop through and find the zanata ID and relevant original topics */
-			final Map<String, TopicV1> translatedTopicsMap = new HashMap<String, TopicV1>();
+			final Map<String, RESTTopicV1> translatedTopicsMap = new HashMap<String, RESTTopicV1>();
 			if (translatedTopics != null && translatedTopics.getItems() != null)
 			{
-				for (final TranslatedTopicV1 translatedTopic : translatedTopics.getItems())
+				for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.getItems())
 				{
-					final String zanataId = translatedTopic.getZanataId();
+					final String zanataId = ComponentTranslatedTopicV1.returnZanataId(translatedTopic);
 
 					if (!translatedTopicsMap.containsKey(zanataId))
 					{
@@ -172,7 +171,7 @@ public class Main
 			if (id != null && revision != null)
 			{
 				/* check that the historical topic actually exists */
-				TopicV1 historicalTopic = null;
+				RESTTopicV1 historicalTopic = null;
 				try
 				{
 					historicalTopic = client.getJSONTopicRevision(id, revision, "");
@@ -184,19 +183,19 @@ public class Main
 				if (historicalTopic != null && historicalTopic.getLocale().equals(resource.getLang().toString()))
 				{
 					/* create the new translated topic */
-					TranslatedTopicV1 newTranslatedTopic = new TranslatedTopicV1();
-					newTranslatedTopic.setTopicIdExplicit(id);
-					newTranslatedTopic.setTopicRevisionExplicit(revision);
+					RESTTranslatedTopicV1 newTranslatedTopic = new RESTTranslatedTopicV1();
+					newTranslatedTopic.explicitSetTopicId(id);
+					newTranslatedTopic.explicitSetTopicRevision(revision);
 
 					/* create the base language data */
 					newTranslatedTopic.setAddItem(true);
-					newTranslatedTopic.setXmlExplicit(historicalTopic.getXml());
-					newTranslatedTopic.setLocaleExplicit(resource.getLang().toString());
-					newTranslatedTopic.setTranslationPercentageExplicit(100);
+					newTranslatedTopic.explicitSetXml(historicalTopic.getXml());
+					newTranslatedTopic.explicitSetLocale(resource.getLang().toString());
+					newTranslatedTopic.explicitSetTranslationPercentage(100);
 
 					newTranslatedTopic = client.createJSONTranslatedTopic("", newTranslatedTopic);
 
-					BaseRestCollectionV1<TranslatedTopicV1> translatedTopics = new BaseRestCollectionV1<TranslatedTopicV1>();
+					BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
 					translatedTopics.addItem(newTranslatedTopic);
 
 					historicalTopic.setTranslatedTopics_OTM(translatedTopics);
