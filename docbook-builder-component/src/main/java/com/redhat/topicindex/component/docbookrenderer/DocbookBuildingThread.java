@@ -40,10 +40,10 @@ import com.redhat.ecs.services.docbookcompiling.DocbookBuilderConstants;
 import com.redhat.ecs.services.docbookcompiling.DocbookBuildingOptions;
 import com.redhat.topicindex.messaging.TopicRendererType;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
-import com.redhat.topicindex.rest.entities.BaseTopicV1;
 import com.redhat.topicindex.rest.entities.BlobConstantV1;
-import com.redhat.topicindex.rest.entities.TopicV1;
-import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTBaseTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
 import com.redhat.topicindex.rest.exceptions.InternalProcessingException;
 import com.redhat.topicindex.rest.exceptions.InvalidParameterException;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
@@ -148,7 +148,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 
 			final ExpandDataTrunk topicsExpand = new ExpandDataTrunk(new ExpandDataDetails("topics"));
 			final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails("tags"));
-			final ExpandDataTrunk properties = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.PROPERTIES_NAME));
+			final ExpandDataTrunk properties = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.PROPERTIES_NAME));
 			final ExpandDataTrunk categories = new ExpandDataTrunk(new ExpandDataDetails("categories"));
 			final ExpandDataTrunk parentTags = new ExpandDataTrunk(new ExpandDataDetails("parenttags"));
 			final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails("outgoingRelationships"));
@@ -163,7 +163,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
-			final BaseRestCollectionV1<TopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
+			final BaseRestCollectionV1<RESTTopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
 
 			/*
 			 * Construct the URL that will show us the topics used in
@@ -171,7 +171,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			 */
 			final String searchTagsUrl = CommonConstants.FULL_SERVER_URL + "/CustomSearchTopicList.seam?" + buildDocbookMessage.getQuery().replaceAll(";", "&amp;");
 			
-			buildAndEmailFromTopics(TopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl);
+			buildAndEmailFromTopics(RESTTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl);
 		}
 		else
 		{
@@ -202,13 +202,13 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
 
 			final ExpandDataTrunk translatedTopicsExpand = new ExpandDataTrunk(new ExpandDataDetails("translatedtopics"));
-			final ExpandDataTrunk topicExpandTranslatedTopics = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.TRANSLATEDTOPICS_NAME));
+			final ExpandDataTrunk topicExpandTranslatedTopics = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TRANSLATEDTOPICS_NAME));
 			final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails("tags"));
-			final ExpandDataTrunk properties = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.PROPERTIES_NAME));
+			final ExpandDataTrunk properties = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.PROPERTIES_NAME));
 			final ExpandDataTrunk categories = new ExpandDataTrunk(new ExpandDataDetails("categories"));
 			final ExpandDataTrunk parentTags = new ExpandDataTrunk(new ExpandDataDetails("parenttags"));
-			final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
-			final ExpandDataTrunk topicsExpand = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TOPIC_NAME));
+			final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
+			final ExpandDataTrunk topicsExpand = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
 			
 			/* We need to expand the categories collection on the topic tags */
 			tags.setBranches(CollectionUtilities.toArrayList(categories, parentTags, properties));
@@ -223,7 +223,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
-			final BaseRestCollectionV1<TranslatedTopicV1> topics = restClient.getJSONTranslatedTopicsWithQuery(pathSegment, expandEncodedStrnig);
+			final BaseRestCollectionV1<RESTTranslatedTopicV1> topics = restClient.getJSONTranslatedTopicsWithQuery(pathSegment, expandEncodedStrnig);
 			
 			/*
 			 * Construct the URL that will show us the topics used in
@@ -240,7 +240,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 				return;
 			}
 			
-			buildAndEmailFromTopics(TranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl);
+			buildAndEmailFromTopics(RESTTranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl);
 		}
 		else
 		{
@@ -248,7 +248,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		}
 	}
 	
-	private void addDummyRelatedTranslatedTopics(final BaseRestCollectionV1<TranslatedTopicV1> translatedTopics, final String query) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
+	private void addDummyRelatedTranslatedTopics(final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics, final String query) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
 	{
 		NotificationUtilities.dumpMessageToStdOut("Doing dummy translated topic pass");
 		
@@ -264,10 +264,10 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		final ExpandDataTrunk topicsExpand = new ExpandDataTrunk(new ExpandDataDetails("topics"));
 		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails("outgoingRelationships"));
 		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails("tags"));
-		final ExpandDataTrunk properties = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.PROPERTIES_NAME));
+		final ExpandDataTrunk properties = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.PROPERTIES_NAME));
 		final ExpandDataTrunk categories = new ExpandDataTrunk(new ExpandDataDetails("categories"));
 		final ExpandDataTrunk parentTags = new ExpandDataTrunk(new ExpandDataDetails("parenttags"));
-		final ExpandDataTrunk expandTranslatedTopics = new ExpandDataTrunk(new ExpandDataDetails(TopicV1.TRANSLATEDTOPICS_NAME));
+		final ExpandDataTrunk expandTranslatedTopics = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TRANSLATEDTOPICS_NAME));
 
 		/* We need to expand the categories collection on the topic tags */
 		tags.setBranches(CollectionUtilities.toArrayList(categories, parentTags, properties));
@@ -279,23 +279,23 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		final String expandString = mapper.writeValueAsString(expand);
 		final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
-		final BaseRestCollectionV1<TopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
+		final BaseRestCollectionV1<RESTTopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
 
 		
 		/* Split the topics up into their different locales */
-		final Map<String, Map<Integer, TranslatedTopicV1>> groupedLocaleTopics = new HashMap<String, Map<Integer, TranslatedTopicV1>>();
-		for (final TranslatedTopicV1 topic: translatedTopics.getItems())
+		final Map<String, Map<Integer, RESTTranslatedTopicV1>> groupedLocaleTopics = new HashMap<String, Map<Integer, RESTTranslatedTopicV1>>();
+		for (final RESTTranslatedTopicV1 topic: translatedTopics.getItems())
 		{
 			if (!groupedLocaleTopics.containsKey(topic.getLocale()))
-				groupedLocaleTopics.put(topic.getLocale(), new HashMap<Integer, TranslatedTopicV1>());
+				groupedLocaleTopics.put(topic.getLocale(), new HashMap<Integer, RESTTranslatedTopicV1>());
 			groupedLocaleTopics.get(topic.getLocale()).put(topic.getTopicId(), topic);
 		}
 		
 		/* create and add the dummy topics per locale */
 		for (final String locale : groupedLocaleTopics.keySet())
 		{
-			final Map<Integer, TranslatedTopicV1> translatedTopicsMap = groupedLocaleTopics.get(locale);
-			for (final TopicV1 topic: topics.getItems())
+			final Map<Integer, RESTTranslatedTopicV1> translatedTopicsMap = groupedLocaleTopics.get(locale);
+			for (final RESTTopicV1 topic: topics.getItems())
 			{
 				if (this.isShutdownRequested())
 				{
@@ -304,7 +304,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 				
 				if (!translatedTopicsMap.containsKey(topic.getId()))
 				{
-					final TranslatedTopicV1 dummyTopic = createDummyTranslatedTopic(translatedTopicsMap, topic, true, locale);
+					final RESTTranslatedTopicV1 dummyTopic = createDummyTranslatedTopic(translatedTopicsMap, topic, true, locale);
 					
 					translatedTopics.addItem(dummyTopic);
 				}
@@ -322,14 +322,14 @@ public class DocbookBuildingThread extends BaseStompRunnable
 	 * @param expandRelationships Whether the relationships should be expanded for the dummy topic
 	 * @return The dummy translated topic
 	 */
-	private TranslatedTopicV1 createDummyTranslatedTopic(final Map<Integer, TranslatedTopicV1> translatedTopicsMap, final TopicV1 topic, final boolean expandRelationships, final String locale)
+	private RESTTranslatedTopicV1 createDummyTranslatedTopic(final Map<Integer, RESTTranslatedTopicV1> translatedTopicsMap, final RESTTopicV1 topic, final boolean expandRelationships, final String locale)
 	{
 		if (this.isShutdownRequested())
 		{
 			return null;
 		}
 		
-		final TranslatedTopicV1 translatedTopic = new TranslatedTopicV1();
+		final RESTTranslatedTopicV1 translatedTopic = new RESTTranslatedTopicV1();
 		
 		translatedTopic.setId(topic.getId() * -1);
 		translatedTopic.setTopicId(topic.getId());
@@ -349,8 +349,8 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		/* Add the dummy outgoing relationships */
 		if (topic.getOutgoingRelationships() != null && topic.getOutgoingRelationships().getItems() != null)
 		{
-			final BaseRestCollectionV1<TranslatedTopicV1> outgoingRelationships = new BaseRestCollectionV1<TranslatedTopicV1>();
-			for (final TopicV1 relatedTopic : topic.getOutgoingRelationships().getItems())
+			final BaseRestCollectionV1<RESTTranslatedTopicV1> outgoingRelationships = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
+			for (final RESTTopicV1 relatedTopic : topic.getOutgoingRelationships().getItems())
 			{
 				if (this.isShutdownRequested())
 				{
@@ -373,8 +373,8 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		/* Add the dummy incoming relationships */
 		if (topic.getIncomingRelationships() != null && topic.getIncomingRelationships().getItems() != null)
 		{
-			final BaseRestCollectionV1<TranslatedTopicV1> incomingRelationships = new BaseRestCollectionV1<TranslatedTopicV1>();
-			for (final TopicV1 relatedTopic : topic.getIncomingRelationships().getItems())
+			final BaseRestCollectionV1<RESTTranslatedTopicV1> incomingRelationships = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
+			for (final RESTTopicV1 relatedTopic : topic.getIncomingRelationships().getItems())
 			{
 				if (this.isShutdownRequested())
 				{
@@ -397,7 +397,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		return translatedTopic;
 	}
 	
-	private <T extends BaseTopicV1<T>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl)
+	private <T extends RESTBaseTopicV1<T>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl)
 	{
 		if (this.isShutdownRequested())
 		{
@@ -439,7 +439,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 				}
 				
 				try {
-					final DocbookBuilder<TopicV1> builder = new DocbookBuilder<TopicV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
+					final DocbookBuilder<RESTTopicV1> builder = new DocbookBuilder<RESTTopicV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
 					final HashMap<String, byte[]> buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl);
 					
 					/* change the publican.cfg since we have multiple langs */

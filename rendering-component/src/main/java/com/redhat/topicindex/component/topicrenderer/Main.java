@@ -10,7 +10,6 @@ import com.redhat.ecs.servicepojo.ServiceStarter;
 import com.redhat.ecs.services.commonstomp.BaseStompServiceThread;
 import com.redhat.ecs.services.commonstomp.StompWorkQueue;
 import com.redhat.topicindex.component.topicrenderer.utils.RenderingThread;
-import com.redhat.topicindex.rest.entities.jacksonutils.JacksonContextResolver;
 
 class ServiceThread extends BaseStompServiceThread
 {
@@ -32,6 +31,8 @@ class ServiceThread extends BaseStompServiceThread
  * This command line application is used to watch for topic ids being added to a
  * STOMP queue. The corresponding topics are then downloaded, transformed into
  * HTML, and the results saved back to the database.
+ * 
+ * The queue name is SkynetTopicRenderQueue
  */
 public class Main
 {
@@ -45,8 +46,6 @@ public class Main
 	{
 		NotificationUtilities.dumpMessageToStdOut("Skynet Docbook Renderer Service Build " + BUILD);
 		
-		/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
-		ResteasyProviderFactory.getInstance().registerProvider(JacksonContextResolver.class);
 		RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
 
 		/*

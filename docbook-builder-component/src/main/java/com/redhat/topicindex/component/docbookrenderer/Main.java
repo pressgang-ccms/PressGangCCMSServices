@@ -13,7 +13,6 @@ import com.redhat.ecs.commonutils.NotificationUtilities;
 import com.redhat.ecs.servicepojo.ServiceStarter;
 import com.redhat.ecs.services.commonstomp.BaseStompServiceThread;
 import com.redhat.ecs.services.commonstomp.StompWorkQueue;
-import com.redhat.topicindex.rest.entities.jacksonutils.JacksonContextResolver;
 
 /**
  * 
@@ -51,7 +50,6 @@ public class Main
 		NotificationUtilities.dumpMessageToStdOut("Skynet Docbook Compiler Service Build " + BUILD);
 		
 		/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
-		ResteasyProviderFactory.getInstance().registerProvider(JacksonContextResolver.class);
 		RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
 		
 		/* Setup the logger used by the CSP Builder */

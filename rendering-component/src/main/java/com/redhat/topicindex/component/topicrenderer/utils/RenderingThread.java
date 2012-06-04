@@ -35,12 +35,10 @@ import com.redhat.topicindex.component.topicrenderer.Main;
 import com.redhat.topicindex.messaging.DocbookRendererMessage;
 import com.redhat.topicindex.messaging.TopicRendererType;
 import com.redhat.topicindex.rest.entities.BlobConstantV1;
-import com.redhat.topicindex.rest.entities.TagV1;
-import com.redhat.topicindex.rest.entities.TopicV1;
-import com.redhat.topicindex.rest.entities.TranslatedTopicV1;
-import com.redhat.topicindex.rest.entities.interfaces.ITagV1;
-import com.redhat.topicindex.rest.entities.interfaces.ITopicV1;
-import com.redhat.topicindex.rest.entities.interfaces.ITranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTagV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
 import com.redhat.topicindex.rest.exceptions.InternalProcessingException;
 import com.redhat.topicindex.rest.exceptions.InvalidParameterException;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
@@ -119,20 +117,20 @@ public class RenderingThread extends BaseStompRunnable
 		 */
 		ExpandDataTrunk expand = new ExpandDataTrunk();
 
-		final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.TOPIC_NAME));
-		final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(ITopicV1.TRANSLATEDTOPICS_NAME));
-		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
-		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.TAGS_NAME));
-		final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails(ITagV1.CATEGORIES_NAME));
-		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(ITranslatedTopicV1.PROPERTIES_NAME));
+		final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
+		final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TRANSLATEDTOPICS_NAME));
+		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails(RESTTagV1.CATEGORIES_NAME));
+		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.PROPERTIES_NAME));
 
 		outgoingRelationships.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTags, expandTopic));
 		outgoingRelationshipsTags.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTagsCategories));
 		
 		expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
 
-		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails(TranslatedTopicV1.TAGS_NAME));
-		final ExpandDataTrunk tagsCategories = new ExpandDataTrunk(new ExpandDataDetails(TagV1.CATEGORIES_NAME));
+		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk tagsCategories = new ExpandDataTrunk(new ExpandDataDetails(RESTTagV1.CATEGORIES_NAME));
 
 		tags.setBranches(CollectionUtilities.toArrayList(tagsCategories, propertyTags));
 
@@ -142,7 +140,7 @@ public class RenderingThread extends BaseStompRunnable
 		final String expandString = mapper.writeValueAsString(expand);
 		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 		
-		final ITranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandEncodedString);
+		final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandEncodedString);
 
 		if (translatedTopic != null)
 		{
@@ -168,7 +166,7 @@ public class RenderingThread extends BaseStompRunnable
 			NotificationUtilities.dumpMessageToStdOut("Processing TranslatedTopic " + translatedTopicId + "-" + translatedTopic.getLocale() + ": " + translatedTopic.getTitle());
 				
 			/* the object we will send back to do the update */
-			final TranslatedTopicV1 updatedTranslatedTopicV1 = new TranslatedTopicV1();
+			final RESTTranslatedTopicV1 updatedTranslatedTopicV1 = new RESTTranslatedTopicV1();
 			updatedTranslatedTopicV1.setId(translatedTopic.getId());
 			
 			final XMLValidator validator = new XMLValidator();
@@ -188,7 +186,7 @@ public class RenderingThread extends BaseStompRunnable
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 					
-					final XMLPreProcessor<ITranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<ITranslatedTopicV1>();
+					final XMLPreProcessor<RESTTranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<RESTTranslatedTopicV1>();
 					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
 					specTopic.setTopic(translatedTopic);
 					
@@ -218,10 +216,10 @@ public class RenderingThread extends BaseStompRunnable
 						/* Generate the note for the translated topics relationships that haven't been translated */
 						if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
 						{
-							final List<ITranslatedTopicV1> nonTranslatedTopics = new ArrayList<ITranslatedTopicV1>();
-							for (ITranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
+							final List<RESTTranslatedTopicV1> nonTranslatedTopics = new ArrayList<RESTTranslatedTopicV1>();
+							for (RESTTranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
 							{
-								if (relatedTranslatedTopic.returnIsDummyTopic())
+								if (ComponentTranslatedTopicV1.returnIsDummyTopic(relatedTranslatedTopic))
 									nonTranslatedTopics.add(relatedTranslatedTopic);
 							}
 							
@@ -270,7 +268,7 @@ public class RenderingThread extends BaseStompRunnable
 	 * Add the list of Translated Topics who referenced 
 	 * another topic that hasn't been translated.
 	 */
-	private void processTranslatedTitleErrors(final Document xmlDoc, final List<ITranslatedTopicV1> errorTopics)
+	private void processTranslatedTitleErrors(final Document xmlDoc, final List<RESTTranslatedTopicV1> errorTopics)
 	{
 		/* Check that there are errors */
 		if (errorTopics.isEmpty()) return;
@@ -294,14 +292,14 @@ public class RenderingThread extends BaseStompRunnable
 		errorNonPushedSection.appendChild(errorNonPushedSectionTitle);
 
 		/* Add all of the topic titles that had errors to the list */
-		for (ITranslatedTopicV1 topic: errorTopics)
+		for (RESTTranslatedTopicV1 topic: errorTopics)
 		{
 			Element errorTitleListItem = xmlDoc.createElement("listitem");
 			Element errorTitlePara = xmlDoc.createElement("para");
 			errorTitlePara.setTextContent(topic.getTitle());
 			errorTitleListItem.appendChild(errorTitlePara);
 			
-			if (topic.hasBeenPushedForTranslation())
+			if (ComponentTranslatedTopicV1.hasBeenPushedForTranslation(topic))
 			{
 				errorUntranslatedSection.appendChild(errorTitleListItem);
 				untranslatedErrors = true;
@@ -349,7 +347,7 @@ public class RenderingThread extends BaseStompRunnable
 		final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
 		/* get the topic list */
-		final ITopicV1 topic = client.getJSONTopic(topicId, expandEncodedStrnig);
+		final RESTTopicV1 topic = client.getJSONTopic(topicId, expandEncodedStrnig);
 
 		/* early exit if shutdown has been requested */
 		if (this.isShutdownRequested())
@@ -360,7 +358,7 @@ public class RenderingThread extends BaseStompRunnable
 
 		NotificationUtilities.dumpMessageToStdOut("Processing Topic " + topic.getId() + ": " + topic.getTitle());
 
-		final TopicV1 updatedTopicV1 = new TopicV1();
+		final RESTTopicV1 updatedTopicV1 = new RESTTopicV1();
 		updatedTopicV1.setId(topicId);
 
 		final XMLValidator validator = new XMLValidator();
@@ -382,7 +380,7 @@ public class RenderingThread extends BaseStompRunnable
 	
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
-				final XMLPreProcessor<ITopicV1> xmlPreProcessor = new XMLPreProcessor<ITopicV1>();
+				final XMLPreProcessor<RESTTopicV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1>();
 				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
