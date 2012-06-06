@@ -34,8 +34,8 @@ import com.redhat.ecs.services.docbookcompiling.xmlprocessing.XMLPreProcessor;
 import com.redhat.topicindex.component.topicrenderer.Main;
 import com.redhat.topicindex.messaging.DocbookRendererMessage;
 import com.redhat.topicindex.messaging.TopicRendererType;
-import com.redhat.topicindex.rest.entities.BlobConstantV1;
 import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTBlobConstantV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTagV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
@@ -50,7 +50,7 @@ public class RenderingThread extends BaseStompRunnable
 	/** Jackson object mapper */
 	private final ObjectMapper mapper = new ObjectMapper();
 	/** The Rocbook DTD, to be loaded once and then shared */
-	static private BlobConstantV1 constants = null;
+	static private RESTBlobConstantV1 constants = null;
 	
 	private final DocbookBuildingOptions docbookBuildingOptions = new DocbookBuildingOptions();
 
