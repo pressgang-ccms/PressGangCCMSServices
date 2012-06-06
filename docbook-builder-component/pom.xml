@@ -66,7 +66,7 @@
   	<dependency>
   		<groupId>com.redhat.contentspec</groupId>
   		<artifactId>csbuilder</artifactId>
-  		<version>0.1.4-SNAPSHOT</version>
+  		<version>0.1.5-SNAPSHOT</version>
   	</dependency>
   </dependencies>
 </project>
