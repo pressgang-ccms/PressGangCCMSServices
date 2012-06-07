@@ -12,7 +12,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import com.redhat.ecs.commonutils.NotificationUtilities;
 import com.redhat.ecs.commonutils.XSLTUtilities;
 import com.redhat.ecs.commonutils.ZipUtilities;
-import com.redhat.topicindex.rest.entities.BlobConstantV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTBlobConstantV1;
 import com.redhat.topicindex.rest.exceptions.InternalProcessingException;
 import com.redhat.topicindex.rest.exceptions.InvalidParameterException;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
@@ -56,8 +56,8 @@ public class XMLRenderer
 			RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
 
-			final BlobConstantV1 docbookZip = client.getJSONBlobConstant(DOCBOOK_ZIP_ID, "");
-			final BlobConstantV1 docbookDTDZip = client.getJSONBlobConstant(DOCBOOK_DTD_ZIP_FILE, "");
+			final RESTBlobConstantV1 docbookZip = client.getJSONBlobConstant(DOCBOOK_ZIP_ID, "");
+			final RESTBlobConstantV1 docbookDTDZip = client.getJSONBlobConstant(DOCBOOK_DTD_ZIP_FILE, "");
 
 			if (docbookZip != null)
 			{

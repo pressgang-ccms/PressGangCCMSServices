@@ -55,7 +55,6 @@ import com.redhat.contentspec.builder.DocbookBuilder;
 import com.redhat.contentspec.rest.RESTManager;
 import com.redhat.contentspec.structures.CSDocbookBuildingOptions;
 import com.redhat.contentspec.utils.ContentSpecGenerator;
-import com.redhat.contentspec.utils.logging.ErrorLoggerManager;
 
 public class DocbookBuildingThread extends BaseStompRunnable
 {
@@ -417,8 +416,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 					return;
 				}
 
-				final ErrorLoggerManager elm = new ErrorLoggerManager();
-				final RESTManager restManager = new RESTManager(elm, getServiceStarter().getSkynetServer());
+				final RESTManager restManager = new RESTManager(getServiceStarter().getSkynetServer());
 				final ContentSpecGenerator csGenerator = new ContentSpecGenerator(restClient);
 
 				/* Add the topics to the cache to improve loading time */
