@@ -193,7 +193,7 @@ public class RenderingThread extends BaseStompRunnable
 					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 					xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
 					xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
-					XMLPreProcessor.processInternalImageFiles(doc);
+					XMLPreProcessor.processInternalImageFiles(doc, specTopic);
 	
 					xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
 					xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
@@ -386,7 +386,7 @@ public class RenderingThread extends BaseStompRunnable
 				
 				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
 				xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
-				XMLPreProcessor.processInternalImageFiles(doc);
+				XMLPreProcessor.processInternalImageFiles(doc, specTopic);
 	
 				xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
 				xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);

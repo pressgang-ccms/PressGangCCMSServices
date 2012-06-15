@@ -5,8 +5,12 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.mail.BodyPart;
 import javax.mail.Message;
@@ -167,7 +171,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			 */
 			final String searchTagsUrl = CommonConstants.FULL_SERVER_URL + "/CustomSearchTopicList.seam?" + buildDocbookMessage.getQuery().replaceAll(";", "&amp;");
 
-			buildAndEmailFromTopics(RESTTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl);
+			buildAndEmailFromTopics(RESTTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, CommonConstants.DEFAULT_LOCALE);
 		}
 		else
 		{
@@ -223,16 +227,26 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			 */
 			final String searchTagsUrl = CommonConstants.FULL_SERVER_URL + "/GroupedTranslatedTopicDataLocaleList.seam?" + buildDocbookMessage.getQuery().replaceAll(";", "&amp;");
 
+			/* Find the locale for the search query */
+			final Pattern pattern = Pattern.compile(".*locale\\d*=(?<Locale>[a-zA-Z\\-]*)\\d+(;.*|$)");
+			final Matcher matcher = pattern.matcher(buildDocbookMessage.getQuery());
+			
+			String locale = CommonConstants.DEFAULT_LOCALE;
+			while(matcher.find())
+			{
+				locale = matcher.group("Locale");
+			}
+			
 			/* If the "Include all related topics" is selected then we need to include dummy topics */
 			if (buildDocbookMessage.getDocbookOptions().getIncludeUntranslatedTopics() != null && buildDocbookMessage.getDocbookOptions().getIncludeUntranslatedTopics())
-				addDummyRelatedTranslatedTopics(topics, buildDocbookMessage.getQuery());
+				addDummyRelatedTranslatedTopics(topics, buildDocbookMessage.getQuery(), locale);
 
 			if (this.isShutdownRequested())
 			{
 				return;
 			}
 
-			buildAndEmailFromTopics(RESTTranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl);
+			buildAndEmailFromTopics(RESTTranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, locale);
 		}
 		else
 		{
@@ -240,12 +254,25 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		}
 	}
 
-	private void addDummyRelatedTranslatedTopics(final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics, final String query) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
+	private void addDummyRelatedTranslatedTopics(final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics, final String query, final String locale) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
 	{
 		NotificationUtilities.dumpMessageToStdOut("Doing dummy translated topic pass");
-
+		
+		/* 
+		 * Find the topics that are already included as we won't need to
+		 * create dummy topics for them.
+		 */
+		final Set<Integer> excludedTopics = new HashSet<Integer>();
+		for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.getItems())
+		{
+			excludedTopics.add(translatedTopic.getTopicId());
+		}
+		
 		/* remove any locale query strings */
 		String topicQuery = query.replaceAll("locale\\d*=[a-zA-Z\\-]*\\d+(;|$)", "");
+		
+		/* Add the query parameters to not include any topics that we already have all the information for */
+		topicQuery += (topicQuery.endsWith(";") ? "" : ";") + "notTopicIds=" + CollectionUtilities.toSeperatedString(CollectionUtilities.toArrayList(excludedTopics), ",");
 
 		NotificationUtilities.dumpMessageToStdOut("\tGetting Topic Collection with query " + topicQuery);
 
@@ -269,36 +296,30 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		expand.setBranches(CollectionUtilities.toArrayList(topicsExpand));
 
 		final String expandString = mapper.writeValueAsString(expand);
-		final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
+		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-		final BaseRestCollectionV1<RESTTopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
-
-		/* Split the topics up into their different locales */
-		final Map<String, Map<Integer, RESTTranslatedTopicV1>> groupedLocaleTopics = new HashMap<String, Map<Integer, RESTTranslatedTopicV1>>();
+		final BaseRestCollectionV1<RESTTopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedString);
+		
+		/* Create a mapping of Topic ID's to translated topics */
+		final Map<Integer, RESTTranslatedTopicV1> translatedTopicsToTopicIds = new HashMap<Integer, RESTTranslatedTopicV1>();
 		for (final RESTTranslatedTopicV1 topic : translatedTopics.getItems())
 		{
-			if (!groupedLocaleTopics.containsKey(topic.getLocale()))
-				groupedLocaleTopics.put(topic.getLocale(), new HashMap<Integer, RESTTranslatedTopicV1>());
-			groupedLocaleTopics.get(topic.getLocale()).put(topic.getTopicId(), topic);
+			translatedTopicsToTopicIds.put(topic.getTopicId(), topic);
 		}
 
 		/* create and add the dummy topics per locale */
-		for (final String locale : groupedLocaleTopics.keySet())
+		for (final RESTTopicV1 topic : topics.getItems())
 		{
-			final Map<Integer, RESTTranslatedTopicV1> translatedTopicsMap = groupedLocaleTopics.get(locale);
-			for (final RESTTopicV1 topic : topics.getItems())
+			if (this.isShutdownRequested())
 			{
-				if (this.isShutdownRequested())
-				{
-					return;
-				}
+				return;
+			}
 
-				if (!translatedTopicsMap.containsKey(topic.getId()))
-				{
-					final RESTTranslatedTopicV1 dummyTopic = createDummyTranslatedTopic(translatedTopicsMap, topic, true, locale);
+			if (!translatedTopicsToTopicIds.containsKey(topic.getId()))
+			{
+				final RESTTranslatedTopicV1 dummyTopic = createDummyTranslatedTopic(translatedTopicsToTopicIds, topic, true, locale);
 
-					translatedTopics.addItem(dummyTopic);
-				}
+				translatedTopics.addItem(dummyTopic);
 			}
 		}
 	}
@@ -389,7 +410,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		return translatedTopic;
 	}
 
-	private <T extends RESTBaseTopicV1<T>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl)
+	private <T extends RESTBaseTopicV1<T>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String locale)
 	{
 		if (this.isShutdownRequested())
 		{
@@ -398,75 +419,51 @@ public class DocbookBuildingThread extends BaseStompRunnable
 
 		if (topics != null && topics.getItems() != null)
 		{
-			/* Split the topics up into their different locales */
-			final Map<String, BaseRestCollectionV1<T>> groupedLocaleTopics = new HashMap<String, BaseRestCollectionV1<T>>();
-			for (final T topic : topics.getItems())
-			{
-				if (!groupedLocaleTopics.containsKey(topic.getLocale()))
-					groupedLocaleTopics.put(topic.getLocale(), new BaseRestCollectionV1<T>());
-				groupedLocaleTopics.get(topic.getLocale()).addItem(topic);
-			}
 
 			final HashMap<String, byte[]> files = new HashMap<String, byte[]>();
 			boolean success = true;
-			for (final String locale : groupedLocaleTopics.keySet())
+			
+			if (this.isShutdownRequested())
 			{
-				if (this.isShutdownRequested())
+				return;
+			}
+
+			final RESTManager restManager = new RESTManager(getServiceStarter().getSkynetServer());
+			final ContentSpecGenerator csGenerator = new ContentSpecGenerator(restClient);
+
+			/* Add the topics to the cache to improve loading time */
+			restManager.getRESTEntityCache().add(topics);
+
+			final ContentSpec contentSpec = csGenerator.generateContentSpecFromTopics(clazz, topics, locale, docbookBuildingOptions);
+
+			if (this.isShutdownRequested())
+			{
+				return;
+			}
+
+			try
+			{
+				final DocbookBuilder<RESTTopicV1> builder = new DocbookBuilder<RESTTopicV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
+				final HashMap<String, byte[]> buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl);
+
+				/*
+				 * Resend the message if the files was null. The only reason they will be null is by a reset message.
+				 */
+				if (buildFiles == null)
 				{
+					this.resendMessage();
 					return;
 				}
-
-				final RESTManager restManager = new RESTManager(getServiceStarter().getSkynetServer());
-				final ContentSpecGenerator csGenerator = new ContentSpecGenerator(restClient);
-
-				/* Add the topics to the cache to improve loading time */
-				restManager.getRESTEntityCache().add(topics);
-
-				final ContentSpec contentSpec = csGenerator.generateContentSpecFromTopics(clazz, topics, locale, docbookBuildingOptions);
-
-				if (this.isShutdownRequested())
+				else
 				{
-					return;
+					files.putAll(buildFiles);
 				}
 
-				try
-				{
-					final DocbookBuilder<RESTTopicV1> builder = new DocbookBuilder<RESTTopicV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
-					final HashMap<String, byte[]> buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl);
-
-					/* change the publican.cfg since we have multiple langs */
-					if (groupedLocaleTopics.keySet().size() > 1)
-					{
-						final String publicanFileName = DocBookUtilities.escapeTitle(contentSpec.getTitle()) + "/publican.cfg";
-						final String newPublicanFileName = DocBookUtilities.escapeTitle(contentSpec.getTitle()) + "/publican-" + locale + ".cfg";
-						byte[] publicanCfg = buildFiles.get(publicanFileName);
-
-						/* remove the old file */
-						buildFiles.remove(publicanFileName);
-
-						/* add in the new file */
-						buildFiles.put(newPublicanFileName, publicanCfg);
-					}
-
-					/*
-					 * Resend the message if the files was null. The only reason they will be null is by a reset message.
-					 */
-					if (buildFiles == null)
-					{
-						this.resendMessage();
-						return;
-					}
-					else
-					{
-						files.putAll(buildFiles);
-					}
-
-				}
-				catch (Exception ex)
-				{
-					ExceptionUtilities.handleException(ex);
-					success = false;
-				}
+			}
+			catch (Exception ex)
+			{
+				ExceptionUtilities.handleException(ex);
+				success = false;
 			}
 
 			if (this.isShutdownRequested())
@@ -489,7 +486,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 					ExceptionUtilities.handleException(ex);
 				}
 
-				emailZIP(zipFile, docbookBuildingOptions);
+				emailZIP(zipFile, docbookBuildingOptions, DocBookUtilities.escapeTitle(contentSpec.getTitle()), locale);
 			}
 		}
 		else
@@ -504,7 +501,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 	 * @param topics
 	 *            The collection of topics to process
 	 */
-	private void emailZIP(final byte[] zip, final DocbookBuildingOptions docbookBuildingOptions)
+	private void emailZIP(final byte[] zip, final DocbookBuildingOptions docbookBuildingOptions, final String bookName, final String locale)
 	{
 		NotificationUtilities.dumpMessageToStdOut("Doing Distribution Pass - Emailing To " + docbookBuildingOptions.getEmailTo());
 
@@ -551,7 +548,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 
 			// Create the attachment
 			final BodyPart attachmentBodyPart = new MimeBodyPart();
-			final String filename = "Book.zip";
+			final String filename = bookName + "-" + locale + ".zip";
 			attachmentBodyPart.setContent(zip, CommonConstants.ZIP_MIME_TYPE);
 			attachmentBodyPart.setFileName(filename);
 
