@@ -14,7 +14,6 @@ import org.zanata.rest.dto.resource.TranslationsResource;
 
 import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.commonutils.XMLUtilities;
-import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicStringV1;
@@ -38,7 +37,9 @@ public class ZanataPullTopicThread implements Runnable {
 		this.skynetClient = ProxyFactory.create(RESTInterfaceV1.class, skynetServerUrl);
 	}
 	
-	public void run() {
+	public void run()
+	{
+		final List<LocaleId> locales = zanataInterface.getZanataLocales();
 		try
 		{
 			if (translatedHistoricalTopic != null)
@@ -52,12 +53,12 @@ public class ZanataPullTopicThread implements Runnable {
 				final BaseRestCollectionV1<RESTTranslatedTopicV1> changedTranslatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
 				final BaseRestCollectionV1<RESTTranslatedTopicV1> newTranslatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
 				
-				for (String locale : CommonConstants.LOCALES)
+				for (final LocaleId locale : locales)
 				{
-					if (zanataInterface.getTranslationsExists(zanataId, LocaleId.fromJavaName(locale)))
+					if (zanataInterface.getTranslationsExists(zanataId, locale))
 					{
 						/* find a translation */
-						final TranslationsResource translationsResource = zanataInterface.getTranslations(zanataId, LocaleId.fromJavaName(locale));
+						final TranslationsResource translationsResource = zanataInterface.getTranslations(zanataId, locale);
 						/* and find the original resource */
 						final Resource originalTextResource = zanataInterface.getZanataResource(zanataId);
 		
@@ -89,7 +90,7 @@ public class ZanataPullTopicThread implements Runnable {
 							if (translatedTopic == null)
 							{
 								translatedTopic = new RESTTranslatedTopicV1();
-								translatedTopic.explicitSetLocale(locale);
+								translatedTopic.explicitSetLocale(locale.toString());
 								translatedTopic.explicitSetTopicId(translatedHistoricalTopic.getId());
 								translatedTopic.explicitSetTopicRevision(translatedHistoricalTopic.getRevision().intValue());
 							}

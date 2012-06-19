@@ -82,9 +82,10 @@ public class Main
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-			BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
-			List<ResourceMeta> zanataResources = ZanataInterface.getInstance().getZanataResources();
-			List<String> existingZanataResources = new ArrayList<String>();
+			final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
+			final ZanataInterface zanataInterface = new ZanataInterface();
+			final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
+			final List<String> existingZanataResources = new ArrayList<String>();
 
 			/* Loop through and find the zanata ID and relevant original topics */
 			final Map<String, RESTTopicV1> translatedTopicsMap = new HashMap<String, RESTTopicV1>();
