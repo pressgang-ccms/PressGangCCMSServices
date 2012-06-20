@@ -62,7 +62,7 @@ import com.redhat.contentspec.rest.RESTManager;
 import com.redhat.contentspec.structures.CSDocbookBuildingOptions;
 import com.redhat.contentspec.utils.ContentSpecGenerator;
 
-public class DocbookBuildingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> extends BaseStompRunnable
+public class DocbookBuildingThread extends BaseStompRunnable
 {
 	/** The REST client */
 	private final RESTInterfaceV1 restClient;
@@ -173,7 +173,7 @@ public class DocbookBuildingThread<T extends RESTBaseTopicV1<T, U>, U extends Ba
 			 */
 			final String searchTagsUrl = CommonConstants.FULL_SERVER_URL + "/CustomSearchTopicList.seam?" + buildDocbookMessage.getQuery().replaceAll(";", "&amp;");
 
-			buildAndEmailFromTopics((Class<T>)RESTTopicV1.class, (BaseRestCollectionV1<T, U>)topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, CommonConstants.DEFAULT_LOCALE);
+			buildAndEmailFromTopics(RESTTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, CommonConstants.DEFAULT_LOCALE);
 		}
 		else
 		{
@@ -248,7 +248,7 @@ public class DocbookBuildingThread<T extends RESTBaseTopicV1<T, U>, U extends Ba
 				return;
 			}
 
-			buildAndEmailFromTopics((Class<T>)RESTTranslatedTopicV1.class, (BaseRestCollectionV1<T, U>)topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, locale);
+			buildAndEmailFromTopics(RESTTranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, locale);
 		}
 		else
 		{
@@ -412,7 +412,7 @@ public class DocbookBuildingThread<T extends RESTBaseTopicV1<T, U>, U extends Ba
 		return translatedTopic;
 	}
 
-	private void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T, U> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String locale)
+	private <T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T, U> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String locale)
 	{
 		if (this.isShutdownRequested())
 		{
@@ -436,7 +436,7 @@ public class DocbookBuildingThread<T extends RESTBaseTopicV1<T, U>, U extends Ba
 			/* Add the topics to the cache to improve loading time */
 			restManager.getRESTEntityCache().add(topics);
 
-			final ContentSpec<T, U> contentSpec = csGenerator.generateContentSpecFromTopics(clazz, topics, locale, docbookBuildingOptions);
+			final ContentSpec contentSpec = csGenerator.generateContentSpecFromTopics(clazz, topics, locale, docbookBuildingOptions);
 
 			if (this.isShutdownRequested())
 			{

@@ -198,7 +198,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 					
 					final XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1>();
-					final SpecTopic<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> specTopic = new SpecTopic<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> (translatedTopic.getTopicId(), translatedTopic.getTitle());
+					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
 					specTopic.setTopic(translatedTopic);
 					
 					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
@@ -392,7 +392,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
 				final XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1>();
-				final SpecTopic<RESTTopicV1, RESTTopicCollectionV1> specTopic = new SpecTopic<RESTTopicV1, RESTTopicCollectionV1>(topic.getId(), topic.getTitle());
+				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
 				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
