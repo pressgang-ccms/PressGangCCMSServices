@@ -14,7 +14,6 @@ import org.zanata.rest.dto.resource.TranslationsResource;
 
 import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.commonutils.XMLUtilities;
-import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
 import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
 import com.redhat.topicindex.rest.collections.RESTTranslatedTopicStringCollectionV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
@@ -39,6 +38,7 @@ public class ZanataPullTopicThread implements Runnable {
 		this.skynetClient = ProxyFactory.create(RESTInterfaceV1.class, skynetServerUrl);
 	}
 	
+	@Override
 	public void run()
 	{
 		final List<LocaleId> locales = zanataInterface.getZanataLocales();

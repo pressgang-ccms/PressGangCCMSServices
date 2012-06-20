@@ -19,7 +19,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-import com.redhat.contentspec.Level;
 import com.redhat.contentspec.SpecTopic;
 import com.redhat.ecs.commonstructures.Pair;
 import com.redhat.ecs.commonutils.CollectionUtilities;
@@ -38,6 +37,7 @@ import com.redhat.topicindex.messaging.TopicRendererType;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
 import com.redhat.topicindex.rest.collections.RESTTopicCollectionV1;
 import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
+import com.redhat.topicindex.rest.entities.ComponentBaseTopicV1;
 import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBaseTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBlobConstantV1;
@@ -65,6 +65,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 		docbookBuildingOptions.setInsertSurveyLink(false);
 	}
 
+	@Override
 	public void run()
 	{
 		try
@@ -125,16 +126,16 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 		final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
 		final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TRANSLATEDTOPICS_NAME));
 		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
-		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(RESTBaseTopicV1.TAGS_NAME));
 		final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails(RESTTagV1.CATEGORIES_NAME));
-		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.PROPERTIES_NAME));
+		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(RESTBaseTopicV1.PROPERTIES_NAME));
 
 		outgoingRelationships.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTags, expandTopic));
 		outgoingRelationshipsTags.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTagsCategories));
 		
 		expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
 
-		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails(RESTBaseTopicV1.TAGS_NAME));
 		final ExpandDataTrunk tagsCategories = new ExpandDataTrunk(new ExpandDataDetails(RESTTagV1.CATEGORIES_NAME));
 
 		tags.setBranches(CollectionUtilities.toArrayList(tagsCategories, propertyTags));
@@ -224,7 +225,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 							final List<RESTTranslatedTopicV1> nonTranslatedTopics = new ArrayList<RESTTranslatedTopicV1>();
 							for (RESTTranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
 							{
-								if (ComponentTranslatedTopicV1.returnIsDummyTopic(relatedTranslatedTopic))
+								if (ComponentBaseTopicV1.returnIsDummyTopic(relatedTranslatedTopic))
 									nonTranslatedTopics.add(relatedTranslatedTopic);
 							}
 							
@@ -386,7 +387,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
 				final XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1>();
-				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
+				final SpecTopic<RESTTopicV1, RESTTopicCollectionV1> specTopic = new SpecTopic<RESTTopicV1, RESTTopicCollectionV1>(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
 				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
