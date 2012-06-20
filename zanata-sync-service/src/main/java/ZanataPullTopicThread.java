@@ -15,6 +15,8 @@ import org.zanata.rest.dto.resource.TranslationsResource;
 import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.commonutils.XMLUtilities;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTranslatedTopicStringCollectionV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicStringV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
@@ -48,10 +50,10 @@ public class ZanataPullTopicThread implements Runnable {
 				
 				log.info("Starting to pull translations for " + zanataId);
 				
-				final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = translatedHistoricalTopic.getTranslatedTopics_OTM();		
+				final RESTTranslatedTopicCollectionV1 translatedTopics = translatedHistoricalTopic.getTranslatedTopics_OTM();		
 				
-				final BaseRestCollectionV1<RESTTranslatedTopicV1> changedTranslatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
-				final BaseRestCollectionV1<RESTTranslatedTopicV1> newTranslatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
+				final RESTTranslatedTopicCollectionV1 changedTranslatedTopics = new RESTTranslatedTopicCollectionV1();
+				final RESTTranslatedTopicCollectionV1 newTranslatedTopics = new RESTTranslatedTopicCollectionV1();
 				
 				for (final LocaleId locale : locales)
 				{
@@ -126,7 +128,7 @@ public class ZanataPullTopicThread implements Runnable {
 							translatedTopic.explicitSetTranslationPercentage((int) ( i / ((double) textFlows.size()) * 100.0f));
 							
 							/* save the strings to TranslatedTopicString entities */
-							BaseRestCollectionV1<RESTTranslatedTopicStringV1> translatedTopicStrings = new BaseRestCollectionV1<RESTTranslatedTopicStringV1>();
+							RESTTranslatedTopicStringCollectionV1 translatedTopicStrings = new RESTTranslatedTopicStringCollectionV1();
 							for (final String originalText : translations.keySet())
 							{
 								final String translation = translations.get(originalText);

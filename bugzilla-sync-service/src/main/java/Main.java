@@ -21,6 +21,8 @@ import com.redhat.ecs.commonutils.CollectionUtilities;
 import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTBugzillaBugCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTopicCollectionV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBugzillaBugV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
@@ -71,7 +73,7 @@ public class Main
 
 			final PathSegmentImpl query = new PathSegmentImpl("query;topicHasBugzillaBugs=true", false);
 
-			final BaseRestCollectionV1<RESTTopicV1> topicsWithBugs = client.getJSONTopicsWithQuery(query, expandEncodedStrnig);
+			final RESTTopicCollectionV1 topicsWithBugs = client.getJSONTopicsWithQuery(query, expandEncodedStrnig);
 
 			System.out.println("Found " + topicsWithBugs.getSize() + " topics that already have Bugzilla bugs assigned to them.");
 
@@ -136,7 +138,7 @@ public class Main
 					{
 						updateTopic = new RESTTopicV1();
 						updateTopic.setId(topicIdInt);
-						updateTopic.explicitSetBugzillaBugs_OTM(new BaseRestCollectionV1<RESTBugzillaBugV1>());
+						updateTopic.explicitSetBugzillaBugs_OTM(new RESTBugzillaBugCollectionV1());
 						processedTopics.put(topicIdInt, updateTopic);
 					}
 					else
@@ -218,7 +220,7 @@ public class Main
 				{
 					final RESTTopicV1 updateTopic = new RESTTopicV1();
 					updateTopic.setId(topic.getId());
-					updateTopic.explicitSetBugzillaBugs_OTM(new BaseRestCollectionV1<RESTBugzillaBugV1>());
+					updateTopic.explicitSetBugzillaBugs_OTM(new RESTBugzillaBugCollectionV1());
 					processedTopics.put(topic.getId(), updateTopic);
 
 					for (final RESTBugzillaBugV1 bug : topic.getBugzillaBugs_OTM().getItems())
@@ -231,7 +233,7 @@ public class Main
 				}
 			}
 
-			final BaseRestCollectionV1<RESTTopicV1> dataObjects = new BaseRestCollectionV1<RESTTopicV1>();
+			final RESTTopicCollectionV1 dataObjects = new RESTTopicCollectionV1();
 			for (final RESTTopicV1 topic : processedTopics.values())
 				dataObjects.addItem(topic);
 
@@ -290,7 +292,7 @@ public class Main
 		updateTopic.getBugzillaBugs_OTM().addItem(addBug);
 	}
 
-	static private RESTTopicV1 findTopic(final Integer topicId, final BaseRestCollectionV1<RESTTopicV1> topicsWithBugs)
+	static private RESTTopicV1 findTopic(final Integer topicId, final RESTTopicCollectionV1 topicsWithBugs)
 	{
 		if (topicsWithBugs.getItems() == null)
 			return null;
@@ -304,7 +306,7 @@ public class Main
 		return null;
 	}
 
-	static private List<RESTBugzillaBugV1> findBug(final Integer id, final BaseRestCollectionV1<RESTBugzillaBugV1> collection)
+	static private List<RESTBugzillaBugV1> findBug(final Integer id, final RESTBugzillaBugCollectionV1 collection)
 	{
 		final List<RESTBugzillaBugV1> retValue = new ArrayList<RESTBugzillaBugV1>();
 

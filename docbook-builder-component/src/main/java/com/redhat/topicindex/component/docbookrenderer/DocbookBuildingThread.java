@@ -44,6 +44,8 @@ import com.redhat.ecs.services.docbookcompiling.DocbookBuilderConstants;
 import com.redhat.ecs.services.docbookcompiling.DocbookBuildingOptions;
 import com.redhat.topicindex.messaging.TopicRendererType;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTopicCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBaseTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBlobConstantV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
@@ -60,7 +62,7 @@ import com.redhat.contentspec.rest.RESTManager;
 import com.redhat.contentspec.structures.CSDocbookBuildingOptions;
 import com.redhat.contentspec.utils.ContentSpecGenerator;
 
-public class DocbookBuildingThread extends BaseStompRunnable
+public class DocbookBuildingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> extends BaseStompRunnable
 {
 	/** The REST client */
 	private final RESTInterfaceV1 restClient;
@@ -164,14 +166,14 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
-			final BaseRestCollectionV1<RESTTopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
+			final RESTTopicCollectionV1 topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
 
 			/*
 			 * Construct the URL that will show us the topics used in this Docbook build
 			 */
 			final String searchTagsUrl = CommonConstants.FULL_SERVER_URL + "/CustomSearchTopicList.seam?" + buildDocbookMessage.getQuery().replaceAll(";", "&amp;");
 
-			buildAndEmailFromTopics(RESTTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, CommonConstants.DEFAULT_LOCALE);
+			buildAndEmailFromTopics((Class<T>)RESTTopicV1.class, (BaseRestCollectionV1<T, U>)topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, CommonConstants.DEFAULT_LOCALE);
 		}
 		else
 		{
@@ -220,7 +222,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
-			final BaseRestCollectionV1<RESTTranslatedTopicV1> topics = restClient.getJSONTranslatedTopicsWithQuery(pathSegment, expandEncodedStrnig);
+			final RESTTranslatedTopicCollectionV1 topics = restClient.getJSONTranslatedTopicsWithQuery(pathSegment, expandEncodedStrnig);
 
 			/*
 			 * Construct the URL that will show us the topics used in this Docbook build
@@ -246,7 +248,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 				return;
 			}
 
-			buildAndEmailFromTopics(RESTTranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, locale);
+			buildAndEmailFromTopics((Class<T>)RESTTranslatedTopicV1.class, (BaseRestCollectionV1<T, U>)topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, locale);
 		}
 		else
 		{
@@ -254,7 +256,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		}
 	}
 
-	private void addDummyRelatedTranslatedTopics(final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics, final String query, final String locale) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
+	private void addDummyRelatedTranslatedTopics(final RESTTranslatedTopicCollectionV1 translatedTopics, final String query, final String locale) throws JsonGenerationException, JsonMappingException, IOException, InvalidParameterException, InternalProcessingException
 	{
 		NotificationUtilities.dumpMessageToStdOut("Doing dummy translated topic pass");
 		
@@ -298,7 +300,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		final String expandString = mapper.writeValueAsString(expand);
 		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-		final BaseRestCollectionV1<RESTTopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedString);
+		final BaseRestCollectionV1<RESTTopicV1, RESTTopicCollectionV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedString);
 		
 		/* Create a mapping of Topic ID's to translated topics */
 		final Map<Integer, RESTTranslatedTopicV1> translatedTopicsToTopicIds = new HashMap<Integer, RESTTranslatedTopicV1>();
@@ -362,7 +364,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		/* Add the dummy outgoing relationships */
 		if (topic.getOutgoingRelationships() != null && topic.getOutgoingRelationships().getItems() != null)
 		{
-			final BaseRestCollectionV1<RESTTranslatedTopicV1> outgoingRelationships = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
+			final RESTTranslatedTopicCollectionV1 outgoingRelationships = new RESTTranslatedTopicCollectionV1();
 			for (final RESTTopicV1 relatedTopic : topic.getOutgoingRelationships().getItems())
 			{
 				if (this.isShutdownRequested())
@@ -386,7 +388,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		/* Add the dummy incoming relationships */
 		if (topic.getIncomingRelationships() != null && topic.getIncomingRelationships().getItems() != null)
 		{
-			final BaseRestCollectionV1<RESTTranslatedTopicV1> incomingRelationships = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
+			final RESTTranslatedTopicCollectionV1 incomingRelationships = new RESTTranslatedTopicCollectionV1();
 			for (final RESTTopicV1 relatedTopic : topic.getIncomingRelationships().getItems())
 			{
 				if (this.isShutdownRequested())
@@ -410,7 +412,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		return translatedTopic;
 	}
 
-	private <T extends RESTBaseTopicV1<T>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String locale)
+	private void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T, U> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String locale)
 	{
 		if (this.isShutdownRequested())
 		{
@@ -429,12 +431,12 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			}
 
 			final RESTManager restManager = new RESTManager(getServiceStarter().getSkynetServer());
-			final ContentSpecGenerator csGenerator = new ContentSpecGenerator(restClient);
+			final ContentSpecGenerator<T, U> csGenerator = new ContentSpecGenerator<T, U>(restClient);
 
 			/* Add the topics to the cache to improve loading time */
 			restManager.getRESTEntityCache().add(topics);
 
-			final ContentSpec contentSpec = csGenerator.generateContentSpecFromTopics(clazz, topics, locale, docbookBuildingOptions);
+			final ContentSpec<T, U> contentSpec = csGenerator.generateContentSpecFromTopics(clazz, topics, locale, docbookBuildingOptions);
 
 			if (this.isShutdownRequested())
 			{
@@ -443,7 +445,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 
 			try
 			{
-				final DocbookBuilder<RESTTopicV1> builder = new DocbookBuilder<RESTTopicV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
+				final DocbookBuilder<RESTTopicV1, RESTTopicCollectionV1> builder = new DocbookBuilder<RESTTopicV1, RESTTopicCollectionV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
 				final HashMap<String, byte[]> buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl);
 
 				/*

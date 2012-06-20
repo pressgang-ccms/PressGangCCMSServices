@@ -15,6 +15,7 @@ import com.redhat.ecs.commonutils.CollectionUtilities;
 import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
 import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
@@ -82,7 +83,7 @@ public class Main
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-			final BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
+			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopics(expandEncodedString);
 			final ZanataInterface zanataInterface = new ZanataInterface();
 			final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
 			final List<String> existingZanataResources = new ArrayList<String>();
@@ -196,7 +197,7 @@ public class Main
 
 					newTranslatedTopic = client.createJSONTranslatedTopic("", newTranslatedTopic);
 
-					BaseRestCollectionV1<RESTTranslatedTopicV1> translatedTopics = new BaseRestCollectionV1<RESTTranslatedTopicV1>();
+					final RESTTranslatedTopicCollectionV1 translatedTopics = new RESTTranslatedTopicCollectionV1();
 					translatedTopics.addItem(newTranslatedTopic);
 
 					historicalTopic.setTranslatedTopics_OTM(translatedTopics);

@@ -19,6 +19,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+import com.redhat.contentspec.Level;
 import com.redhat.contentspec.SpecTopic;
 import com.redhat.ecs.commonstructures.Pair;
 import com.redhat.ecs.commonutils.CollectionUtilities;
@@ -34,7 +35,11 @@ import com.redhat.ecs.services.docbookcompiling.xmlprocessing.XMLPreProcessor;
 import com.redhat.topicindex.component.topicrenderer.Main;
 import com.redhat.topicindex.messaging.DocbookRendererMessage;
 import com.redhat.topicindex.messaging.TopicRendererType;
+import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTopicCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
 import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTBaseTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBlobConstantV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTagV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
@@ -45,7 +50,7 @@ import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
 
-public class RenderingThread extends BaseStompRunnable
+public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> extends BaseStompRunnable
 {
 	/** Jackson object mapper */
 	private final ObjectMapper mapper = new ObjectMapper();
@@ -186,8 +191,8 @@ public class RenderingThread extends BaseStompRunnable
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 					
-					final XMLPreProcessor<RESTTranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<RESTTranslatedTopicV1>();
-					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
+					final XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1>();
+					final SpecTopic<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> specTopic = new SpecTopic<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> (translatedTopic.getTopicId(), translatedTopic.getTitle());
 					specTopic.setTopic(translatedTopic);
 					
 					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
@@ -380,7 +385,7 @@ public class RenderingThread extends BaseStompRunnable
 	
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
-				final XMLPreProcessor<RESTTopicV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1>();
+				final XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1>();
 				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
