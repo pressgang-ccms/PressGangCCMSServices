@@ -27,7 +27,9 @@ import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.commonutils.XMLUtilities;
 import com.redhat.ecs.servicepojo.ServiceStarter;
 import com.redhat.ecs.services.docbookcompiling.xmlprocessing.XMLPreProcessor;
-import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTPropertyTagCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTagCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTopicCollectionV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTStringConstantV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTPropertyTagV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTagV1;
@@ -118,7 +120,7 @@ public class Main
 			final String expandString = mapper.writeValueAsString(expand);
 			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
-			final BaseRestCollectionV1<RESTTopicV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
+			final RESTTopicCollectionV1 topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
 
 			/* Get the tags to ignore */
 			final RESTStringConstantV1 ignoreTags = restClient.getJSONStringConstant(DOCBOOK_IGNORE_ELEMENTS_STRING_CONSTANT_ID, "");
@@ -169,8 +171,8 @@ public class Main
 
 		final RESTTopicV1 updateTopic = new RESTTopicV1();
 		updateTopic.setId(topic.getId());
-		updateTopic.explicitSetProperties(new BaseRestCollectionV1<RESTPropertyTagV1>());
-		updateTopic.explicitSetTags(new BaseRestCollectionV1<RESTTagV1>());
+		updateTopic.explicitSetProperties(new RESTPropertyTagCollectionV1());
+		updateTopic.explicitSetTags(new RESTTagCollectionV1());
 
 		/* remove any old spelling error details */
 		for (final RESTPropertyTagV1 tag : topic.getProperties().getItems())

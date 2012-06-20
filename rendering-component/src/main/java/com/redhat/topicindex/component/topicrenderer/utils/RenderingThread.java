@@ -36,7 +36,12 @@ import com.redhat.ecs.services.docbookcompiling.xmlprocessing.XMLPreProcessor;
 import com.redhat.topicindex.component.topicrenderer.Main;
 import com.redhat.topicindex.messaging.DocbookRendererMessage;
 import com.redhat.topicindex.messaging.TopicRendererType;
+import com.redhat.topicindex.rest.collections.BaseRestCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTopicCollectionV1;
+import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
+import com.redhat.topicindex.rest.entities.ComponentBaseTopicV1;
 import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTBaseTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBlobConstantV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTImageV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTLanguageImageV1;
@@ -49,7 +54,7 @@ import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
 
-public class RenderingThread extends BaseStompRunnable
+public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> extends BaseStompRunnable
 {
 	/** Jackson object mapper */
 	private final ObjectMapper mapper = new ObjectMapper();
@@ -67,6 +72,7 @@ public class RenderingThread extends BaseStompRunnable
 		this.client = ProxyFactory.create(RESTInterfaceV1.class, this.getServiceStarter().getSkynetServer());
 	}
 
+	@Override
 	public void run()
 	{
 		try
@@ -125,16 +131,16 @@ public class RenderingThread extends BaseStompRunnable
 		final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
 		final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TRANSLATEDTOPICS_NAME));
 		final ExpandDataTrunk outgoingRelationships = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.ALL_LATEST_OUTGOING_NAME));
-		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk outgoingRelationshipsTags = new ExpandDataTrunk(new ExpandDataDetails(RESTBaseTopicV1.TAGS_NAME));
 		final ExpandDataTrunk outgoingRelationshipsTagsCategories = new ExpandDataTrunk(new ExpandDataDetails(RESTTagV1.CATEGORIES_NAME));
-		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.PROPERTIES_NAME));
+		final ExpandDataTrunk propertyTags = new ExpandDataTrunk(new ExpandDataDetails(RESTBaseTopicV1.PROPERTIES_NAME));
 
 		outgoingRelationships.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTags, expandTopic));
 		outgoingRelationshipsTags.setBranches(CollectionUtilities.toArrayList(outgoingRelationshipsTagsCategories));
 		
 		expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
 
-		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TAGS_NAME));
+		final ExpandDataTrunk tags = new ExpandDataTrunk(new ExpandDataDetails(RESTBaseTopicV1.TAGS_NAME));
 		final ExpandDataTrunk tagsCategories = new ExpandDataTrunk(new ExpandDataDetails(RESTTagV1.CATEGORIES_NAME));
 
 		tags.setBranches(CollectionUtilities.toArrayList(tagsCategories, propertyTags));
@@ -191,8 +197,8 @@ public class RenderingThread extends BaseStompRunnable
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 					
-					final XMLPreProcessor<RESTTranslatedTopicV1> xmlPreProcessor = new XMLPreProcessor<RESTTranslatedTopicV1>();
-					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
+					final XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1>();
+					final SpecTopic<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> specTopic = new SpecTopic<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> (translatedTopic.getTopicId(), translatedTopic.getTitle());
 					specTopic.setTopic(translatedTopic);
 					
 					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
@@ -224,7 +230,7 @@ public class RenderingThread extends BaseStompRunnable
 							final List<RESTTranslatedTopicV1> nonTranslatedTopics = new ArrayList<RESTTranslatedTopicV1>();
 							for (RESTTranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
 							{
-								if (ComponentTranslatedTopicV1.returnIsDummyTopic(relatedTranslatedTopic))
+								if (ComponentBaseTopicV1.returnIsDummyTopic(relatedTranslatedTopic))
 									nonTranslatedTopics.add(relatedTranslatedTopic);
 							}
 							
@@ -385,8 +391,8 @@ public class RenderingThread extends BaseStompRunnable
 	
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
-				final XMLPreProcessor<RESTTopicV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1>();
-				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
+				final XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1>();
+				final SpecTopic<RESTTopicV1, RESTTopicCollectionV1> specTopic = new SpecTopic<RESTTopicV1, RESTTopicCollectionV1>(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
 				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
