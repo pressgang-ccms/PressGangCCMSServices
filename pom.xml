@@ -5,7 +5,7 @@
   <artifactId>topicindex</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>ECS CCMS Tool</name>
+  <name>ECS CCMS Tools</name>
   
   <repositories>
 	<repository>
@@ -102,4 +102,11 @@
   		<version>2.6</version>
   	</dependency>
   </dependencies>
+  <modules>
+	<module>bugzilla-sync-service</module>
+	<module>docbook-builder-component</module>
+	<module>rendering-component</module>
+	<module>Spell-Check-Service</module>
+	<module>zanata-sync-service</module>
+  </modules>
 </project>
