@@ -72,6 +72,8 @@ public class Main
 
 			final PathSegmentImpl query = new PathSegmentImpl("query;topicHasBugzillaBugs=true", false);
 
+			System.out.println("Fetching topics with existing Bugzilla bugs.");
+			
 			final RESTTopicCollectionV1 topicsWithBugs = client.getJSONTopicsWithQuery(query, expandEncodedStrnig);
 
 			System.out.println("Found " + topicsWithBugs.getSize() + " topics that already have Bugzilla bugs assigned to them.");
