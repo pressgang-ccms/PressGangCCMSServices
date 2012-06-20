@@ -17,6 +17,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.resteasy.client.ProxyFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import com.redhat.contentspec.SpecTopic;
@@ -36,6 +38,8 @@ import com.redhat.topicindex.messaging.DocbookRendererMessage;
 import com.redhat.topicindex.messaging.TopicRendererType;
 import com.redhat.topicindex.rest.entities.ComponentTranslatedTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTBlobConstantV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTImageV1;
+import com.redhat.topicindex.rest.entities.interfaces.RESTLanguageImageV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTagV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
@@ -51,6 +55,8 @@ public class RenderingThread extends BaseStompRunnable
 	private final ObjectMapper mapper = new ObjectMapper();
 	/** The Rocbook DTD, to be loaded once and then shared */
 	static private RESTBlobConstantV1 constants = null;
+	/** RestEASY Proxy client */
+	private final RESTInterfaceV1 client;
 	
 	private final DocbookBuildingOptions docbookBuildingOptions = new DocbookBuildingOptions();
 
@@ -58,6 +64,7 @@ public class RenderingThread extends BaseStompRunnable
 	{
 		super(client, serviceStarter, message, headers, shutdownRequested);
 		docbookBuildingOptions.setInsertSurveyLink(false);
+		this.client = ProxyFactory.create(RESTInterfaceV1.class, this.getServiceStarter().getSkynetServer());
 	}
 
 	public void run()
@@ -70,8 +77,6 @@ public class RenderingThread extends BaseStompRunnable
 				this.resendMessage();
 				return;
 			}
-
-			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, this.getServiceStarter().getSkynetServer());
 
 			/* load the dtd once */
 			synchronized (RenderingThread.class)
@@ -193,7 +198,7 @@ public class RenderingThread extends BaseStompRunnable
 					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 					xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
 					xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
-					XMLPreProcessor.processInternalImageFiles(doc, specTopic);
+					processInternalImageFiles(doc, specTopic);
 	
 					xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
 					xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
@@ -386,7 +391,7 @@ public class RenderingThread extends BaseStompRunnable
 				
 				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
 				xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
-				XMLPreProcessor.processInternalImageFiles(doc, specTopic);
+				processInternalImageFiles(doc, specTopic);
 	
 				xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
 				xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
@@ -438,5 +443,65 @@ public class RenderingThread extends BaseStompRunnable
 		client.updateJSONTopic("", updatedTopicV1);
 
 		NotificationUtilities.dumpMessageToStdOut("Topic " + topic.getId() + " has been updated");
+	}
+	
+	public void processInternalImageFiles(final Document xmlDoc, final SpecTopic topic)
+	{
+		if (xmlDoc == null)
+			return;
+
+		final List<Node> imageDataNodes = XMLUtilities.getNodes(xmlDoc.getDocumentElement(), "imagedata");
+		for (final Node imageDataNode : imageDataNodes)
+		{
+			final NamedNodeMap attributes = imageDataNode.getAttributes();
+			final Node filerefAttribute = attributes.getNamedItem("fileref");
+			if (filerefAttribute != null)
+			{
+				String imageId = filerefAttribute.getTextContent();
+				imageId = imageId.replace("images/", "");
+				final int periodIndex = imageId.lastIndexOf(".");
+				if (periodIndex != -1)
+					imageId = imageId.substring(0, periodIndex);
+
+				/*
+				 * at this point imageId should be an integer that is the id of the image uploaded in skynet. We will leave the validation of imageId to the
+				 * ImageFileDisplay class.
+				 */
+				
+				try
+				{
+					/* Expand the Language Images */
+					final ExpandDataTrunk expand = new ExpandDataTrunk();
+					expand.setBranches(CollectionUtilities.toArrayList(new ExpandDataTrunk(new ExpandDataDetails(RESTImageV1.LANGUAGEIMAGES_NAME))));
+					final String expandString = mapper.writeValueAsString(expand);
+					final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
+					
+					final RESTImageV1 imageFile = client.getJSONImage(Integer.parseInt(imageId), expandEncodedString);
+					
+					final String locale = topic.getTopic().getLocale();
+					boolean localeImageExists = false;
+					for (final RESTLanguageImageV1 languageImage : imageFile.getLanguageImages_OTM().getItems())
+					{
+						if (locale.equals(languageImage.getLocale()))
+						{
+							localeImageExists = true;
+						}
+					}
+					
+					if (localeImageExists)
+					{
+						filerefAttribute.setTextContent("ImageFileDisplay.seam?imageFileId=" + imageId + "&language=" + locale);
+					}
+					else
+					{
+						filerefAttribute.setTextContent("ImageFileDisplay.seam?imageFileId=" + imageId);
+					}
+				}
+				catch (Exception ex)
+				{
+					ExceptionUtilities.handleException(ex);
+				}
+			}
+		}
 	}
 }
