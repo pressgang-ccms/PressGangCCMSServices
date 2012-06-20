@@ -62,7 +62,12 @@ public class Main
 
 			/* Get the topics from Skynet that have bugs assigned to them */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
-			final ExpandDataTrunk topics = new ExpandDataTrunk(new ExpandDataDetails("topics"));
+			
+			final ExpandDataDetails topicsExpand = new ExpandDataDetails("topics");
+			topicsExpand.setShowSize(true);
+			
+			final ExpandDataTrunk topics = new ExpandDataTrunk(topicsExpand);
+			
 			expand.setBranches(CollectionUtilities.toArrayList(topics));
 			final ExpandDataTrunk bugzillaBugz = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.BUGZILLABUGS_NAME));
 			topics.setBranches(CollectionUtilities.toArrayList(bugzillaBugz));
