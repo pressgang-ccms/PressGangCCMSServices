@@ -167,6 +167,8 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			//final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
 			final RESTTopicCollectionV1 topics = restClient.getJSONTopicsWithQuery(pathSegment, expandString);
+			
+			NotificationUtilities.dumpMessageToStdOut("\t" + topics.getItems().size() + " topics returned.");
 
 			/*
 			 * Construct the URL that will show us the topics used in this Docbook build
