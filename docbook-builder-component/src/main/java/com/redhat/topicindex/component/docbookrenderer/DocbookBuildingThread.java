@@ -362,48 +362,54 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		translatedTopic.setTitle("[" + topic.getLocale() + "] " + topic.getTitle());
 
 		/* Add the dummy outgoing relationships */
-		if (topic.getOutgoingRelationships() != null && topic.getOutgoingRelationships().getItems() != null)
+		if (topic.getOutgoingRelationships() != null)
 		{
 			final RESTTranslatedTopicCollectionV1 outgoingRelationships = new RESTTranslatedTopicCollectionV1();
-			for (final RESTTopicV1 relatedTopic : topic.getOutgoingRelationships().getItems())
+			if (topic.getOutgoingRelationships().getItems() != null)
 			{
-				if (this.isShutdownRequested())
+				for (final RESTTopicV1 relatedTopic : topic.getOutgoingRelationships().getItems())
 				{
-					return null;
-				}
-
-				/* check to see if the translated topic already exists */
-				if (translatedTopicsMap.containsKey(relatedTopic.getId()))
-				{
-					outgoingRelationships.addItem(translatedTopicsMap.get(relatedTopic.getId()));
-				}
-				else
-				{
-					outgoingRelationships.addItem(createDummyTranslatedTopic(translatedTopicsMap, relatedTopic, false, locale));
+					if (this.isShutdownRequested())
+					{
+						return null;
+					}
+	
+					/* check to see if the translated topic already exists */
+					if (translatedTopicsMap.containsKey(relatedTopic.getId()))
+					{
+						outgoingRelationships.addItem(translatedTopicsMap.get(relatedTopic.getId()));
+					}
+					else
+					{
+						outgoingRelationships.addItem(createDummyTranslatedTopic(translatedTopicsMap, relatedTopic, false, locale));
+					}
 				}
 			}
 			translatedTopic.setOutgoingRelationships(outgoingRelationships);
 		}
 
 		/* Add the dummy incoming relationships */
-		if (topic.getIncomingRelationships() != null && topic.getIncomingRelationships().getItems() != null)
+		if (topic.getIncomingRelationships() != null)
 		{
 			final RESTTranslatedTopicCollectionV1 incomingRelationships = new RESTTranslatedTopicCollectionV1();
-			for (final RESTTopicV1 relatedTopic : topic.getIncomingRelationships().getItems())
+			if (topic.getIncomingRelationships().getItems() != null)
 			{
-				if (this.isShutdownRequested())
+				for (final RESTTopicV1 relatedTopic : topic.getIncomingRelationships().getItems())
 				{
-					return null;
-				}
-
-				/* check to see if the translated topic already exists */
-				if (translatedTopicsMap.containsKey(relatedTopic.getId()))
-				{
-					incomingRelationships.addItem(translatedTopicsMap.get(relatedTopic.getId()));
-				}
-				else
-				{
-					incomingRelationships.addItem(createDummyTranslatedTopic(translatedTopicsMap, relatedTopic, false, locale));
+					if (this.isShutdownRequested())
+					{
+						return null;
+					}
+	
+					/* check to see if the translated topic already exists */
+					if (translatedTopicsMap.containsKey(relatedTopic.getId()))
+					{
+						incomingRelationships.addItem(translatedTopicsMap.get(relatedTopic.getId()));
+					}
+					else
+					{
+						incomingRelationships.addItem(createDummyTranslatedTopic(translatedTopicsMap, relatedTopic, false, locale));
+					}
 				}
 			}
 			translatedTopic.setIncomingRelationships(incomingRelationships);
