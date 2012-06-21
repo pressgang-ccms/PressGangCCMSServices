@@ -149,9 +149,9 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 
 		/* convert the ExpandDataTrunk to an encoded JSON String */
 		final String expandString = mapper.writeValueAsString(expand);
-		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
+		//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 		
-		final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandEncodedString);
+		final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandString);
 
 		if (translatedTopic != null)
 		{
@@ -269,7 +269,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 			/* Set the last changed date to the current date/time */
 			updatedTranslatedTopicV1.explicitSetHtmlUpdated(new Date());
 			
-			client.updateJSONTranslatedTopic(expandEncodedString, updatedTranslatedTopicV1);
+			client.updateJSONTranslatedTopic(expandString, updatedTranslatedTopicV1);
 
 			NotificationUtilities.dumpMessageToStdOut("TranslatedTopic " + translatedTopicId + "-" + translatedTopic.getLocale() + " has been updated");
 		}
