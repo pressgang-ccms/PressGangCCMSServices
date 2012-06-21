@@ -8,7 +8,6 @@
   </parent>
   <groupId>com.redhat.topicindex</groupId>
   <artifactId>bugzilla-sync-service</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
   <name>Bugzilla Sync Service</name>
   
   <build>

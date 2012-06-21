@@ -62,17 +62,12 @@
   	<dependency>
   		<groupId>org.jboss.resteasy</groupId>
   		<artifactId>resteasy-atom-provider</artifactId>
-  		<version>2.2.3.GA</version>
+  		<version>2.3.4.Final</version>
   	</dependency>
   	<dependency>
   		<groupId>org.jboss.resteasy</groupId>
   		<artifactId>resteasy-jaxrs</artifactId>
-  		<version>2.2.3.GA</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.jboss.resteasy</groupId>
-  		<artifactId>resteasy-jaxb-provider</artifactId>
-  		<version>2.2.3.GA</version>
+  		<version>2.3.4.Final</version>
   	</dependency>
   	<dependency>
   		<groupId>javax.ws.rs</groupId>
@@ -82,7 +77,7 @@
 	<dependency>
   		<groupId>org.jboss.resteasy</groupId>
   		<artifactId>resteasy-jackson-provider</artifactId>
-  		<version>2.2.3.GA</version>
+  		<version>2.3.4.Final</version>
   	</dependency>
   	
   	<!-- Various Libraries -->
@@ -100,6 +95,11 @@
   		<groupId>org.apache.directory.studio</groupId>
   		<artifactId>org.apache.commons.lang</artifactId>
   		<version>2.6</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.jboss.resteasy</groupId>
+  		<artifactId>resteasy-jaxb-provider</artifactId>
+  		<version>2.3.4.Final</version>
   	</dependency>
   </dependencies>
   <modules>

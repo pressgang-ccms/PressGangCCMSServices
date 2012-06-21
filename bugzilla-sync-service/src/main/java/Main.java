@@ -212,6 +212,8 @@ public class Main
 
 				if (!foundMatch)
 					System.out.println("Build ID field was not a match for the named regular expression.");
+				
+				break;
 			}
 
 			/*
@@ -244,7 +246,7 @@ public class Main
 				dataObjects.addItem(topic);
 
 			/*
-			 * make sure the topic ids referenced by the bigzilla build id field
+			 * make sure the topic ids referenced by the bugzilla build id field
 			 * actually exist
 			 */
 			final List<Integer> invalidIds = new ArrayList<Integer>();
@@ -279,7 +281,7 @@ public class Main
 				dataObjects.getItems().remove(topic);
 
 			/* make the changes */
-			client.updateJSONTopics("", dataObjects);
+			client.updateJSONTopics(null, dataObjects);
 		}
 		catch (final Exception ex)
 		{
