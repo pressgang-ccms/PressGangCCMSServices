@@ -2,7 +2,7 @@
 
 REST_SERVER=http://localhost:8080/TopicIndex/seam/resource/rest
 BUGZILLA_URL=bugzilla.redhat.com
-BUGZILLA_USERNAME=mcaspers@redhat.com
+BUGZILLA_USERNAME=pressgang-ccms-dev@redhat.com
 BUGZILLA_PASSWORD=password
 MAINCLASS=Main
 

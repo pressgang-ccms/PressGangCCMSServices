@@ -149,9 +149,9 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 
 		/* convert the ExpandDataTrunk to an encoded JSON String */
 		final String expandString = mapper.writeValueAsString(expand);
-		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
+		//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 		
-		final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandEncodedString);
+		final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(translatedTopicDataId, expandString);
 
 		if (translatedTopic != null)
 		{
@@ -269,7 +269,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 			/* Set the last changed date to the current date/time */
 			updatedTranslatedTopicV1.explicitSetHtmlUpdated(new Date());
 			
-			client.updateJSONTranslatedTopic(expandEncodedString, updatedTranslatedTopicV1);
+			client.updateJSONTranslatedTopic(expandString, updatedTranslatedTopicV1);
 
 			NotificationUtilities.dumpMessageToStdOut("TranslatedTopic " + translatedTopicId + "-" + translatedTopic.getLocale() + " has been updated");
 		}
@@ -480,9 +480,9 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					final ExpandDataTrunk expand = new ExpandDataTrunk();
 					expand.setBranches(CollectionUtilities.toArrayList(new ExpandDataTrunk(new ExpandDataDetails(RESTImageV1.LANGUAGEIMAGES_NAME))));
 					final String expandString = mapper.writeValueAsString(expand);
-					final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
+					//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 					
-					final RESTImageV1 imageFile = client.getJSONImage(Integer.parseInt(imageId), expandEncodedString);
+					final RESTImageV1 imageFile = client.getJSONImage(Integer.parseInt(imageId), expandString);
 					
 					final String locale = topic.getTopic().getLocale();
 					boolean localeImageExists = false;

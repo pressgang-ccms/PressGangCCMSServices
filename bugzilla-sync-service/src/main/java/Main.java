@@ -39,6 +39,10 @@ public class Main
 			final String bugzillaServer = System.getProperty(CommonConstants.BUGZILLA_URL_PROPERTY);
 			final String bugzillaPassword = System.getProperty(CommonConstants.BUGZILLA_PASSWORD_PROPERTY);
 			final String bugzillaUsername = System.getProperty(CommonConstants.BUGZILLA_USERNAME_PROPERTY);
+			
+			System.out.println("REST Server: " + skynetServer);
+			System.out.println("Bugzilla Username: " + bugzillaUsername);
+			System.out.println("Bugzilla Server: " + bugzillaServer);
 
 			/* Some sanity checking */
 			if (skynetServer == null || skynetServer.trim().isEmpty() || bugzillaServer == null || bugzillaServer.trim().isEmpty() || bugzillaPassword == null || bugzillaPassword.trim().isEmpty() || bugzillaUsername == null || bugzillaUsername.trim().isEmpty())
@@ -56,25 +60,37 @@ public class Main
 			/* The JSON mapper */
 			final ObjectMapper mapper = new ObjectMapper();
 
-			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
+			/* Register the RESTEasy marshallers */
 			RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
+			
+			/* Create a REST Client interface */
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
 
 			/* Get the topics from Skynet that have bugs assigned to them */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
-			final ExpandDataTrunk topics = new ExpandDataTrunk(new ExpandDataDetails("topics"));
+			
+			final ExpandDataDetails topicsExpand = new ExpandDataDetails("topics");
+			topicsExpand.setShowSize(true);
+			
+			final ExpandDataTrunk topics = new ExpandDataTrunk(topicsExpand);
+			
 			expand.setBranches(CollectionUtilities.toArrayList(topics));
 			final ExpandDataTrunk bugzillaBugz = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.BUGZILLABUGS_NAME));
 			topics.setBranches(CollectionUtilities.toArrayList(bugzillaBugz));
 
 			final String expandString = mapper.writeValueAsString(expand);
-			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
+			
+			//final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
 			final PathSegmentImpl query = new PathSegmentImpl("query;topicHasBugzillaBugs=true", false);
 
-			final RESTTopicCollectionV1 topicsWithBugs = client.getJSONTopicsWithQuery(query, expandEncodedStrnig);
+			System.out.println("Fetching topics with existing Bugzilla bugs.");
+			
+			final RESTTopicCollectionV1 topicsWithBugs = client.getJSONTopicsWithQuery(query, expandString);
 
 			System.out.println("Found " + topicsWithBugs.getSize() + " topics that already have Bugzilla bugs assigned to them.");
+			
+			System.out.println("Searching Bugzilla for matching bug reports.");
 
 			/* Get the bugzilla bugs */
 			final LogIn login = new LogIn(bugzillaUsername, bugzillaPassword);
@@ -237,7 +253,7 @@ public class Main
 				dataObjects.addItem(topic);
 
 			/*
-			 * make sure the topic ids referenced by the bigzilla build id field
+			 * make sure the topic ids referenced by the bugzilla build id field
 			 * actually exist
 			 */
 			final List<Integer> invalidIds = new ArrayList<Integer>();
@@ -262,6 +278,7 @@ public class Main
 				{
 					if (topic.getId().equals(id))
 					{
+						System.out.println("Topic id " + topic.getId() + " was found for removal.");
 						removeList.add(topic);
 					}
 				}
@@ -269,10 +286,15 @@ public class Main
 
 			/* remove them from the collection */
 			for (final RESTTopicV1 topic : removeList)
-				dataObjects.getItems().remove(topic);
+			{
+				if (!dataObjects.getItems().remove(topic))
+					System.out.println("Topic id " + topic.getId() + " could not be removed.");
+				else
+					System.out.println("Topic id " + topic.getId() + " was removed.");
+			}
 
 			/* make the changes */
-			client.updateJSONTopics("", dataObjects);
+			client.updateJSONTopics(null, dataObjects);
 		}
 		catch (final Exception ex)
 		{
