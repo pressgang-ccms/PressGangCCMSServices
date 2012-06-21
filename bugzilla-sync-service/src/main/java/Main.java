@@ -278,6 +278,7 @@ public class Main
 				{
 					if (topic.getId().equals(id))
 					{
+						System.out.println("Topic id " + topic.getId() + " was found for removal.");
 						removeList.add(topic);
 					}
 				}
@@ -285,7 +286,12 @@ public class Main
 
 			/* remove them from the collection */
 			for (final RESTTopicV1 topic : removeList)
-				dataObjects.getItems().remove(topic);
+			{
+				if (!dataObjects.getItems().remove(topic))
+					System.out.println("Topic id " + topic.getId() + " could not be removed.");
+				else
+					System.out.println("Topic id " + topic.getId() + " was removed.");
+			}
 
 			/* make the changes */
 			client.updateJSONTopics(null, dataObjects);
