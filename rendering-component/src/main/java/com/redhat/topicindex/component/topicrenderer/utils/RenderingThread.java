@@ -480,9 +480,9 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					final ExpandDataTrunk expand = new ExpandDataTrunk();
 					expand.setBranches(CollectionUtilities.toArrayList(new ExpandDataTrunk(new ExpandDataDetails(RESTImageV1.LANGUAGEIMAGES_NAME))));
 					final String expandString = mapper.writeValueAsString(expand);
-					final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
+					//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 					
-					final RESTImageV1 imageFile = client.getJSONImage(Integer.parseInt(imageId), expandEncodedString);
+					final RESTImageV1 imageFile = client.getJSONImage(Integer.parseInt(imageId), expandString);
 					
 					final String locale = topic.getTopic().getLocale();
 					boolean localeImageExists = false;
