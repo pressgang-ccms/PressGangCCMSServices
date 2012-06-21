@@ -39,6 +39,10 @@ public class Main
 			final String bugzillaServer = System.getProperty(CommonConstants.BUGZILLA_URL_PROPERTY);
 			final String bugzillaPassword = System.getProperty(CommonConstants.BUGZILLA_PASSWORD_PROPERTY);
 			final String bugzillaUsername = System.getProperty(CommonConstants.BUGZILLA_USERNAME_PROPERTY);
+			
+			System.out.println("REST Server: " + skynetServer);
+			System.out.println("Bugzilla Username: " + bugzillaUsername);
+			System.out.println("Bugzilla Server: " + bugzillaServer);
 
 			/* Some sanity checking */
 			if (skynetServer == null || skynetServer.trim().isEmpty() || bugzillaServer == null || bugzillaServer.trim().isEmpty() || bugzillaPassword == null || bugzillaPassword.trim().isEmpty() || bugzillaUsername == null || bugzillaUsername.trim().isEmpty())
@@ -56,8 +60,10 @@ public class Main
 			/* The JSON mapper */
 			final ObjectMapper mapper = new ObjectMapper();
 
-			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
+			/* Register the RESTEasy marshallers */
 			RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
+			
+			/* Create a REST Client interface */
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
 
 			/* Get the topics from Skynet that have bugs assigned to them */
@@ -73,15 +79,18 @@ public class Main
 			topics.setBranches(CollectionUtilities.toArrayList(bugzillaBugz));
 
 			final String expandString = mapper.writeValueAsString(expand);
-			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
+			
+			//final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
 
 			final PathSegmentImpl query = new PathSegmentImpl("query;topicHasBugzillaBugs=true", false);
 
 			System.out.println("Fetching topics with existing Bugzilla bugs.");
 			
-			final RESTTopicCollectionV1 topicsWithBugs = client.getJSONTopicsWithQuery(query, expandEncodedStrnig);
+			final RESTTopicCollectionV1 topicsWithBugs = client.getJSONTopicsWithQuery(query, expandString);
 
 			System.out.println("Found " + topicsWithBugs.getSize() + " topics that already have Bugzilla bugs assigned to them.");
+			
+			System.out.println("Searching Bugzilla for matching bug reports.");
 
 			/* Get the bugzilla bugs */
 			final LogIn login = new LogIn(bugzillaUsername, bugzillaPassword);
@@ -212,8 +221,6 @@ public class Main
 
 				if (!foundMatch)
 					System.out.println("Build ID field was not a match for the named regular expression.");
-				
-				break;
 			}
 
 			/*
