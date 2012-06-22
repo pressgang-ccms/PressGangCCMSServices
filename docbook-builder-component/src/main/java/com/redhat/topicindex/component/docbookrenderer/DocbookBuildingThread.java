@@ -222,9 +222,9 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			expand.setBranches(CollectionUtilities.toArrayList(translatedTopicsExpand));
 
 			final String expandString = mapper.writeValueAsString(expand);
-			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
+			//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-			final RESTTranslatedTopicCollectionV1 topics = restClient.getJSONTranslatedTopicsWithQuery(pathSegment, expandEncodedStrnig);
+			final RESTTranslatedTopicCollectionV1 topics = restClient.getJSONTranslatedTopicsWithQuery(pathSegment, expandString);
 
 			/*
 			 * Construct the URL that will show us the topics used in this Docbook build
@@ -300,9 +300,9 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		expand.setBranches(CollectionUtilities.toArrayList(topicsExpand));
 
 		final String expandString = mapper.writeValueAsString(expand);
-		final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
+		//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-		final BaseRestCollectionV1<RESTTopicV1, RESTTopicCollectionV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedString);
+		final BaseRestCollectionV1<RESTTopicV1, RESTTopicCollectionV1> topics = restClient.getJSONTopicsWithQuery(pathSegment, expandString);
 		
 		/* Create a mapping of Topic ID's to translated topics */
 		final Map<Integer, RESTTranslatedTopicV1> translatedTopicsToTopicIds = new HashMap<Integer, RESTTranslatedTopicV1>();

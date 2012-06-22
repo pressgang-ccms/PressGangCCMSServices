@@ -355,10 +355,10 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 
 		/* convert the ExpandDataTrunk to an encoded JSON String */
 		final String expandString = mapper.writeValueAsString(expand);
-		final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
+		//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
 		/* get the topic list */
-		final RESTTopicV1 topic = client.getJSONTopic(topicId, expandEncodedStrnig);
+		final RESTTopicV1 topic = client.getJSONTopic(topicId, expandString);
 
 		/* early exit if shutdown has been requested */
 		if (this.isShutdownRequested())

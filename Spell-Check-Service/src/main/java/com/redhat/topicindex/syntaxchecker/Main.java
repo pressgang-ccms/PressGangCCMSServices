@@ -118,9 +118,9 @@ public class Main
 			topicsExpand.setBranches(CollectionUtilities.toArrayList(tagsExpand, propertiesExpand));
 
 			final String expandString = mapper.writeValueAsString(expand);
-			final String expandEncodedStrnig = URLEncoder.encode(expandString, "UTF-8");
+			//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
-			final RESTTopicCollectionV1 topics = restClient.getJSONTopicsWithQuery(pathSegment, expandEncodedStrnig);
+			final RESTTopicCollectionV1 topics = restClient.getJSONTopicsWithQuery(pathSegment, expandString);
 
 			/* Get the tags to ignore */
 			final RESTStringConstantV1 ignoreTags = restClient.getJSONStringConstant(DOCBOOK_IGNORE_ELEMENTS_STRING_CONSTANT_ID, "");
