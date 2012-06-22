@@ -4,7 +4,7 @@ ZANATA_SERVER=http://zanatatest.usersys.redhat.com/
 REST_SERVER=http://localhost:8080/TopicIndex/seam/resource/rest
 USERNAME=admin
 TOKEN=b6d7044e9ee3b2447c28fb7c50d86d98
-PROJECT=skynet
+PROJECT=Skynet
 PROJECT_VERSION=1
 MAINCLASS=Main
 

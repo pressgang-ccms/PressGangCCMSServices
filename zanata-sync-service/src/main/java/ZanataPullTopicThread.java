@@ -76,7 +76,7 @@ public class ZanataPullTopicThread implements Runnable {
 							{
 								for (final RESTTranslatedTopicV1 myTranslatedTopic : translatedTopics.getItems())
 								{
-									if (myTranslatedTopic.getLocale().equals(locale))
+									if (myTranslatedTopic.getLocale().equals(locale.toString()))
 									{
 										translatedTopic = myTranslatedTopic;
 										newTranslation = false;
