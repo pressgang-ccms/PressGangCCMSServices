@@ -16,7 +16,7 @@ CONTENTS_INLINE_XML_ELEMENTS=title,term
 NUMBER_OF_THREADS=1
 MAINCLASS=com.redhat.topicindex.component.docbookrenderer.Main
 
-java -Xmx1024m \
+java -Xmx1536m \
 -Dmail.smtp.host=${SMTP} \
 -DtopicIndex.stompMessageServer=${STOMP_SERVER} \
 -DtopicIndex.stompMessageServerPort=${PORT} \
