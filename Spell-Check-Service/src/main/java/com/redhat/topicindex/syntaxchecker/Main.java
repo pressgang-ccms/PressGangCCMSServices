@@ -266,8 +266,6 @@ public class Main
 		/* build up the property tags if errors exist */
 		if (spellingErrors.size() != 0 || doubleWords.size() != 0)
 		{
-			topicIsUpdated = true;
-
 			System.out.println("Topic ID: " + topic.getId());
 			System.out.println("Topic Title: " + topic.getTitle());
 
@@ -304,10 +302,17 @@ public class Main
 				{
 					addGrammarErrorTag = foundGrammarPropertyTag;
 				}
-				addGrammarErrorTag.setAddItem(true);
-				addGrammarErrorTag.explicitSetValue(doubleWordErrors.toString());
-
-				updateTopic.getProperties().addItem(addGrammarErrorTag);
+				
+				/* Only update the property tag if the value has changed */
+				if (!addGrammarErrorTag.getValue().equals(doubleWordErrors.toString()))
+				{
+					topicIsUpdated = true;
+					
+					addGrammarErrorTag.setAddItem(true);
+					addGrammarErrorTag.explicitSetValue(doubleWordErrors.toString());
+		
+					updateTopic.getProperties().addItem(addGrammarErrorTag);
+				}
 			}
 
 			/* Build up the spelling error property tag */
@@ -366,10 +371,16 @@ public class Main
 					addSpellingErrorTag = foundSpellingPropertyTag;
 				}
 				
-				addSpellingErrorTag.setAddItem(true);
-				addSpellingErrorTag.explicitSetValue(spellingErrorsMessage.toString());
-
-				updateTopic.getProperties().addItem(addSpellingErrorTag);
+				/* Only update the property tag if the value has changed */
+				if (!addSpellingErrorTag.getValue().equals(spellingErrorsMessage.toString()))
+				{
+					topicIsUpdated = true;
+					
+					addSpellingErrorTag.setAddItem(true);
+					addSpellingErrorTag.explicitSetValue(spellingErrorsMessage.toString());
+	
+					updateTopic.getProperties().addItem(addSpellingErrorTag);
+				}
 			}
 			else
 			{
