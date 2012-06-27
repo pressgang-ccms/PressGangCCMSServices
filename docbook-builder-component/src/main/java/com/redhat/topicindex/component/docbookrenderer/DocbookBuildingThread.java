@@ -1,7 +1,6 @@
 package com.redhat.topicindex.component.docbookrenderer;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
