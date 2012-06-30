@@ -304,7 +304,7 @@ public class Main
 				}
 				
 				/* Only update the property tag if the value has changed */
-				if (!addGrammarErrorTag.getValue().equals(doubleWordErrors.toString()))
+				if (addGrammarErrorTag.getValue() == null && !addGrammarErrorTag.getValue().equals(doubleWordErrors.toString()))
 				{
 					topicIsUpdated = true;
 					
@@ -372,7 +372,7 @@ public class Main
 				}
 				
 				/* Only update the property tag if the value has changed */
-				if (!addSpellingErrorTag.getValue().equals(spellingErrorsMessage.toString()))
+				if (addSpellingErrorTag.getValue() == null || !addSpellingErrorTag.getValue().equals(spellingErrorsMessage.toString()))
 				{
 					topicIsUpdated = true;
 					

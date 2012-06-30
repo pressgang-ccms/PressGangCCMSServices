@@ -275,8 +275,11 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		String topicQuery = query.replaceAll("locale\\d*=[a-zA-Z\\-]*\\d+(;|$)", "");
 		
 		/* Add the query parameters to not include any topics that we already have all the information for */
-		topicQuery += (topicQuery.endsWith(";") ? "" : ";") + "notTopicIds=" + CollectionUtilities.toSeperatedString(CollectionUtilities.toArrayList(excludedTopics), ",");
-
+		if (excludedTopics.size() > 0)
+		{
+			topicQuery += (topicQuery.endsWith(";") ? "" : ";") + "notTopicIds=" + CollectionUtilities.toSeperatedString(CollectionUtilities.toArrayList(excludedTopics), ",");
+		}
+		
 		NotificationUtilities.dumpMessageToStdOut("\tGetting Topic Collection with query " + topicQuery);
 
 		final PathSegment pathSegment = new PathSegmentImpl(topicQuery, false);
