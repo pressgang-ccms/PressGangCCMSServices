@@ -66,8 +66,14 @@ public class Main
 
 			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
+			
+			/* Get the Zanata resources */
+			final ZanataInterface zanataInterface = new ZanataInterface();
+			final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
+			final List<String> existingZanataResources = new ArrayList<String>();			
+			System.out.println("Found " + zanataResources.size() + " topics in Zanata.");
 
-			/* get the translated data */
+			// Get the Skynet Resources			
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
 			final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails("translatedtopics"));
 			final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
@@ -78,19 +84,19 @@ public class Main
 			expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
 			expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopic));
 			expand.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopic));
-
-			/* convert the ExpandDataTrunk to an encoded JSON String */
+			
+			/* A map to hold Zanata document ids to Topics */
+			final Map<String, RESTTopicV1> translatedTopicsMap = new HashMap<String, RESTTopicV1>();
+			
+			// Start comment block here to test single file
+			// convert the ExpandDataTrunk to an encoded JSON String
 			final String expandString = mapper.writeValueAsString(expand);
 
 			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopics(expandString);
-			final ZanataInterface zanataInterface = new ZanataInterface();
-			final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
-			final List<String> existingZanataResources = new ArrayList<String>();
-			
-			System.out.println("Found " + zanataResources.size() + " topics in Zanata.");
+			System.out.println("Found " + translatedTopics.getItems().size() + " topics in Skynet.");
 
-			/* Loop through and find the zanata ID and relevant original topics */
-			final Map<String, RESTTopicV1> translatedTopicsMap = new HashMap<String, RESTTopicV1>();
+			// Loop through and find the zanata ID and relevant original topics
+			
 			if (translatedTopics != null && translatedTopics.getItems() != null)
 			{
 				for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.getItems())
@@ -108,22 +114,21 @@ public class Main
 				System.out.println("Did not recieve expected response from REST service.");
 				System.exit(1);
 			}
+			// End comment block here to test single file
 			
 			/* load a single topic to test with */
 			/*final ExpandDataTrunk expandSingle = new ExpandDataTrunk();
 			expandSingle.setBranches(CollectionUtilities.toArrayList(expandTopic));
 			final String expandSingleString = mapper.writeValueAsString(expandSingle);
 			
-			final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(18, expandSingleString);
+			final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(957, expandSingleString);
 			final String myZanataId = ComponentTranslatedTopicV1.returnZanataId(translatedTopic);
 
 			if (!translatedTopicsMap.containsKey(myZanataId))
 			{
 				translatedTopicsMap.put(myZanataId, translatedTopic.getTopic());
 			}*/
-			
-			System.out.println("Found " + translatedTopicsMap.keySet().size() + " topics in Skynet.");
-			
+
 			for (final String zanataId : translatedTopicsMap.keySet())
 			{
 				/*
