@@ -81,7 +81,6 @@ public class Main
 
 			/* convert the ExpandDataTrunk to an encoded JSON String */
 			final String expandString = mapper.writeValueAsString(expand);
-			//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
 
 			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopics(expandString);
 			final ZanataInterface zanataInterface = new ZanataInterface();
