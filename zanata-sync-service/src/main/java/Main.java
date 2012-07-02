@@ -80,13 +80,13 @@ public class Main
 			/* convert the ExpandDataTrunk to an encoded JSON String */
 			final String expandString = mapper.writeValueAsString(expand);
 			//final String expandEncodedString = URLEncoder.encode(expandString, "UTF-8");
-			
-			log.info("Getting Translated Topics");
 
 			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopics(expandString);
 			final ZanataInterface zanataInterface = new ZanataInterface();
 			final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
 			final List<String> existingZanataResources = new ArrayList<String>();
+			
+			System.out.println("Found " + zanataResources.size() + " topics in Zanata.");
 
 			/* Loop through and find the zanata ID and relevant original topics */
 			final Map<String, RESTTopicV1> translatedTopicsMap = new HashMap<String, RESTTopicV1>();
@@ -104,12 +104,26 @@ public class Main
 			}
 			else
 			{
-				/* increasing prepared-statement-cache-size may fix this */
 				System.out.println("Did not recieve expected response from REST service.");
 				System.exit(1);
 			}
+			
+			/* load a single topic to test with */
+			/*final ExpandDataTrunk expandSingle = new ExpandDataTrunk();
+			expandSingle.setBranches(CollectionUtilities.toArrayList(expandTopic));
+			final String expandSingleString = mapper.writeValueAsString(expandSingle);
+			
+			final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(18, expandSingleString);
+			final String myZanataId = ComponentTranslatedTopicV1.returnZanataId(translatedTopic);
 
-			for (String zanataId : translatedTopicsMap.keySet())
+			if (!translatedTopicsMap.containsKey(myZanataId))
+			{
+				translatedTopicsMap.put(myZanataId, translatedTopic.getTopic());
+			}*/
+			
+			System.out.println("Found " + translatedTopicsMap.keySet().size() + " topics in Skynet.");
+			
+			for (final String zanataId : translatedTopicsMap.keySet())
 			{
 				/*
 				 * Pull each topic in a separate thread to decrease total
@@ -130,6 +144,7 @@ public class Main
 
 					if (!existingZanataResources.contains(resourceName) && resourceName.indexOf("-") != -1)
 					{
+						/* Comment out this line to stop the service creating new records in Skynet when they don't exist */
 						createTranslatedTopicFromZanataResource(resource, client);
 					}
 				}
