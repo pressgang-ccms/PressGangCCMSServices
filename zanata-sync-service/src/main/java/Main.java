@@ -90,6 +90,7 @@ public class Main
 			
 			// Start comment block here to test single file
 			// convert the ExpandDataTrunk to an encoded JSON String
+			
 			final String expandString = mapper.writeValueAsString(expand);
 
 			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopics(expandString);
@@ -114,6 +115,7 @@ public class Main
 				System.out.println("Did not recieve expected response from REST service.");
 				System.exit(1);
 			}
+			
 			// End comment block here to test single file
 			
 			/* load a single topic to test with */
@@ -121,7 +123,7 @@ public class Main
 			expandSingle.setBranches(CollectionUtilities.toArrayList(expandTopic));
 			final String expandSingleString = mapper.writeValueAsString(expandSingle);
 			
-			final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(957, expandSingleString);
+			final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(1492, expandSingleString);
 			final String myZanataId = ComponentTranslatedTopicV1.returnZanataId(translatedTopic);
 
 			if (!translatedTopicsMap.containsKey(myZanataId))
