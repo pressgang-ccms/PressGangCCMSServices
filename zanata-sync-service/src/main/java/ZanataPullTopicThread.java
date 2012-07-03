@@ -34,12 +34,12 @@ public class ZanataPullTopicThread implements Runnable
 	private final ZanataInterface zanataInterface = new ZanataInterface();
 	private static long syncTimePerTopicPerLocale;
 	
-	public static long getSyncTimePerTopicPerLocale()
+	synchronized public static long getSyncTimePerTopicPerLocale()
 	{
 		return syncTimePerTopicPerLocale;
 	}
 	
-	public static void setSyncTimePerTopicPerLocale(final long syncTimePerTopicPerLocale)
+	synchronized public static void setSyncTimePerTopicPerLocale(final long syncTimePerTopicPerLocale)
 	{
 		ZanataPullTopicThread.syncTimePerTopicPerLocale = syncTimePerTopicPerLocale;
 	}
@@ -207,7 +207,7 @@ public class ZanataPullTopicThread implements Runnable
 					/* work out how long to sleep for */
 					final long endTime = System.currentTimeMillis();					
 					final long duration = endTime - startTime;
-					final long sleep = syncTimePerTopicPerLocale - duration;
+					final long sleep = getSyncTimePerTopicPerLocale() - duration;
 					final long fixedSleep = sleep < 0 ? 0 : sleep;
 					
 					System.out.println("Rate limiting by sleeping for " + fixedSleep / 1000.0 + " seconds");
