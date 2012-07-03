@@ -24,7 +24,8 @@ import com.redhat.topicindex.zanata.ZanataInterface;
 
 public class Main
 {
-
+	private static final String NUMBER_OF_ZANATA_LANGUAGES_PROPERTY = "topicIndex.numberOfZanataLocales";
+	private static final String TOTAL_ZANATA_SYNC_TIME_PROPERTY = "topicIndex.zanataSyncTime";
 	private static final Logger log = Logger.getLogger("SkynetZanataSyncService");
 
 	/** Jackson object mapper */
@@ -37,13 +38,44 @@ public class Main
 	private static final String zanataUsername = System.getProperty(CommonConstants.ZANATA_USERNAME_PROPERTY);
 	private static final String zanataProject = System.getProperty(CommonConstants.ZANATA_PROJECT_PROPERTY);
 	private static final String zanataVersion = System.getProperty(CommonConstants.ZANATA_PROJECT_VERSION_PROPERTY);
+	private static Integer numLocales = 1;
+	/** The total time it should take to sync with Zanata */
+	private static Integer syncTime = 0;
+	
+	/** Static initialisation block to read system properties */
+	static {
+		try
+		{
+			Main.numLocales = Integer.parseInt(System.getProperty(NUMBER_OF_ZANATA_LANGUAGES_PROPERTY));
+		}
+		catch (final NumberFormatException ex)
+		{
+			
+		}
+		finally
+		{
+			/* Stop divide by zero */
+			if (Main.numLocales == 0)
+				Main.numLocales = 1;
+		}
+		
+		try
+		{
+			Main.syncTime = Integer.parseInt(System.getProperty(TOTAL_ZANATA_SYNC_TIME_PROPERTY));
+		}
+		catch (final NumberFormatException ex)
+		{
+			
+		}
+	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args)
 	{
-
+		final long startTime = System.currentTimeMillis();
+		
 		RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
 
 		try
@@ -54,6 +86,8 @@ public class Main
 			log.info("Zanata Token: " + zanataToken);
 			log.info("Zanata Project: " + zanataProject);
 			log.info("Zanata Project Version: " + zanataVersion);
+			log.info("Total Sync Time: " + syncTime / 1000.0 + " seconds or " + syncTime / 1000.0 / 60.0 + " minutes");
+			log.info("Estimated Number Of Locales: " + numLocales);
 
 			/* Some sanity checking */
 			if (skynetServer == null || skynetServer.trim().isEmpty() || zanataServer == null || zanataServer.trim().isEmpty() || zanataToken == null || zanataToken.trim().isEmpty() || zanataUsername == null || zanataUsername.trim().isEmpty() || zanataProject == null || zanataProject.trim().isEmpty()
@@ -70,8 +104,20 @@ public class Main
 			/* Get the Zanata resources */
 			final ZanataInterface zanataInterface = new ZanataInterface();
 			final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
-			final List<String> existingZanataResources = new ArrayList<String>();			
-			System.out.println("Found " + zanataResources.size() + " topics in Zanata.");
+			final List<String> existingZanataResources = new ArrayList<String>();	
+			
+			final int numberZanataTopics = zanataResources.size();
+			
+			System.out.println("Found " + numberZanataTopics + " topics in Zanata.");
+			
+			/* Let the worker threads know how long they should spend on each locale and topic */
+			if (ZanataPullWorkQueue.getInstance().getNumThreads() != 0 && numberZanataTopics != 0 && numLocales != 0)
+			{
+				final long timePerTopicPerLocale = syncTime / numberZanataTopics / numLocales * ZanataPullWorkQueue.getInstance().getNumThreads();
+				ZanataPullTopicThread.setSyncTimePerTopicPerLocale(timePerTopicPerLocale);
+				
+				System.out.println("Each sync request will take at least " + (timePerTopicPerLocale / 1000.0) + " seconds");
+			}
 
 			// Get the Skynet Resources			
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
@@ -173,6 +219,12 @@ public class Main
 		catch (Exception ex)
 		{
 			ExceptionUtilities.handleException(ex);
+		}
+		finally
+		{
+			final long endTime = System.currentTimeMillis();
+			final long duration = endTime - startTime;
+			System.out.println("Total sync time was " + duration / 1000.0 + " seconds or " + duration / 1000.0 / 60.0 + " minutes or " + duration / 1000.0 / 60.0 / 60.0 + " hours");
 		}
 	}
 

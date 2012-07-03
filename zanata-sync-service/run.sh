@@ -7,6 +7,9 @@ TOKEN=b6d7044e9ee3b2447c28fb7c50d86d98
 PROJECT=skynet-topics
 PROJECT_VERSION=1
 MAINCLASS=Main
+NUMBER_LOCALES=25
+# 1 hour in milliseconds
+TOTAL_SYNC_TIME=3600000
 
 java -DtopicIndex.zanataServer=${ZANATA_SERVER} \
 -DtopicIndex.zanataUsername=${USERNAME} \
@@ -14,4 +17,6 @@ java -DtopicIndex.zanataServer=${ZANATA_SERVER} \
 -DtopicIndex.zanataProject=${PROJECT} \
 -DtopicIndex.zanataProjectVersion=${PROJECT_VERSION} \
 -DtopicIndex.skynetServer=${REST_SERVER} \
+-DtopicIndex.numberOfZanataLocales=${NUMBER_LOCALES} \
+-DtopicIndex.zanataSyncTime=${TOTAL_SYNC_TIME} \
 -cp target/classes:target/lib/* ${MAINCLASS}

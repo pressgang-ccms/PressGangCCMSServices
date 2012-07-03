@@ -32,6 +32,17 @@ public class ZanataPullTopicThread implements Runnable
 	private final RESTTopicV1 translatedHistoricalTopic;
 	private final RESTInterfaceV1 skynetClient;
 	private final ZanataInterface zanataInterface = new ZanataInterface();
+	private static long syncTimePerTopicPerLocale;
+	
+	public static long getSyncTimePerTopicPerLocale()
+	{
+		return syncTimePerTopicPerLocale;
+	}
+	
+	public static void setSyncTimePerTopicPerLocale(final long syncTimePerTopicPerLocale)
+	{
+		ZanataPullTopicThread.syncTimePerTopicPerLocale = syncTimePerTopicPerLocale;
+	}
 
 	public ZanataPullTopicThread(final RESTTopicV1 topic, final String skynetServerUrl)
 	{
@@ -58,6 +69,8 @@ public class ZanataPullTopicThread implements Runnable
 
 				for (final LocaleId locale : locales)
 				{
+					final long startTime = System.currentTimeMillis();
+										
 					if (zanataInterface.getTranslationsExists(zanataId, locale))
 					{
 						/* find a translation */
@@ -190,6 +203,19 @@ public class ZanataPullTopicThread implements Runnable
 							log.info("Finished pulling translations for " + zanataId + " locale " + locale);
 						}
 					}
+					
+					/* work out how long to sleep for */
+					final long endTime = System.currentTimeMillis();					
+					final long duration = endTime - startTime;
+					final long sleep = syncTimePerTopicPerLocale - duration;
+					final long fixedSleep = sleep < 0 ? 0 : sleep;
+					
+					System.out.println("Rate limiting by sleeping for " + fixedSleep / 1000.0 + " seconds");
+					
+					Thread.sleep(fixedSleep);
+					
+					System.out.println("Sleep done");
+					
 				}
 
 				/* Save the new Translated Topic Datas */
