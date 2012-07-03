@@ -210,11 +210,9 @@ public class ZanataPullTopicThread implements Runnable
 					final long sleep = getSyncTimePerTopicPerLocale() - duration;
 					final long fixedSleep = sleep < 0 ? 0 : sleep;
 					
-					System.out.print("Rate limiting by sleeping for " + fixedSleep / 1000.0 + " seconds. ");
+					System.out.println("Rate limiting by sleeping for " + fixedSleep / 1000.0 + " seconds. ");
 					
 					Thread.sleep(fixedSleep);
-					
-					System.out.println("Sleep done");
 					
 				}
 
