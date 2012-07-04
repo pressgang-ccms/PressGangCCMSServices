@@ -212,7 +212,16 @@ public class ZanataPullTopicThread implements Runnable
 					
 					System.out.println("Rate limiting by sleeping for " + fixedSleep / 1000.0 + " seconds. ");
 					
-					Thread.sleep(fixedSleep);
+					try
+					{
+						Thread.sleep(fixedSleep);
+					}
+					catch (final InterruptedException ex)
+					{
+						// todo: if we interrupt this thread (possibly for an early exit with CTRL-C) then
+						// we will have to do something intelligent with this exception.
+						// see http://www.ibm.com/developerworks/java/library/j-jtp05236/index.html or http://www.javaspecialists.co.za/archive/Issue056.html
+					}
 					
 				}
 
