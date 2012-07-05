@@ -2,7 +2,6 @@ package com.redhat.topicindex.component.topicrenderer.utils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -53,6 +52,7 @@ import com.redhat.topicindex.rest.exceptions.InvalidParameterException;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
+import com.redhat.topicindex.zanata.ZanataDetails;
 
 public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> extends BaseStompRunnable
 {
@@ -222,7 +222,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					{
 						/* add the standard boilerplate xml */
 						/* currently disabled until how the additions should be displayed are figured out */
-						xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
+						xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date(), new ZanataDetails());
 	
 						/* Generate the note for the translated topics relationships that haven't been translated */
 						if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
@@ -414,7 +414,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 				else
 				{
 					/* add the standard boilerplate xml */
-					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date());
+					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date(), new ZanataDetails());
 	
 					/* render the topic html */
 					final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);

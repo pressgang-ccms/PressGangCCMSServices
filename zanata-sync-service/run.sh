@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ZANATA_SERVER=https://translate.engineering.redhat.com
+ZANATA_SERVER=https://translate.zanata.org/zanata/
 REST_SERVER=http://localhost:8080/TopicIndex/seam/resource/rest
 USERNAME=admin
 TOKEN=b6d7044e9ee3b2447c28fb7c50d86d98

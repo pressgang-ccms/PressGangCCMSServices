@@ -42,6 +42,6 @@ java \
 -DtopicIndex.stompMessageServerQueue=${QUEUE} \
 -DtopicIndex.skynetServer=${REST_SERVER} \
 -DtopicIndex.spellCheckQuery=${QUERY} \
--jar target/spellchecker-service-0.0.1-SNAPSHOT.jar
-#-cp ./target/classes:./target/lib/* ${MAINCLASS}
+-cp ./target/classes:./target/lib/* ${MAINCLASS}
+#-jar target/spellchecker-service-0.0.1-SNAPSHOT.jar
 

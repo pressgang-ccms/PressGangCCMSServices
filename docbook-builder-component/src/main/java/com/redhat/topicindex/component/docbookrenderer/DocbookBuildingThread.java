@@ -54,6 +54,7 @@ import com.redhat.topicindex.rest.exceptions.InvalidParameterException;
 import com.redhat.topicindex.rest.expand.ExpandDataDetails;
 import com.redhat.topicindex.rest.expand.ExpandDataTrunk;
 import com.redhat.topicindex.rest.sharedinterface.RESTInterfaceV1;
+import com.redhat.topicindex.zanata.ZanataDetails;
 
 import com.redhat.contentspec.ContentSpec;
 import com.redhat.contentspec.builder.DocbookBuilder;
@@ -174,7 +175,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			 */
 			final String searchTagsUrl = CommonConstants.FULL_SERVER_URL + "/CustomSearchTopicList.seam?" + buildDocbookMessage.getQuery().replaceAll(";", "&amp;");
 
-			buildAndEmailFromTopics(RESTTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, CommonConstants.DEFAULT_LOCALE);
+			buildAndEmailFromTopics(RESTTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, CommonConstants.DEFAULT_LOCALE, buildDocbookMessage.getZanataDetails());
 		}
 		else
 		{
@@ -249,7 +250,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 				return;
 			}
 
-			buildAndEmailFromTopics(RESTTranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, locale);
+			buildAndEmailFromTopics(RESTTranslatedTopicV1.class, topics, buildDocbookMessage.getDocbookOptions(), searchTagsUrl, locale, buildDocbookMessage.getZanataDetails());
 		}
 		else
 		{
@@ -422,7 +423,8 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		return translatedTopic;
 	}
 
-	private <T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T, U> topics, final DocbookBuildingOptions docbookBuildingOptions, final String searchTagsUrl, final String locale)
+	private <T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T, U> topics, final DocbookBuildingOptions docbookBuildingOptions, 
+			final String searchTagsUrl, final String locale, final ZanataDetails zanataDetails)
 	{
 		if (this.isShutdownRequested())
 		{
@@ -455,7 +457,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 
 			try
 			{
-				final DocbookBuilder<RESTTopicV1, RESTTopicCollectionV1> builder = new DocbookBuilder<RESTTopicV1, RESTTopicCollectionV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
+				final DocbookBuilder<RESTTopicV1, RESTTopicCollectionV1> builder = new DocbookBuilder<RESTTopicV1, RESTTopicCollectionV1>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE, zanataDetails);
 				final HashMap<String, byte[]> buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl);
 
 				/*
