@@ -12,10 +12,15 @@ import org.zanata.rest.dto.resource.TextFlow;
 import org.zanata.rest.dto.resource.TextFlowTarget;
 import org.zanata.rest.dto.resource.TranslationsResource;
 
+import com.redhat.contentspec.ContentSpec;
+import com.redhat.contentspec.processor.ContentSpecParser;
+import com.redhat.contentspec.utils.ContentSpecUtilities;
 import com.redhat.ecs.commonutils.ExceptionUtilities;
 import com.redhat.ecs.commonutils.XMLUtilities;
+import com.redhat.ecs.constants.CommonConstants;
 import com.redhat.topicindex.rest.collections.RESTTranslatedTopicCollectionV1;
 import com.redhat.topicindex.rest.collections.RESTTranslatedTopicStringCollectionV1;
+import com.redhat.topicindex.rest.entities.ComponentBaseTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTopicV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicStringV1;
 import com.redhat.topicindex.rest.entities.interfaces.RESTTranslatedTopicV1;
@@ -26,6 +31,7 @@ public class ZanataPullTopicThread implements Runnable
 {
 
 	private static final Logger log = Logger.getLogger(ZanataPullTopicThread.class);
+	private static final String skynetServer = System.getProperty(CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY);
 
 	private static final String XML_ENCODING = "UTF-8";
 
@@ -175,16 +181,34 @@ public class ZanataPullTopicThread implements Runnable
 							}
 							translatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopicStrings);
 
-							/* get a Document from the stored historical XML */
-							final Document xml = XMLUtilities.convertStringToDocument(translatedHistoricalTopic.getXml());
-
-							/*
-							 * replace the translated strings, and save the result into the TranslatedTopicData entity
-							 */
-							if (xml != null)
+							if (ComponentBaseTopicV1.hasTag(translatedHistoricalTopic, CommonConstants.CONTENT_SPEC_TAG_ID))
 							{
-								XMLUtilities.replaceTranslatedStrings(xml, translations);
-								translatedTopic.explicitSetXml(XMLUtilities.convertDocumentToString(xml, XML_ENCODING));
+								/* Parse the Content Spec stored in the XML Field */
+								final ContentSpecParser parser = new ContentSpecParser(skynetServer);
+								
+								/*
+								 * replace the translated strings, and save the result into the TranslatedTopicData entity
+								 */
+								if (parser.parse(translatedHistoricalTopic.getXml()))
+								{
+									final ContentSpec spec = parser.getContentSpec();
+									ContentSpecUtilities.replaceTranslatedStrings(spec, translations);
+									translatedTopic.explicitSetXml(spec.toString());
+								}
+							}
+							else
+							{
+								/* get a Document from the stored historical XML */
+								final Document xml = XMLUtilities.convertStringToDocument(translatedHistoricalTopic.getXml());
+	
+								/*
+								 * replace the translated strings, and save the result into the TranslatedTopicData entity
+								 */
+								if (xml != null)
+								{
+									XMLUtilities.replaceTranslatedStrings(xml, translations);
+									translatedTopic.explicitSetXml(XMLUtilities.convertDocumentToString(xml, XML_ENCODING));
+								}
 							}
 
 							/* Only save the data if the content has changed */

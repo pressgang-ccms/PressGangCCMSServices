@@ -123,11 +123,12 @@ public class Main
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
 			final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails("translatedtopics"));
 			final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
+			final ExpandDataTrunk expandTopicTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TAGS_NAME));
 			final ExpandDataTrunk expandTopicTranslations = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TRANSLATEDTOPICS_NAME));
 			final ExpandDataTrunk expandTopicTranslationStrings = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TRANSLATEDTOPICSTRING_NAME));
 
 			expandTopicTranslations.setBranches(CollectionUtilities.toArrayList(expandTopicTranslationStrings));
-			expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations));
+			expandTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslations, expandTopicTags));
 			expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopic));
 			expand.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopic));
 			
@@ -147,7 +148,7 @@ public class Main
 			if (translatedTopics != null && translatedTopics.getItems() != null)
 			{
 				for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.getItems())
-				{
+				{				
 					final String zanataId = ComponentTranslatedTopicV1.returnZanataId(translatedTopic);
 
 					if (!translatedTopicsMap.containsKey(zanataId))

@@ -66,5 +66,12 @@
   		<artifactId>zanata-rest-client</artifactId>
   		<version>1.5.0</version>
   	</dependency>
+  	
+  	<!-- CSP based libraries -->
+  	<dependency>
+		<groupId>com.redhat.contentspec</groupId>
+		<artifactId>csprocessor</artifactId>
+		<version>0.0.2-SNAPSHOT</version>
+	</dependency>
   </dependencies>
 </project>
