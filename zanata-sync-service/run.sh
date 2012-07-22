@@ -11,6 +11,12 @@ NUMBER_LOCALES=25
 # 1 hour in milliseconds
 TOTAL_SYNC_TIME=3600000
 
+# Get the directory hosting the script. This is important if the script is called from 
+# another working directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd ${DIR}
+
 java -DtopicIndex.zanataServer=${ZANATA_SERVER} \
 -DtopicIndex.zanataUsername=${USERNAME} \
 -DtopicIndex.zanataToken=${TOKEN} \
