@@ -8,6 +8,12 @@ PASS=guest
 QUEUE=jms.queue.SkynetTopicRenderQueue
 MAINCLASS=com.redhat.topicindex.component.topicrenderer.Main
 
+# Get the directory hosting the script. This is important if the script is called from 
+# another working directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd ${DIR}
+
 java -DtopicIndex.stompMessageServer=${STOMP_SERVER} \
 -DtopicIndex.stompMessageServerPort=${PORT} \
 -DtopicIndex.stompMessageServerUser=${USER} \

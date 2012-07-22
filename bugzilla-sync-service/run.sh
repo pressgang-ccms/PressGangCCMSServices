@@ -6,6 +6,12 @@ BUGZILLA_USERNAME=pressgang-ccms-dev@redhat.com
 BUGZILLA_PASSWORD=password
 MAINCLASS=Main
 
+# Get the directory hosting the script. This is important if the script is called from 
+# another working directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd ${DIR}
+
 java -DtopicIndex.bugzillaUrl=${BUGZILLA_URL} \
 -DtopicIndex.bugzillaUsername=${BUGZILLA_USERNAME} \
 -DtopicIndex.bugzillaPassword=${BUGZILLA_PASSWORD} \

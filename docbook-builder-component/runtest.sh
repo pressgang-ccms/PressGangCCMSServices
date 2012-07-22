@@ -16,6 +16,12 @@ CONTENTS_INLINE_XML_ELEMENTS=title,term
 NUMBER_OF_THREADS=1
 MAINCLASS=com.redhat.topicindex.component.docbookrenderer.Main
 
+# Get the directory hosting the script. This is important if the script is called from 
+# another working directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd ${DIR}
+
 echo "java -Xmx1024m \
 -Dmail.smtp.host=${SMTP} \
 -DtopicIndex.stompMessageServer=${STOMP_SERVER} \
