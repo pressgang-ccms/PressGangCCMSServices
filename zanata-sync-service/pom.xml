@@ -1,15 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-	<artifactId>topicindex</artifactId>
-	<groupId>com.redhat</groupId>
+	<artifactId>services</artifactId>
+	<groupId>org.jboss.pressgangccms</groupId>
 	<version>0.0.1-SNAPSHOT</version>
 	<relativePath>..</relativePath>
   </parent>
-  <groupId>com.redhat.topicindex</groupId>
+  <groupId>org.jboss.pressgangccms.services</groupId>
   <artifactId>zanata-sync-service</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>Zanata Sync Service</name>
+  <name>PressGang CCMS Zanata Sync Service</name>
   
   <build>
     <plugins>
@@ -71,7 +71,7 @@
   	<dependency>
 		<groupId>com.redhat.contentspec</groupId>
 		<artifactId>csprocessor</artifactId>
-		<version>0.0.2-SNAPSHOT</version>
+		<version>0.0.3-SNAPSHOT</version>
 	</dependency>
   </dependencies>
 </project>
