@@ -14,10 +14,10 @@ import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgangccms.contentspec.SpecTopic;
-import org.jboss.pressgangccms.docbook.compiling.DocbookBuildType;
 import org.jboss.pressgangccms.docbook.compiling.DocbookBuildingOptions;
-import org.jboss.pressgangccms.docbook.compiling.DocbookRendererMessage;
 import org.jboss.pressgangccms.docbook.constants.DocbookBuilderConstants;
+import org.jboss.pressgangccms.docbook.messaging.DocbookBuildType;
+import org.jboss.pressgangccms.docbook.messaging.DocbookRendererMessage;
 import org.jboss.pressgangccms.docbook.processing.XMLPreProcessor;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
@@ -87,16 +87,22 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 			synchronized (RenderingThread.class)
 			{
 				if (constants == null)
+				{
 					constants = client.getJSONBlobConstant(DocbookBuilderConstants.ROCBOOK_DTD_BLOB_ID, "");
+				}
 			}
 
 			/* Get the id of the topic we are updating */
 			final DocbookRendererMessage message = mapper.readValue(this.getMessage(), DocbookRendererMessage.class);
 
 			if (message.entityType == DocbookBuildType.TOPIC)
+			{
 				renderTopic(client, message.entityId);
+			}
 			else if (message.entityType == DocbookBuildType.TRANSLATEDTOPIC)
+			{
 				renderTranslatedTopic(client, message.entityId);
+			}
 		}
 		catch (final Exception ex)
 		{
@@ -165,11 +171,14 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 			/* Get the translated topic id for easier debugging */
 			Integer translatedTopicId = null;
 			final Field translatedTopicIdField;
-			try {
+			try
+			{
 				translatedTopicIdField = translatedTopic.getClass().getDeclaredField("translatedTopicId");
 				translatedTopicIdField.setAccessible(true);
 				translatedTopicId = (Integer)translatedTopicIdField.get(translatedTopic);
-			} catch (Exception ex) {
+			}
+			catch (Exception ex)
+			{
 				ExceptionUtilities.handleException(ex);
 			}
 			
@@ -181,7 +190,8 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 			
 			final XMLValidator validator = new XMLValidator();
 
-			try {
+			try
+			{
 				final Document doc = XMLUtilities.convertStringToDocument(translatedTopic.getXml());
 				if (doc != null)
 				{
@@ -466,7 +476,9 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 				imageId = imageId.replace("images/", "");
 				final int periodIndex = imageId.lastIndexOf(".");
 				if (periodIndex != -1)
+				{
 					imageId = imageId.substring(0, periodIndex);
+				}
 
 				/*
 				 * at this point imageId should be an integer that is the id of the image uploaded in skynet. We will leave the validation of imageId to the
