@@ -211,7 +211,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					specTopic.setTopic(translatedTopic);
 					
 					final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
-					xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
+					xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, null, false);
 					xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
 					processInternalImageFiles(doc, specTopic);
 	
@@ -404,7 +404,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
-				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, false);
+				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, null, false);
 				xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
 				processInternalImageFiles(doc, specTopic);
 	
