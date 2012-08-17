@@ -4,10 +4,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.core.PathSegment;
+
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.components.ComponentTranslatedTopicV1;
+import org.jboss.pressgangccms.rest.v1.entities.RESTStringConstantV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTopicV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTranslatedTopicV1;
 import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataDetails;
@@ -20,7 +23,9 @@ import org.jboss.pressgangccms.zanata.ZanataConstants;
 import org.jboss.pressgangccms.zanata.ZanataInterface;
 import org.jboss.resteasy.client.ProxyFactory;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
+import org.jboss.resteasy.specimpl.PathSegmentImpl;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.zanata.common.LocaleId;
 import org.zanata.rest.dto.resource.ResourceMeta;
 
 public class Main
@@ -42,6 +47,8 @@ public class Main
 	private static Integer numLocales = 1;
 	/** The total time it should take to sync with Zanata */
 	private static Integer syncTime = 0;
+	/** The XML Element Properties constant file */
+	private static RESTStringConstantV1 xmlElementProperties;
 	
 	/** Static initialisation block to read system properties */
 	static {
@@ -102,8 +109,21 @@ public class Main
 			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
 			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
 			
+			/* Get the XML Element transformation constants */
+			xmlElementProperties = client.getJSONStringConstant(CommonConstants.XML_ELEMENTS_STRING_CONSTANT_ID, "");
+			
+			/* Get the Locale constants */
+			final RESTStringConstantV1 localeConstant = client.getJSONStringConstant(CommonConstants.LOCALES_STRING_CONSTANT_ID, "");
+			final List<String> locales = CollectionUtilities.replaceStrings(CollectionUtilities.sortAndReturn(CollectionUtilities.toArrayList(localeConstant.getValue().split("[\\s\r\n]*,[\\s\r\n]*"))), "_", "-");
+			final List<LocaleId> localeIds = new ArrayList<LocaleId>();
+			for (final String locale : locales)
+			{
+				localeIds.add(LocaleId.fromJavaName(locale));
+			}
+			
 			/* Get the Zanata resources */
 			final ZanataInterface zanataInterface = new ZanataInterface();
+			zanataInterface.getLocaleManager().setLocales(localeIds);
 			final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
 			final List<String> existingZanataResources = new ArrayList<String>();	
 			
@@ -140,8 +160,12 @@ public class Main
 			// convert the ExpandDataTrunk to an encoded JSON String
 			
 			final String expandString = mapper.writeValueAsString(expand);
+			
+			/* Add the default locale to the query so that we don't download all the translations */
+			final String query = "query;locale1=" + CommonConstants.DEFAULT_LOCALE + "1";
+			final PathSegment path = new PathSegmentImpl(query, false);
 
-			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopics(expandString);
+			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(path, expandString);
 			System.out.println("Found " + translatedTopics.getItems().size() + " topics in Skynet.");
 
 			// Loop through and find the zanata ID and relevant original topics
@@ -185,7 +209,7 @@ public class Main
 				 * Pull each topic in a separate thread to decrease total
 				 * processing time
 				 */
-				ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(translatedTopicsMap.get(zanataId), skynetServer));
+				ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(translatedTopicsMap.get(zanataId), skynetServer, xmlElementProperties));
 
 				/* add the zanata id to the list of existing resources */
 				existingZanataResources.add(zanataId);
@@ -285,7 +309,7 @@ public class Main
 						 * Pull the data from zanata for the new translated
 						 * topic
 						 */
-						ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(historicalTopic, skynetServer));
+						ZanataPullWorkQueue.getInstance().execute(new ZanataPullTopicThread(historicalTopic, skynetServer, xmlElementProperties));
 					}
 				}
 			}
