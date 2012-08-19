@@ -259,20 +259,17 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 						catch (final TransformerException ex)
 						{
 							updatedTranslatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-							updatedTranslatedTopicV1.explicitSetXmlErrors(ex.toString());
 						}
 					}
 				}
 				else
 				{
 					updatedTranslatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-					updatedTranslatedTopicV1.explicitSetXmlErrors(validator.getErrorText());
 				}
 			}
 			catch (SAXException ex)
 			{
 				updatedTranslatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-				updatedTranslatedTopicV1.explicitSetXmlErrors(ex.getMessage());
 			}
 			
 			/* Set the last changed date to the current date/time */
@@ -439,20 +436,17 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					catch (final TransformerException ex)
 					{
 						updatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-						updatedTopicV1.explicitSetXmlErrors(ex.toString());
 					}
 				}
 			}
 			else
 			{
 				updatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-				updatedTopicV1.explicitSetXmlErrors(validator.getErrorText());
 			}
 		}
 		catch (SAXException ex)
 		{
 			updatedTopicV1.explicitSetHtml(DocbookBuilderConstants.XSL_ERROR_TEMPLATE);
-			updatedTopicV1.explicitSetXmlErrors(ex.getMessage());
 		}
 
 		client.updateJSONTopic("", updatedTopicV1);
