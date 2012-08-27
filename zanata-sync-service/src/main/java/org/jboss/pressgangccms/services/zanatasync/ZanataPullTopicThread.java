@@ -1,13 +1,8 @@
 package org.jboss.pressgangccms.services.zanatasync;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-
 import org.apache.log4j.Logger;
 import org.jboss.pressgangccms.contentspec.ContentSpec;
 import org.jboss.pressgangccms.contentspec.structures.StringToCSNodeCollection;
@@ -15,18 +10,16 @@ import org.jboss.pressgangccms.contentspec.utils.ContentSpecUtilities;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicStringCollectionV1;
 import org.jboss.pressgangccms.rest.v1.components.ComponentBaseTopicV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTStringConstantV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTopicV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTranslatedTopicStringV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTranslatedTopicV1;
 import org.jboss.pressgangccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
-import org.jboss.pressgangccms.utils.common.CollectionUtilities;
-import org.jboss.pressgangccms.utils.common.DocBookUtilities;
 import org.jboss.pressgangccms.utils.common.ExceptionUtilities;
 import org.jboss.pressgangccms.utils.common.XMLUtilities;
 import org.jboss.pressgangccms.utils.constants.CommonConstants;
 import org.jboss.pressgangccms.utils.structures.StringToNodeCollection;
 import org.jboss.pressgangccms.zanata.ZanataInterface;
+import org.jboss.pressgangccms.zanata.ZanataTranslation;
 import org.jboss.resteasy.client.ProxyFactory;
 import org.w3c.dom.Document;
 
@@ -50,9 +43,6 @@ public class ZanataPullTopicThread implements Runnable
 	private final RESTInterfaceV1 skynetClient;
 	private final ZanataInterface zanataInterface = new ZanataInterface();
 	private static long syncTimePerTopicPerLocale;
-	private final ArrayList<String> verbatimElements;
-	private final ArrayList<String> inlineElements;
-	private final ArrayList<String> contentsInlineElements;
 	
 	synchronized public static long getSyncTimePerTopicPerLocale()
 	{
@@ -64,30 +54,14 @@ public class ZanataPullTopicThread implements Runnable
 		ZanataPullTopicThread.syncTimePerTopicPerLocale = syncTimePerTopicPerLocale;
 	}
 
-	public ZanataPullTopicThread(final RESTTopicV1 topic, final String skynetServerUrl, final RESTStringConstantV1 xmlElementProperties)
+	public ZanataPullTopicThread(final RESTTopicV1 topic, final String skynetServerUrl)
 	{
 		this.translatedHistoricalTopic = topic;
 		this.skynetClient = ProxyFactory.create(RESTInterfaceV1.class, skynetServerUrl);
-		
-		final Properties prop = new Properties();
-		try
-		{
-			prop.load(new StringReader(xmlElementProperties.getValue()));
-		}
-		catch (IOException e)
-		{
-			log.error("The XML Elements Properties file couldn't be loaded as a property file");
-		}
-		final String verbatimElementsString = prop.getProperty(CommonConstants.VERBATIM_XML_ELEMENTS_PROPERTY_KEY);
-		final String inlineElementsString = prop.getProperty(CommonConstants.INLINE_XML_ELEMENTS_PROPERTY_KEY);
-		final String contentsInlineElementsString = prop.getProperty(CommonConstants.CONTENTS_INLINE_XML_ELEMENTS_PROPERTY_KEY);
-		
-		verbatimElements = verbatimElementsString == null ? new ArrayList<String>() : CollectionUtilities.toArrayList(verbatimElementsString.split("[\\s]*,[\\s]*"));
-		inlineElements = inlineElementsString == null ? new ArrayList<String>() : CollectionUtilities.toArrayList(inlineElementsString.split("[\\s]*,[\\s]*"));
-		contentsInlineElements = contentsInlineElementsString == null ? new ArrayList<String>() : CollectionUtilities.toArrayList(contentsInlineElementsString.split("[\\s]*,[\\s]*"));
 	}
 
-	@Override
+	@SuppressWarnings("deprecation")
+    @Override
 	public void run()
 	{
 		final List<LocaleId> locales = zanataInterface.getZanataLocales();
@@ -155,11 +129,14 @@ public class ZanataPullTopicThread implements Runnable
 							/*
 							 * a mapping of the original strings to their translations
 							 */
+							final Map<String, ZanataTranslation> translationDetails = new HashMap<String, ZanataTranslation>();
 							final Map<String, String> translations = new HashMap<String, String>();
 
 							final List<TextFlowTarget> textFlowTargets = translationsResource.getTextFlowTargets();
 							final List<TextFlow> textFlows = originalTextResource.getTextFlows();
-							int i = 0;
+							
+							double wordCount = 0;
+		                    double totalWordCount = 0;
 
 							/* map the translation to the original resource */
 							for (final TextFlow textFlow : textFlows)
@@ -168,15 +145,17 @@ public class ZanataPullTopicThread implements Runnable
 								{
 									if (textFlowTarget.getResId().equals(textFlow.getId()))
 									{
-										translations.put(textFlow.getContent(), textFlowTarget.getContent());
-										i++;
+									    translationDetails.put(textFlow.getContent(), new ZanataTranslation(textFlowTarget));
+									    translations.put(textFlow.getContent(), textFlowTarget.getContent());
+									    wordCount += textFlow.getContent().split(" ").length;
 										break;
 									}
 								}
+								totalWordCount += textFlow.getContent().split(" ").length;
 							}
 
 							/* Set the translation completion status */
-							translatedTopic.explicitSetTranslationPercentage((int) (i / ((double) textFlows.size()) * 100.0f));
+							translatedTopic.explicitSetTranslationPercentage((int) ( wordCount / totalWordCount * 100.0f));
 
 							/* The collection used to modify the TranslatedTopicString entities */
 							RESTTranslatedTopicStringCollectionV1 translatedTopicStrings = new RESTTranslatedTopicStringCollectionV1();
@@ -216,13 +195,14 @@ public class ZanataPullTopicThread implements Runnable
 									for (final StringToCSNodeCollection original : stringToNodeCollections)
 									{
 										final String originalText = original.getTranslationString();
-										final String translation = translations.get(originalText);
+										final ZanataTranslation translation = translationDetails.get(originalText);
 
 										if (translation != null)
 										{
 											final RESTTranslatedTopicStringV1 translatedTopicString = new RESTTranslatedTopicStringV1();
 											translatedTopicString.explicitSetOriginalString(originalText);
-											translatedTopicString.explicitSetTranslatedString(translation);
+											translatedTopicString.explicitSetTranslatedString(translation.getTranslation());
+											translatedTopicString.explicitSetFuzzyTranslation(translation.isFuzzy());
 											translatedTopicString.setAddItem(true);
 	
 											translatedTopicStrings.addItem(translatedTopicString);
@@ -240,23 +220,31 @@ public class ZanataPullTopicThread implements Runnable
 								final Document xml = XMLUtilities.convertStringToDocument(translatedHistoricalTopic.getXml());
 								if (xml != null)
 								{
-									DocBookUtilities.setSectionTitle(translatedHistoricalTopic.getTitle(), xml);
-									final String formattedXML = XMLUtilities.convertNodeToString(xml, verbatimElements, inlineElements, contentsInlineElements, true);
-									final Document fixedXml = XMLUtilities.convertStringToDocument(formattedXML);
 									
-									final List<StringToNodeCollection> stringToNodeCollections = XMLUtilities.getTranslatableStrings(fixedXml, false);
+									final List<StringToNodeCollection> stringToNodeCollectionsV2 = XMLUtilities.getTranslatableStringsV2(xml, false);
+									final List<StringToNodeCollection> stringToNodeCollectionsV1 = XMLUtilities.getTranslatableStringsV1(xml, false);
+									
+									/* merge the two string to node collections */
+									for (final StringToNodeCollection stringToNodeCollectionV1 : stringToNodeCollectionsV1)
+									{
+									    if (!stringToNodeCollectionsV1.contains(stringToNodeCollectionV1))
+									    {
+									        stringToNodeCollectionsV2.add(stringToNodeCollectionV1);
+									    }
+									}
 									
 									/* save the strings to TranslatedTopicString entities */							
-									for (final StringToNodeCollection original : stringToNodeCollections)
+									for (final StringToNodeCollection original : stringToNodeCollectionsV2)
 									{
 										final String originalText = original.getTranslationString();
-										final String translation = translations.get(originalText);
+										final ZanataTranslation translation = translationDetails.get(originalText);
 	
 										if (translation != null)
 										{
 											final RESTTranslatedTopicStringV1 translatedTopicString = new RESTTranslatedTopicStringV1();
 											translatedTopicString.explicitSetOriginalString(originalText);
-											translatedTopicString.explicitSetTranslatedString(translation);
+											translatedTopicString.explicitSetTranslatedString(translation.getTranslation());
+                                            translatedTopicString.explicitSetFuzzyTranslation(translation.isFuzzy());
 											translatedTopicString.setAddItem(true);
 		
 											translatedTopicStrings.addItem(translatedTopicString);
@@ -267,10 +255,10 @@ public class ZanataPullTopicThread implements Runnable
 									/*
 									 * replace the translated strings, and save the result into the TranslatedTopicData entity
 									 */
-									if (fixedXml != null)
+									if (xml != null)
 									{
-										XMLUtilities.replaceTranslatedStrings(fixedXml, translations);
-										translatedTopic.explicitSetXml(XMLUtilities.convertDocumentToString(fixedXml, XML_ENCODING));
+										XMLUtilities.replaceTranslatedStrings(xml, translations, stringToNodeCollectionsV2);
+										translatedTopic.explicitSetXml(XMLUtilities.convertDocumentToString(xml, XML_ENCODING));
 									}
 								}
 							}
