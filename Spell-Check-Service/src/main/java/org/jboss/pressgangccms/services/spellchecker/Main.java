@@ -13,6 +13,7 @@ import net.htmlparser.jericho.Source;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgangccms.docbook.processing.XMLPreProcessor;
+import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
 import org.jboss.pressgangccms.rest.v1.collections.RESTPropertyTagCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTagCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
@@ -28,7 +29,6 @@ import org.jboss.pressgangccms.utils.common.CollectionUtilities;
 import org.jboss.pressgangccms.utils.common.ExceptionUtilities;
 import org.jboss.pressgangccms.utils.common.XMLUtilities;
 import org.jboss.pressgangccms.utils.services.ServiceStarter;
-import org.jboss.resteasy.client.ProxyFactory;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
@@ -102,8 +102,7 @@ public class Main
 			System.out.println("Main.Main() - Getting topics from query " + query);
 
 			/* Get the topics */
-			RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
-			final RESTInterfaceV1 restClient = ProxyFactory.create(RESTInterfaceV1.class, serviceStarter.getSkynetServer());
+			final RESTInterfaceV1 restClient = PressGangCCMSProxyFactory.create(serviceStarter.getSkynetServer()).getRESTInterfaceClient();
 
 			final PathSegment pathSegment = new PathSegmentImpl(query, false);
 

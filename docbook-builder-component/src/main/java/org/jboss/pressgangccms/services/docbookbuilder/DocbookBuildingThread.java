@@ -35,6 +35,7 @@ import org.jboss.pressgangccms.docbook.compiling.DocbookBuildingOptions;
 import org.jboss.pressgangccms.docbook.constants.DocbookBuilderConstants;
 import org.jboss.pressgangccms.docbook.messaging.BuildDocbookMessage;
 import org.jboss.pressgangccms.docbook.messaging.DocbookBuildType;
+import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.base.BaseRestCollectionV1;
@@ -56,8 +57,8 @@ import org.jboss.pressgangccms.utils.constants.CommonConstants;
 import org.jboss.pressgangccms.utils.services.ServiceStarter;
 import org.jboss.pressgangccms.utils.services.stomp.BaseStompRunnable;
 import org.jboss.pressgangccms.zanata.ZanataDetails;
-import org.jboss.resteasy.client.ProxyFactory;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
+
 import com.redhat.contentspec.builder.DocbookBuilder;
 import com.redhat.contentspec.structures.CSDocbookBuildingOptions;
 
@@ -74,7 +75,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 	public DocbookBuildingThread(final ServiceStarter serviceStarter, final Client client, final String message, final Map<String, String> headers, final boolean shutdownRequested)
 	{
 		super(client, serviceStarter, message, headers, shutdownRequested);
-		this.restClient = ProxyFactory.create(RESTInterfaceV1.class, serviceStarter.getSkynetServer());
+		this.restClient = PressGangCCMSProxyFactory.create(serviceStarter.getSkynetServer()).getRESTInterfaceClient();
 		try
 		{
 			rocbookdtd = restClient.getJSONBlobConstant(DocbookBuilderConstants.ROCBOOK_DTD_BLOB_ID, "");

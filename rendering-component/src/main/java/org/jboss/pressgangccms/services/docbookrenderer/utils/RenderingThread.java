@@ -19,6 +19,7 @@ import org.jboss.pressgangccms.docbook.constants.DocbookBuilderConstants;
 import org.jboss.pressgangccms.docbook.messaging.DocbookBuildType;
 import org.jboss.pressgangccms.docbook.messaging.DocbookRendererMessage;
 import org.jboss.pressgangccms.docbook.processing.XMLPreProcessor;
+import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.base.BaseRestCollectionV1;
@@ -46,7 +47,6 @@ import org.jboss.pressgangccms.utils.services.ServiceStarter;
 import org.jboss.pressgangccms.utils.services.stomp.BaseStompRunnable;
 import org.jboss.pressgangccms.utils.structures.Pair;
 import org.jboss.pressgangccms.zanata.ZanataDetails;
-import org.jboss.resteasy.client.ProxyFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -68,7 +68,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 	{
 		super(client, serviceStarter, message, headers, shutdownRequested);
 		docbookBuildingOptions.setInsertSurveyLink(false);
-		this.client = ProxyFactory.create(RESTInterfaceV1.class, this.getServiceStarter().getSkynetServer());
+		this.client = PressGangCCMSProxyFactory.create(this.getServiceStarter().getSkynetServer()).getRESTInterfaceClient();
 	}
 
 	@Override

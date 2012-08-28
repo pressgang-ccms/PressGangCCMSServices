@@ -8,6 +8,7 @@ import javax.ws.rs.core.PathSegment;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.components.ComponentTranslatedTopicV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTStringConstantV1;
@@ -21,7 +22,6 @@ import org.jboss.pressgangccms.utils.common.ExceptionUtilities;
 import org.jboss.pressgangccms.utils.constants.CommonConstants;
 import org.jboss.pressgangccms.zanata.ZanataConstants;
 import org.jboss.pressgangccms.zanata.ZanataInterface;
-import org.jboss.resteasy.client.ProxyFactory;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
@@ -105,7 +105,7 @@ public class Main
 			}
 
 			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
-			final RESTInterfaceV1 client = ProxyFactory.create(RESTInterfaceV1.class, skynetServer);
+			final RESTInterfaceV1 client = PressGangCCMSProxyFactory.create(skynetServer).getRESTInterfaceClient();
 			
 			/* Get the Locale constants */
 			final RESTStringConstantV1 localeConstant = client.getJSONStringConstant(CommonConstants.LOCALES_STRING_CONSTANT_ID, "");
