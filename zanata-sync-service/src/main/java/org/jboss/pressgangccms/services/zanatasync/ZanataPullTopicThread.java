@@ -259,7 +259,10 @@ public class ZanataPullTopicThread implements Runnable
             
             final List<StringToNodeCollection> stringToNodeCollectionsV2 = XMLUtilities.getTranslatableStringsV2(xml, false);
             final List<StringToNodeCollection> stringToNodeCollectionsV1 = XMLUtilities.getTranslatableStringsV1(xml, false);
+            
+            /* Used to hold the list of StringToNode's that match the translations pulled form Zanata */
             final List<StringToNodeCollection> stringToNodeCollections = new ArrayList<StringToNodeCollection>();
+            /* Used to hold a duplicate list of StringToNode's so we can remove the originals from the above List*/
             final List<StringToNodeCollection> tempStringToNodeCollection = new ArrayList<StringToNodeCollection>();
             
             /* Add any StringToNode's that match the original translations */
@@ -275,6 +278,7 @@ public class ZanataPullTopicThread implements Runnable
                 }
             }
             
+            /* Add any StringToNode's that match the original translations and weren't added already by the V2 method*/
             for (final StringToNodeCollection stringToNodeCollectionV1 : stringToNodeCollectionsV1)
             {
                 for (final String originalString : translations.keySet())
@@ -362,7 +366,7 @@ public class ZanataPullTopicThread implements Runnable
              */
             if (xml != null)
             {
-                XMLUtilities.replaceTranslatedStrings(xml, translations, stringToNodeCollectionsV2);
+                XMLUtilities.replaceTranslatedStrings(xml, translations, stringToNodeCollections);
                 translatedTopic.explicitSetXml(XMLUtilities.convertDocumentToString(xml, XML_ENCODING));
             }
         }
