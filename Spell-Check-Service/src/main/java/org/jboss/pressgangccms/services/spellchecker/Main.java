@@ -102,7 +102,7 @@ public class Main
 			System.out.println("Main.Main() - Getting topics from query " + query);
 
 			/* Get the topics */
-			final RESTInterfaceV1 restClient = PressGangCCMSProxyFactory.create(serviceStarter.getSkynetServer()).getRESTInterfaceClient();
+			final RESTInterfaceV1 restClient = PressGangCCMSProxyFactory.create(serviceStarter.getSkynetServer()).getRESTInterfaceV1Client();
 
 			final PathSegment pathSegment = new PathSegmentImpl(query, false);
 

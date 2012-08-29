@@ -75,7 +75,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 	public DocbookBuildingThread(final ServiceStarter serviceStarter, final Client client, final String message, final Map<String, String> headers, final boolean shutdownRequested)
 	{
 		super(client, serviceStarter, message, headers, shutdownRequested);
-		this.restClient = PressGangCCMSProxyFactory.create(serviceStarter.getSkynetServer()).getRESTInterfaceClient();
+		this.restClient = PressGangCCMSProxyFactory.create(serviceStarter.getSkynetServer()).getRESTInterfaceV1Client();
 		try
 		{
 			rocbookdtd = restClient.getJSONBlobConstant(DocbookBuilderConstants.ROCBOOK_DTD_BLOB_ID, "");

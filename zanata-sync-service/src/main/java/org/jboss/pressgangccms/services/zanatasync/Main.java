@@ -105,7 +105,7 @@ public class Main
 			}
 
 			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
-			final RESTInterfaceV1 client = PressGangCCMSProxyFactory.create(skynetServer).getRESTInterfaceClient();
+			final RESTInterfaceV1 client = PressGangCCMSProxyFactory.create(skynetServer).getRESTInterfaceV1Client();
 			
 			/* Get the Locale constants */
 			final RESTStringConstantV1 localeConstant = client.getJSONStringConstant(CommonConstants.LOCALES_STRING_CONSTANT_ID, "");
@@ -190,7 +190,7 @@ public class Main
 			expandSingle.setBranches(CollectionUtilities.toArrayList(expandTopic));
 			final String expandSingleString = mapper.writeValueAsString(expandSingle);
 			
-			final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(694, expandSingleString);
+			final RESTTranslatedTopicV1 translatedTopic = client.getJSONTranslatedTopic(1276, expandSingleString);
 			final String myZanataId = ComponentTranslatedTopicV1.returnZanataId(translatedTopic);
 
 			if (!translatedTopicsMap.containsKey(myZanataId))

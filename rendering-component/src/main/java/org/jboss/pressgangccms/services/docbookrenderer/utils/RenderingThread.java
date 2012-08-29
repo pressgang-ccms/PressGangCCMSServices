@@ -68,7 +68,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 	{
 		super(client, serviceStarter, message, headers, shutdownRequested);
 		docbookBuildingOptions.setInsertSurveyLink(false);
-		this.client = PressGangCCMSProxyFactory.create(this.getServiceStarter().getSkynetServer()).getRESTInterfaceClient();
+		this.client = PressGangCCMSProxyFactory.create(this.getServiceStarter().getSkynetServer()).getRESTInterfaceV1Client();
 	}
 
 	@Override

@@ -59,7 +59,7 @@ public class Main
 			final ObjectMapper mapper = new ObjectMapper();
 			
 			/* Create a REST Client interface */
-			final RESTInterfaceV1 client = PressGangCCMSProxyFactory.create(skynetServer).getRESTInterfaceClient();
+			final RESTInterfaceV1 client = PressGangCCMSProxyFactory.create(skynetServer).getRESTInterfaceV1Client();
 
 			/* Get the topics from Skynet that have bugs assigned to them */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
