@@ -78,6 +78,7 @@ public class ZanataPullTopicThread implements Runnable
 
 				final RESTTranslatedTopicCollectionV1 changedTranslatedTopics = new RESTTranslatedTopicCollectionV1();
 				final RESTTranslatedTopicCollectionV1 newTranslatedTopics = new RESTTranslatedTopicCollectionV1();
+				final RESTTranslatedTopicStringCollectionV1 changedTranslatedTopicStrings = new RESTTranslatedTopicStringCollectionV1();
 
 				for (final LocaleId locale : locales)
 				{
@@ -161,11 +162,11 @@ public class ZanataPullTopicThread implements Runnable
 							final boolean changed;
 							if (ComponentBaseTopicV1.hasTag(translatedHistoricalTopic, CommonConstants.CONTENT_SPEC_TAG_ID))
 							{
-								changed = processContentSpec(translatedTopic, translationDetails, translations);
+								changed = processContentSpec(translatedTopic, translationDetails, translations, changedTranslatedTopicStrings);
 							}
 							else
 							{
-							    changed = processTopic(translatedTopic, translationDetails, translations);
+							    changed = processTopic(translatedTopic, translationDetails, translations, changedTranslatedTopicStrings);
 							}
 
 							/* Only save the data if the content has changed */
@@ -216,6 +217,12 @@ public class ZanataPullTopicThread implements Runnable
 				{
 					skynetClient.updateJSONTranslatedTopics("", changedTranslatedTopics);
 				}
+				
+				/* Save all the changed Translated Topic Strings */
+                if (changedTranslatedTopicStrings.getItems() != null && !changedTranslatedTopicStrings.getItems().isEmpty())
+                {
+                    skynetClient.updateJSONTranslatedTopicStrings("", changedTranslatedTopicStrings);
+                }
 
 				log.info("Finished pulling translations for " + zanataId);
 			}
@@ -233,11 +240,13 @@ public class ZanataPullTopicThread implements Runnable
      * @param translatedTopic The Translated Topic to update.
      * @param translationDetails The mapping of Original Translation strings to Zanata Translation information.
      * @param translations A direct mapping of Original strings to Translation strings.
+     * @param changedTranslatedTopicStrings A collection of existing TranslatedTopicString entities that need updating.
      * @return True if anything in the translated topic changed, otherwise false.
      * @throws SAXException Thrown if the XML in the historical topic has invalid XML and can't be parsed.
      */
 	@SuppressWarnings("deprecation")
-    protected boolean processTopic(final RESTTranslatedTopicV1 translatedTopic, final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations) throws SAXException
+    protected boolean processTopic(final RESTTranslatedTopicV1 translatedTopic, final Map<String, ZanataTranslation> translationDetails,
+            final Map<String, String> translations, final RESTTranslatedTopicStringCollectionV1 changedTranslatedTopicStrings) throws SAXException
 	{
 	    /* The collection used to modify the TranslatedTopicString entities */
         final RESTTranslatedTopicStringCollectionV1 translatedTopicStrings = new RESTTranslatedTopicStringCollectionV1();
@@ -250,21 +259,33 @@ public class ZanataPullTopicThread implements Runnable
             
             final List<StringToNodeCollection> stringToNodeCollectionsV2 = XMLUtilities.getTranslatableStringsV2(xml, false);
             final List<StringToNodeCollection> stringToNodeCollectionsV1 = XMLUtilities.getTranslatableStringsV1(xml, false);
+            final List<StringToNodeCollection> stringToNodeCollections = new ArrayList<StringToNodeCollection>();
+            final List<StringToNodeCollection> tempStringToNodeCollection = new ArrayList<StringToNodeCollection>();
             
-            /* merge the two string to node collections */
-            for (final StringToNodeCollection stringToNodeCollectionV1 : stringToNodeCollectionsV1)
+            /* Add any StringToNode's that match the original translations */
+            for (final StringToNodeCollection stringToNodeCollectionV2 : stringToNodeCollectionsV2)
             {
-                if (!stringToNodeCollectionsV1.contains(stringToNodeCollectionV1))
+                for (final String originalString : translations.keySet())
                 {
-                    stringToNodeCollectionsV2.add(stringToNodeCollectionV1);
+                    if (originalString.equals(stringToNodeCollectionV2.getTranslationString()))
+                    {
+                        stringToNodeCollections.add(stringToNodeCollectionV2);
+                        tempStringToNodeCollection.add(stringToNodeCollectionV2);
+                    }
                 }
             }
             
-            /* create a temporary collection that we can freely remove items from */
-            final List<StringToNodeCollection> tempStringToNodeCollection = new ArrayList<StringToNodeCollection>();
-            for (final StringToNodeCollection stringToNodeCollection : stringToNodeCollectionsV2)
+            for (final StringToNodeCollection stringToNodeCollectionV1 : stringToNodeCollectionsV1)
             {
-                tempStringToNodeCollection.add(stringToNodeCollection);
+                for (final String originalString : translations.keySet())
+                {
+                    if (originalString.equals(stringToNodeCollectionV1.getTranslationString()) 
+                            && !stringToNodeCollections.contains(stringToNodeCollectionV1))
+                    {
+                        stringToNodeCollections.add(stringToNodeCollectionV1);
+                        tempStringToNodeCollection.add(stringToNodeCollectionV1);
+                    }
+                }
             }
             
             // Remove or update any existing translation strings
@@ -274,7 +295,7 @@ public class ZanataPullTopicThread implements Runnable
                 {
                     boolean found = false;
                     
-                    for (final StringToNodeCollection original : stringToNodeCollectionsV2)
+                    for (final StringToNodeCollection original : stringToNodeCollections)
                     {
                         final String originalText = original.getTranslationString();
                         
@@ -286,21 +307,15 @@ public class ZanataPullTopicThread implements Runnable
                             final ZanataTranslation translation = translationDetails.get(originalText);
                             
                             // Check the translations still match
-                            if (!translation.getTranslation().equals(existingString.getTranslatedString()))
+                            if (!translation.getTranslation().equals(existingString.getTranslatedString())
+                                    || translation.isFuzzy() != existingString.getFuzzyTranslation())
                             {
                                 changed = true;
                                 
-                                existingString.setTranslatedString(translation.getTranslation());
-                                existingString.setAddItem(true);
-                            }
-                            
-                            // Check if the string is still fuzzy
-                            if (translation.isFuzzy() != existingString.getFuzzyTranslation())
-                            {
-                                changed = true;
+                                existingString.explicitSetTranslatedString(translation.getTranslation());               
+                                existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
                                 
-                                existingString.setFuzzyTranslation(translation.isFuzzy());
-                                existingString.setAddItem(true);
+                                changedTranslatedTopicStrings.addItem(existingString);
                             }
                         }
                     }
@@ -308,10 +323,11 @@ public class ZanataPullTopicThread implements Runnable
                     // If the original String no longer exists then remove it (this shouldn't happen)
                     if (!found)
                     {
+                        changed = true;
+                        
                         existingString.setRemoveItem(true);
+                        translatedTopicStrings.addItem(existingString);
                     }
-                    
-                    translatedTopicStrings.addItem(existingString);
                 }
             }
 
@@ -334,7 +350,12 @@ public class ZanataPullTopicThread implements Runnable
                     translatedTopicStrings.addItem(translatedTopicString);
                 }
             }
-            translatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopicStrings);
+            
+            /* Set any strings to be Added or Removed */ 
+            if (translatedTopicStrings.getItems() != null && !translatedTopicStrings.getItems().isEmpty())
+            {
+                translatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopicStrings);
+            }
 
             /*
              * replace the translated strings, and save the result into the TranslatedTopicData entity
@@ -356,10 +377,12 @@ public class ZanataPullTopicThread implements Runnable
      * @param translatedTopic The Translated Topic to update.
      * @param translationDetails The mapping of Original Translation strings to Zanata Translation information.
      * @param translations A direct mapping of Original strings to Translation strings.
+     * @param changedTranslatedTopicStrings A collection of existing TranslatedTopicString entities that need updating.
      * @return True if anything in the translated topic changed, otherwise false.
      * @throws Exception Thrown if there is an error in the Content Specification syntax.
      */
-	protected boolean processContentSpec(final RESTTranslatedTopicV1 translatedTopic, final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations) throws Exception
+	protected boolean processContentSpec(final RESTTranslatedTopicV1 translatedTopic, final Map<String, ZanataTranslation> translationDetails,
+	        final Map<String, String> translations, final RESTTranslatedTopicStringCollectionV1 changedTranslatedTopicStrings) throws Exception
 	{
 	    /* The collection used to modify the TranslatedTopicString entities */
         final RESTTranslatedTopicStringCollectionV1 translatedTopicStrings = new RESTTranslatedTopicStringCollectionV1();
@@ -405,21 +428,15 @@ public class ZanataPullTopicThread implements Runnable
                                 final ZanataTranslation translation = translationDetails.get(originalText);
                                 
                                 // Check the translations still match
-                                if (!translation.getTranslation().equals(existingString.getTranslatedString()))
+                                if (!translation.getTranslation().equals(existingString.getTranslatedString())
+                                        || translation.isFuzzy() != existingString.getFuzzyTranslation())
                                 {
                                     changed = true;
                                     
-                                    existingString.setTranslatedString(translation.getTranslation());
-                                    existingString.setAddItem(true);
-                                }
-                                
-                                // Check if the string is still fuzzy
-                                if (translation.isFuzzy() != existingString.getFuzzyTranslation())
-                                {
-                                    changed = true;
+                                    existingString.explicitSetTranslatedString(translation.getTranslation());               
+                                    existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
                                     
-                                    existingString.setFuzzyTranslation(translation.isFuzzy());
-                                    existingString.setAddItem(true);
+                                    changedTranslatedTopicStrings.addItem(existingString);
                                 }
                             }
                         }
@@ -427,10 +444,11 @@ public class ZanataPullTopicThread implements Runnable
                         // If the original String no longer exists then remove it (this shouldn't happen)
                         if (!found)
                         {
+                            changed = true;
+                            
                             existingString.setRemoveItem(true);
+                            translatedTopicStrings.addItem(existingString);
                         }
-                        
-                        translatedTopicStrings.addItem(existingString);
                     }
                 }
                 
@@ -451,7 +469,12 @@ public class ZanataPullTopicThread implements Runnable
                         translatedTopicStrings.addItem(translatedTopicString);
                     }
                 }
-                translatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopicStrings);
+                
+                /* Set any strings to be Added or Removed */ 
+                if (translatedTopicStrings.getItems() != null && !translatedTopicStrings.getItems().isEmpty())
+                {
+                    translatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopicStrings);
+                }
                 
                 ContentSpecUtilities.replaceTranslatedStrings(spec, translations);
                 translatedTopic.explicitSetXml(spec.toString());
