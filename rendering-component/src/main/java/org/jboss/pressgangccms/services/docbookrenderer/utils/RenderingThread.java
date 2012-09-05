@@ -214,9 +214,6 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, null, false);
 					xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
 					processInternalImageFiles(doc, specTopic);
-	
-					xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
-					xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
 					
 					/*
 					 * Validate the topic after injections as Injections such as
@@ -404,9 +401,6 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 				xmlPreProcessor.processInjections(null, specTopic, customInjectionIds, doc, null, null, false);
 				xmlPreProcessor.processGenericInjections(null, specTopic, doc, customInjectionIds, topicTypeTagDetails, null, false);
 				processInternalImageFiles(doc, specTopic);
-	
-				xmlPreProcessor.processTopicContentFragments(specTopic, doc, null);
-				xmlPreProcessor.processTopicTitleFragments(specTopic, doc, null);
 	
 				/*
 				 * Validate the topic after injections as Injections such as

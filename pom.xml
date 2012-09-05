@@ -124,9 +124,9 @@
   </dependencies>
   <modules>
 	<module>bugzilla-sync-service</module>
-	<module>docbook-builder-service</module>
-	<module>docbook-rendering-service</module>
-	<module>spellchecker-service</module>
+	<module>docbook-builder-component</module>
+	<module>rendering-component</module>
+	<module>Spell-Check-Service</module>
 	<module>zanata-sync-service</module>
   </modules>
 </project>
