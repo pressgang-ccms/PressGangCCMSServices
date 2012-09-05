@@ -73,6 +73,25 @@ public class Main
 	 * was a break between words before the element was removed
 	 */
 	private static final String ELEMENT_PUNCTUATION_MARKER = "#";
+	
+	/** A regular expression that matches an Inject Content Fragment */
+    private static final String INJECT_CONTENT_FRAGMENT_RE =
+    /* start xml comment and 'Inject:' surrounded by optional white space */
+    "\\s*InjectText:\\s*" +
+    /* one digit block */
+    "(?<TopicIDs>(\\d+))" +
+    /* xml comment end */
+    "\\s*";
+
+    /** A regular expression that matches an Inject Content Fragment */
+    private static final String INJECT_TITLE_FRAGMENT_RE =
+    /* start xml comment and 'Inject:' surrounded by optional white space */
+    "\\s*InjectTitle:\\s*" +
+    /* one digit block */
+    "(?<TopicIDS>(\\d+))" +
+    /* xml comment end */
+    "\\s*";
+	
 	/** The Jackson mapper that converts POJOs to JSON */
 	private final ObjectMapper mapper = new ObjectMapper();
 
@@ -637,7 +656,7 @@ public class Main
 		return input.replaceAll(XREF_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll(ENTRY_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll(ENTRY_CLOSE_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_SEQUENCE_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
 				.replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_LIST_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_LISTITEMS_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
 				.replaceAll("<!--" + XMLPreProcessor.CUSTOM_ALPHA_SORT_INJECTION_LIST_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_SINGLE_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
-				.replaceAll("<!--" + XMLPreProcessor.INJECT_CONTENT_FRAGMENT_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + XMLPreProcessor.INJECT_TITLE_FRAGMENT_RE + "-->", ELEMENT_PUNCTUATION_MARKER);
+				.replaceAll("<!--" + INJECT_CONTENT_FRAGMENT_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + INJECT_TITLE_FRAGMENT_RE + "-->", ELEMENT_PUNCTUATION_MARKER);
 	}
 
 	/**
