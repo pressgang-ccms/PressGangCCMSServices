@@ -22,7 +22,8 @@ import org.jboss.pressgangccms.docbook.processing.XMLPreProcessor;
 import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
-import org.jboss.pressgangccms.rest.v1.collections.base.BaseRestCollectionV1;
+import org.jboss.pressgangccms.rest.v1.collections.base.RESTBaseCollectionItemV1;
+import org.jboss.pressgangccms.rest.v1.collections.base.RESTBaseCollectionV1;
 import org.jboss.pressgangccms.rest.v1.components.ComponentBaseTopicV1;
 import org.jboss.pressgangccms.rest.v1.components.ComponentTranslatedTopicV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTBlobConstantV1;
@@ -53,7 +54,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
-public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> extends BaseStompRunnable
+public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTBaseCollectionV1<T, U, V>, V extends RESTBaseCollectionItemV1<T, U, V>> extends BaseStompRunnable
 {
 	/** Jackson object mapper */
 	private final ObjectMapper mapper = new ObjectMapper();
@@ -231,10 +232,10 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 						xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date(), new ZanataDetails());
 	
 						/* Generate the note for the translated topics relationships that haven't been translated */
-						if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().getItems() != null)
+						if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().returnItems() != null)
 						{
 							final List<RESTTranslatedTopicV1> nonTranslatedTopics = new ArrayList<RESTTranslatedTopicV1>();
-							for (RESTTranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().getItems())
+							for (RESTTranslatedTopicV1 relatedTranslatedTopic: translatedTopic.getOutgoingRelationships().returnItems())
 							{
 								if (ComponentBaseTopicV1.returnIsDummyTopic(relatedTranslatedTopic))
 									nonTranslatedTopics.add(relatedTranslatedTopic);
@@ -425,7 +426,6 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 						final String transformedXml = XMLRenderer.transformDocbook(processedXMLWithDocType, this.getServiceStarter().getSkynetServer());
 	
 						updatedTopicV1.explicitSetHtml(transformedXml);
-						updatedTopicV1.explicitSetXmlErrors("");
 					}
 					catch (final TransformerException ex)
 					{
@@ -485,9 +485,9 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U>, U extends BaseRest
 					
 					final String locale = topic.getTopic().getLocale();
 					boolean localeImageExists = false;
-					if (imageFile != null && imageFile.getLanguageImages_OTM() != null && imageFile.getLanguageImages_OTM().getItems() != null)
+					if (imageFile != null && imageFile.getLanguageImages_OTM() != null && imageFile.getLanguageImages_OTM().returnItems() != null)
 					{
-						for (final RESTLanguageImageV1 languageImage : imageFile.getLanguageImages_OTM().getItems())
+						for (final RESTLanguageImageV1 languageImage : imageFile.getLanguageImages_OTM().returnItems())
 						{
 							if (locale.equals(languageImage.getLocale()))
 							{

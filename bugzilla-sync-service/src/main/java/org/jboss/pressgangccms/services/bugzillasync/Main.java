@@ -63,9 +63,8 @@ public class Main
 
 			/* Get the topics from Skynet that have bugs assigned to them */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();
-			
+
 			final ExpandDataDetails topicsExpand = new ExpandDataDetails("topics");
-			topicsExpand.setShowSize(true);
 			
 			final ExpandDataTrunk topics = new ExpandDataTrunk(topicsExpand);
 			
@@ -175,8 +174,7 @@ public class Main
 
 								final RESTBugzillaBugV1 removeBug = new RESTBugzillaBugV1();
 								removeBug.setId(existingBugs.get(0).getId());
-								removeBug.setRemoveItem(true);
-								updateTopic.getBugzillaBugs_OTM().addItem(removeBug);
+								updateTopic.getBugzillaBugs_OTM().addRemoveItem(removeBug);
 
 								addBug(ecsBug, updateTopic);
 							}
@@ -196,8 +194,7 @@ public class Main
 							{
 								final RESTBugzillaBugV1 removeBug = new RESTBugzillaBugV1();
 								removeBug.setId(existingBugs.get(i).getId());
-								removeBug.setRemoveItem(true);
-								updateTopic.getBugzillaBugs_OTM().addItem(removeBug);
+								updateTopic.getBugzillaBugs_OTM().addRemoveItem(removeBug);
 							}
 						}
 						else
@@ -224,7 +221,7 @@ public class Main
 			 * hasn't been processed has bugs that for some reason no longer
 			 * exist in Bugzilla.
 			 */
-			for (final RESTTopicV1 topic : topicsWithBugs.getItems())
+			for (final RESTTopicV1 topic : topicsWithBugs.returnItems())
 			{
 				if (!processedTopics.keySet().contains(topic.getId()))
 				{
@@ -233,12 +230,11 @@ public class Main
 					updateTopic.explicitSetBugzillaBugs_OTM(new RESTBugzillaBugCollectionV1());
 					processedTopics.put(topic.getId(), updateTopic);
 
-					for (final RESTBugzillaBugV1 bug : topic.getBugzillaBugs_OTM().getItems())
+					for (final RESTBugzillaBugV1 bug : topic.getBugzillaBugs_OTM().returnItems())
 					{
 						final RESTBugzillaBugV1 removeBug = new RESTBugzillaBugV1();
 						removeBug.setId(bug.getId());
-						removeBug.setRemoveItem(true);
-						updateTopic.getBugzillaBugs_OTM().addItem(removeBug);
+						updateTopic.getBugzillaBugs_OTM().addRemoveItem(removeBug);
 					}
 				}
 			}
@@ -269,7 +265,7 @@ public class Main
 			final List<RESTTopicV1> removeList = new ArrayList<RESTTopicV1>();
 			for (final Integer id : invalidIds)
 			{
-				for (final RESTTopicV1 topic : dataObjects.getItems())
+				for (final RESTTopicV1 topic : dataObjects.returnItems())
 				{
 					if (topic.getId().equals(id))
 					{
@@ -282,7 +278,7 @@ public class Main
 			/* remove them from the collection */
 			for (final RESTTopicV1 topic : removeList)
 			{
-				if (!dataObjects.getItems().remove(topic))
+				if (!dataObjects.returnItems().remove(topic))
 					System.out.println("Topic id " + topic.getId() + " could not be removed.");
 				else
 					System.out.println("Topic id " + topic.getId() + " was removed.");
@@ -303,17 +299,16 @@ public class Main
 		addBug.setBugIdExplicit(ecsBug.getID());
 		addBug.setSummaryExplicit(ecsBug.getSummary());
 		addBug.setIsOpenExplicit(ecsBug.getIsOpen());
-		addBug.setAddItem(true);
 
-		updateTopic.getBugzillaBugs_OTM().addItem(addBug);
+		updateTopic.getBugzillaBugs_OTM().addNewItem(addBug);
 	}
 
 	static private RESTTopicV1 findTopic(final Integer topicId, final RESTTopicCollectionV1 topicsWithBugs)
 	{
-		if (topicsWithBugs.getItems() == null)
+		if (topicsWithBugs.returnItems() == null)
 			return null;
 
-		for (final RESTTopicV1 topic : topicsWithBugs.getItems())
+		for (final RESTTopicV1 topic : topicsWithBugs.returnItems())
 		{
 			if (topic.getId().equals(topicId))
 				return topic;
@@ -326,10 +321,10 @@ public class Main
 	{
 		final List<RESTBugzillaBugV1> retValue = new ArrayList<RESTBugzillaBugV1>();
 
-		if (collection.getItems() == null)
+		if (collection.returnItems() == null)
 			return retValue;
 
-		for (final RESTBugzillaBugV1 element : collection.getItems())
+		for (final RESTBugzillaBugV1 element : collection.returnItems())
 		{
 			if (element.getBugId().equals(id))
 				retValue.add(element);

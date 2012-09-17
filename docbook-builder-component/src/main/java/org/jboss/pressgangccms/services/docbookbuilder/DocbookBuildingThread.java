@@ -38,7 +38,8 @@ import org.jboss.pressgangccms.docbook.messaging.DocbookBuildType;
 import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
-import org.jboss.pressgangccms.rest.v1.collections.base.BaseRestCollectionV1;
+import org.jboss.pressgangccms.rest.v1.collections.base.RESTBaseCollectionItemV1;
+import org.jboss.pressgangccms.rest.v1.collections.base.RESTBaseCollectionV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTBlobConstantV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTopicV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTranslatedTopicV1;
@@ -168,7 +169,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 
 			final RESTTopicCollectionV1 topics = restClient.getJSONTopicsWithQuery(pathSegment, expandString);
 			
-			NotificationUtilities.dumpMessageToStdOut("\t" + topics.getItems().size() + " topics returned.");
+			NotificationUtilities.dumpMessageToStdOut("\t" + topics.returnItems().size() + " topics returned.");
 
 			/*
 			 * Construct the URL that will show us the topics used in this Docbook build
@@ -267,7 +268,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		 * create dummy topics for them.
 		 */
 		final Set<Integer> excludedTopics = new HashSet<Integer>();
-		for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.getItems())
+		for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.returnItems())
 		{
 			excludedTopics.add(translatedTopic.getTopicId());
 		}
@@ -309,13 +310,13 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		
 		/* Create a mapping of Topic ID's to translated topics */
 		final Map<Integer, RESTTranslatedTopicV1> translatedTopicsToTopicIds = new HashMap<Integer, RESTTranslatedTopicV1>();
-		for (final RESTTranslatedTopicV1 topic : translatedTopics.getItems())
+		for (final RESTTranslatedTopicV1 topic : translatedTopics.returnItems())
 		{
 			translatedTopicsToTopicIds.put(topic.getTopicId(), topic);
 		}
 
 		/* create and add the dummy topics per locale */
-		for (final RESTTopicV1 topic : topics.getItems())
+		for (final RESTTopicV1 topic : topics.returnItems())
 		{
 			if (this.isShutdownRequested())
 			{
@@ -370,9 +371,9 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		if (topic.getOutgoingRelationships() != null)
 		{
 			final RESTTranslatedTopicCollectionV1 outgoingRelationships = new RESTTranslatedTopicCollectionV1();
-			if (topic.getOutgoingRelationships().getItems() != null)
+			if (topic.getOutgoingRelationships().returnItems() != null)
 			{
-				for (final RESTTopicV1 relatedTopic : topic.getOutgoingRelationships().getItems())
+				for (final RESTTopicV1 relatedTopic : topic.getOutgoingRelationships().returnItems())
 				{
 					if (this.isShutdownRequested())
 					{
@@ -397,9 +398,9 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		if (topic.getIncomingRelationships() != null)
 		{
 			final RESTTranslatedTopicCollectionV1 incomingRelationships = new RESTTranslatedTopicCollectionV1();
-			if (topic.getIncomingRelationships().getItems() != null)
+			if (topic.getIncomingRelationships().returnItems() != null)
 			{
-				for (final RESTTopicV1 relatedTopic : topic.getIncomingRelationships().getItems())
+				for (final RESTTopicV1 relatedTopic : topic.getIncomingRelationships().returnItems())
 				{
 					if (this.isShutdownRequested())
 					{
@@ -423,15 +424,16 @@ public class DocbookBuildingThread extends BaseStompRunnable
 		return translatedTopic;
 	}
 
-	private <T extends RESTBaseTopicV1<T, U>, U extends BaseRestCollectionV1<T, U>> void buildAndEmailFromTopics(final Class<T> clazz, final BaseRestCollectionV1<T, U> topics, final DocbookBuildingOptions docbookBuildingOptions, 
-			final String searchTagsUrl, final String locale, final ZanataDetails zanataDetails)
+	private <T extends RESTBaseTopicV1<T, U, V>, U extends RESTBaseCollectionV1<T, U, V>, V extends RESTBaseCollectionItemV1<T, U, V>>
+	        void buildAndEmailFromTopics(final Class<T> clazz, final U topics, final DocbookBuildingOptions docbookBuildingOptions, 
+	                final String searchTagsUrl, final String locale, final ZanataDetails zanataDetails)
 	{
 		if (this.isShutdownRequested())
 		{
 			return;
 		}
 
-		if (topics != null && topics.getItems() != null)
+		if (topics != null && topics.returnItems() != null)
 		{
 
 			final HashMap<String, byte[]> files = new HashMap<String, byte[]>();

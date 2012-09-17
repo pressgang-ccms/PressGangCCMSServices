@@ -14,13 +14,13 @@ import net.htmlparser.jericho.Source;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgangccms.docbook.processing.XMLPreProcessor;
 import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
-import org.jboss.pressgangccms.rest.v1.collections.RESTPropertyTagCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTagCollectionV1;
 import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTPropertyTagV1;
+import org.jboss.pressgangccms.rest.v1.collections.join.RESTAssignedPropertyTagCollectionV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTStringConstantV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTagV1;
 import org.jboss.pressgangccms.rest.v1.entities.RESTTopicV1;
+import org.jboss.pressgangccms.rest.v1.entities.join.RESTAssignedPropertyTagV1;
 import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataDetails;
 import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataTrunk;
 import org.jboss.pressgangccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
@@ -148,7 +148,7 @@ public class Main
 			final Dictionary customDict = Hunspell.getInstance().getDictionary("target/classes/customdict/en_US/en_US");
 
 			/* Process the topics */
-			for (final RESTTopicV1 topic : topics.getItems())
+			for (final RESTTopicV1 topic : topics.returnItems())
 			{
 				processDocument(restClient, topic, ignoreTagsList, standardDict, customDict);
 			}
@@ -188,12 +188,12 @@ public class Main
 
 		final RESTTopicV1 updateTopic = new RESTTopicV1();
 		updateTopic.setId(topic.getId());
-		updateTopic.explicitSetProperties(new RESTPropertyTagCollectionV1());
+		updateTopic.explicitSetProperties(new RESTAssignedPropertyTagCollectionV1());
 		updateTopic.explicitSetTags(new RESTTagCollectionV1());
 
 		/* Add or remove the spelling tags as needed */
 		boolean foundSpellingTag = false;
-		for (final RESTTagV1 tag : topic.getTags().getItems())
+		for (final RESTTagV1 tag : topic.getTags().returnItems())
 		{
 			if (tag.getId().equals(SPELLING_ERRORS_TAG_ID))
 			{
@@ -205,23 +205,21 @@ public class Main
 		if (spellingErrors.size() == 0 && foundSpellingTag)
 		{
 			final RESTTagV1 removeSpellingErrorTag = new RESTTagV1();
-			removeSpellingErrorTag.setRemoveItem(true);
 			removeSpellingErrorTag.setId(SPELLING_ERRORS_TAG_ID);
-			updateTopic.getTags().addItem(removeSpellingErrorTag);
+			updateTopic.getTags().addRemoveItem(removeSpellingErrorTag);
 			topicIsUpdated = true;
 		}
 		else if (spellingErrors.size() != 0 && !foundSpellingTag)
 		{
 			final RESTTagV1 removeSpellingErrorTag = new RESTTagV1();
-			removeSpellingErrorTag.setAddItem(true);
 			removeSpellingErrorTag.setId(SPELLING_ERRORS_TAG_ID);
-			updateTopic.getTags().addItem(removeSpellingErrorTag);
+			updateTopic.getTags().addNewItem(removeSpellingErrorTag);
 			topicIsUpdated = true;
 		}
 
 		/* Add or remove the grammar tags as needed */
 		boolean foundGrammarTag = false;
-		for (final RESTTagV1 tag : topic.getTags().getItems())
+		for (final RESTTagV1 tag : topic.getTags().returnItems())
 		{
 			if (tag.getId().equals(GRAMMAR_ERRORS_TAG_ID))
 			{
@@ -233,32 +231,29 @@ public class Main
 		if (doubleWords.size() == 0 && foundGrammarTag)
 		{
 			final RESTTagV1 removeGrammarErrorTag = new RESTTagV1();
-			removeGrammarErrorTag.setRemoveItem(true);
 			removeGrammarErrorTag.setId(GRAMMAR_ERRORS_TAG_ID);
-			updateTopic.getTags().addItem(removeGrammarErrorTag);
+			updateTopic.getTags().addRemoveItem(removeGrammarErrorTag);
 			topicIsUpdated = true;
 		}
 		else if (doubleWords.size() != 0 && !foundGrammarTag)
 		{
 			final RESTTagV1 grammarErrorTag = new RESTTagV1();
-			grammarErrorTag.setAddItem(true);
 			grammarErrorTag.setId(GRAMMAR_ERRORS_TAG_ID);
-			updateTopic.getTags().addItem(grammarErrorTag);
+			updateTopic.getTags().addNewItem(grammarErrorTag);
 			topicIsUpdated = true;
 		}
 		
 		/* remove any old grammar error details if none exist */
 		if (doubleWords.size() == 0)
 		{
-			for (final RESTPropertyTagV1 tag : topic.getProperties().getItems())
+			for (final RESTAssignedPropertyTagV1 tag : topic.getProperties().returnItems())
 			{
 				if (tag.getId().equals(GRAMMAR_ERRORS_PROPERTY_TAG_ID))
 				{
-					final RESTPropertyTagV1 removeGrammarErrorPropertyTag = new RESTPropertyTagV1();
+					final RESTAssignedPropertyTagV1 removeGrammarErrorPropertyTag = new RESTAssignedPropertyTagV1();
 					removeGrammarErrorPropertyTag.setId(GRAMMAR_ERRORS_PROPERTY_TAG_ID);
 					removeGrammarErrorPropertyTag.setValue(tag.getValue());
-					removeGrammarErrorPropertyTag.setRemoveItem(true);
-					updateTopic.getProperties().addItem(removeGrammarErrorPropertyTag);
+					updateTopic.getProperties().addRemoveItem(removeGrammarErrorPropertyTag);
 					topicIsUpdated = true;
 				}
 			}
@@ -267,15 +262,14 @@ public class Main
 		/* remove any old spelling error details if none exist */
 		if (spellingErrors.size() == 0)
 		{
-			for (final RESTPropertyTagV1 tag : topic.getProperties().getItems())
+			for (final RESTAssignedPropertyTagV1 tag : topic.getProperties().returnItems())
 			{
 				if (tag.getId().equals(SPELLING_ERRORS_PROPERTY_TAG_ID))
 				{
-					final RESTPropertyTagV1 removeSpellingErrorPropertyTag = new RESTPropertyTagV1();
+					final RESTAssignedPropertyTagV1 removeSpellingErrorPropertyTag = new RESTAssignedPropertyTagV1();
 					removeSpellingErrorPropertyTag.setId(SPELLING_ERRORS_PROPERTY_TAG_ID);
 					removeSpellingErrorPropertyTag.setValue(tag.getValue());
-					removeSpellingErrorPropertyTag.setRemoveItem(true);
-					updateTopic.getProperties().addItem(removeSpellingErrorPropertyTag);
+					updateTopic.getProperties().addRemoveItem(removeSpellingErrorPropertyTag);
 					topicIsUpdated = true;
 				}
 			}
@@ -299,8 +293,8 @@ public class Main
 				}
 				
 				/* Find if a grammar property tag already exists */
-				RESTPropertyTagV1 foundGrammarPropertyTag = null;
-				for (final RESTPropertyTagV1 tag : topic.getProperties().getItems())
+				RESTAssignedPropertyTagV1 foundGrammarPropertyTag = null;
+				for (final RESTAssignedPropertyTagV1 tag : topic.getProperties().returnItems())
 				{
 					if (tag.getId().equals(GRAMMAR_ERRORS_PROPERTY_TAG_ID))
 					{
@@ -310,10 +304,10 @@ public class Main
 				}
 
 				/* Update the database */
-				final RESTPropertyTagV1 addGrammarErrorTag;
+				final RESTAssignedPropertyTagV1 addGrammarErrorTag;
 				if (foundGrammarPropertyTag == null)
 				{
-					addGrammarErrorTag = new RESTPropertyTagV1();
+					addGrammarErrorTag = new RESTAssignedPropertyTagV1();
 					addGrammarErrorTag.setId(GRAMMAR_ERRORS_PROPERTY_TAG_ID);
 				}
 				else
@@ -325,11 +319,10 @@ public class Main
 				if (addGrammarErrorTag.getValue() == null && !addGrammarErrorTag.getValue().equals(doubleWordErrors.toString()))
 				{
 					topicIsUpdated = true;
-					
-					addGrammarErrorTag.setAddItem(true);
+
 					addGrammarErrorTag.explicitSetValue(doubleWordErrors.toString());
-		
-					updateTopic.getProperties().addItem(addGrammarErrorTag);
+
+					updateTopic.getProperties().addNewItem(addGrammarErrorTag);
 				}
 			}
 
@@ -367,8 +360,8 @@ public class Main
 				System.out.println(spellingErrorsMessage.toString());
 				
 				/* Find if a spelling property tag already exists */
-				RESTPropertyTagV1 foundSpellingPropertyTag = null;
-				for (final RESTPropertyTagV1 tag : topic.getProperties().getItems())
+				RESTAssignedPropertyTagV1 foundSpellingPropertyTag = null;
+				for (final RESTAssignedPropertyTagV1 tag : topic.getProperties().returnItems())
 				{
 					if (tag.getId().equals(SPELLING_ERRORS_PROPERTY_TAG_ID))
 					{
@@ -378,10 +371,10 @@ public class Main
 				}
 				
 				/* Update the database */
-				final RESTPropertyTagV1 addSpellingErrorTag;
+				final RESTAssignedPropertyTagV1 addSpellingErrorTag;
 				if (foundSpellingPropertyTag == null)
 				{
-					addSpellingErrorTag = new RESTPropertyTagV1();
+					addSpellingErrorTag = new RESTAssignedPropertyTagV1();
 					addSpellingErrorTag.setId(SPELLING_ERRORS_PROPERTY_TAG_ID);
 				}
 				else
@@ -393,11 +386,10 @@ public class Main
 				if (addSpellingErrorTag.getValue() == null || !addSpellingErrorTag.getValue().equals(spellingErrorsMessage.toString()))
 				{
 					topicIsUpdated = true;
-					
-					addSpellingErrorTag.setAddItem(true);
+
 					addSpellingErrorTag.explicitSetValue(spellingErrorsMessage.toString());
-	
-					updateTopic.getProperties().addItem(addSpellingErrorTag);
+
+					updateTopic.getProperties().addNewItem(addSpellingErrorTag);
 				}
 			}
 			else

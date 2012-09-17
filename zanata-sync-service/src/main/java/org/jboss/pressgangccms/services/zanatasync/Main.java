@@ -161,13 +161,13 @@ public class Main
 			final PathSegment path = new PathSegmentImpl(query, false);
 
 			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(path, expandString);
-			System.out.println("Found " + translatedTopics.getItems().size() + " topics in Skynet.");
+			System.out.println("Found " + translatedTopics.returnItems().size() + " topics in Skynet.");
 
 			// Loop through and find the zanata ID and relevant original topics
 			
-			if (translatedTopics != null && translatedTopics.getItems() != null)
+			if (translatedTopics != null && translatedTopics.returnItems() != null)
 			{
-				for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.getItems())
+				for (final RESTTranslatedTopicV1 translatedTopic : translatedTopics.returnItems())
 				{				
 					final String zanataId = ComponentTranslatedTopicV1.returnZanataId(translatedTopic);
 
@@ -286,7 +286,6 @@ public class Main
 					newTranslatedTopic.explicitSetTopicRevision(revision);
 
 					/* create the base language data */
-					newTranslatedTopic.setAddItem(true);
 					newTranslatedTopic.explicitSetXml(historicalTopic.getXml());
 					newTranslatedTopic.explicitSetLocale(resource.getLang().toString());
 					newTranslatedTopic.explicitSetTranslationPercentage(100);
