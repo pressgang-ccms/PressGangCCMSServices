@@ -2,11 +2,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>services</artifactId>
-    <groupId>org.jboss.pressgangccms</groupId>
+    <groupId>org.jboss.pressgang.ccms</groupId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
-  <groupId>org.jboss.pressgangccms.services</groupId>
+  <groupId>org.jboss.pressgang.ccms.services</groupId>
   <artifactId>docbook-rendering-service</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>PressGang CCMS Docbook Rendering Service</name>
