@@ -2,11 +2,11 @@ package org.jboss.pressgangccms.services.docbookrenderer;
 
 import java.util.Map;
 
+import org.jboss.pressgang.ccms.utils.common.NotificationUtilities;
+import org.jboss.pressgang.ccms.utils.services.ServiceStarter;
+import org.jboss.pressgang.ccms.utils.services.stomp.BaseStompServiceThread;
+import org.jboss.pressgang.ccms.utils.services.stomp.StompWorkQueue;
 import org.jboss.pressgangccms.services.docbookrenderer.utils.RenderingThread;
-import org.jboss.pressgangccms.utils.common.NotificationUtilities;
-import org.jboss.pressgangccms.utils.services.ServiceStarter;
-import org.jboss.pressgangccms.utils.services.stomp.BaseStompServiceThread;
-import org.jboss.pressgangccms.utils.services.stomp.StompWorkQueue;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 

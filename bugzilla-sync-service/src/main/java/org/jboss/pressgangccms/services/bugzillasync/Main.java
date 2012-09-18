@@ -7,17 +7,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
-import org.jboss.pressgangccms.rest.v1.collections.RESTBugzillaBugCollectionV1;
-import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTBugzillaBugV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTTopicV1;
-import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataDetails;
-import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataTrunk;
-import org.jboss.pressgangccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
-import org.jboss.pressgangccms.utils.common.CollectionUtilities;
-import org.jboss.pressgangccms.utils.common.ExceptionUtilities;
-import org.jboss.pressgangccms.utils.constants.CommonConstants;
+import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
+import org.jboss.pressgang.ccms.rest.v1.collections.RESTBugzillaBugCollectionV1;
+import org.jboss.pressgang.ccms.rest.v1.collections.RESTTopicCollectionV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTBugzillaBugV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTTopicV1;
+import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataDetails;
+import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataTrunk;
+import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
+import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
+import org.jboss.pressgang.ccms.utils.common.ExceptionUtilities;
+import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 
 import com.j2bugzilla.base.BugzillaConnector;
@@ -59,7 +59,7 @@ public class Main
 			final ObjectMapper mapper = new ObjectMapper();
 			
 			/* Create a REST Client interface */
-			final RESTInterfaceV1 client = PressGangCCMSProxyFactory.create(skynetServer).getRESTInterfaceV1Client();
+			final RESTInterfaceV1 client = PressGangCCMSProxyFactoryV1.create(skynetServer).getRESTClient();
 
 			/* Get the topics from Skynet that have bugs assigned to them */
 			final ExpandDataTrunk expand = new ExpandDataTrunk();

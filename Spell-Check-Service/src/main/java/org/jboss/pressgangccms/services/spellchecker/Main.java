@@ -12,23 +12,23 @@ import javax.ws.rs.core.PathSegment;
 import net.htmlparser.jericho.Source;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
+import org.jboss.pressgang.ccms.rest.v1.collections.RESTTagCollectionV1;
+import org.jboss.pressgang.ccms.rest.v1.collections.RESTTopicCollectionV1;
+import org.jboss.pressgang.ccms.rest.v1.collections.join.RESTAssignedPropertyTagCollectionV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTStringConstantV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTTagV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTTopicV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.join.RESTAssignedPropertyTagV1;
+import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataDetails;
+import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataTrunk;
+import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
+import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
+import org.jboss.pressgang.ccms.utils.common.ExceptionUtilities;
+import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
+import org.jboss.pressgang.ccms.utils.services.ServiceStarter;
 import org.jboss.pressgangccms.docbook.processing.XMLPreProcessor;
-import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
-import org.jboss.pressgangccms.rest.v1.collections.RESTTagCollectionV1;
-import org.jboss.pressgangccms.rest.v1.collections.RESTTopicCollectionV1;
-import org.jboss.pressgangccms.rest.v1.collections.join.RESTAssignedPropertyTagCollectionV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTStringConstantV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTTagV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTTopicV1;
-import org.jboss.pressgangccms.rest.v1.entities.join.RESTAssignedPropertyTagV1;
-import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataDetails;
-import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataTrunk;
-import org.jboss.pressgangccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
 import org.jboss.pressgangccms.services.spellchecker.data.SpellingErrorData;
-import org.jboss.pressgangccms.utils.common.CollectionUtilities;
-import org.jboss.pressgangccms.utils.common.ExceptionUtilities;
-import org.jboss.pressgangccms.utils.common.XMLUtilities;
-import org.jboss.pressgangccms.utils.services.ServiceStarter;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
@@ -121,7 +121,7 @@ public class Main
 			System.out.println("Main.Main() - Getting topics from query " + query);
 
 			/* Get the topics */
-			final RESTInterfaceV1 restClient = PressGangCCMSProxyFactory.create(serviceStarter.getSkynetServer()).getRESTInterfaceV1Client();
+			final RESTInterfaceV1 restClient = PressGangCCMSProxyFactoryV1.create(serviceStarter.getSkynetServer()).getRESTClient();
 
 			final PathSegment pathSegment = new PathSegmentImpl(query, false);
 

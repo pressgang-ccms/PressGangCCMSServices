@@ -5,13 +5,13 @@ import java.util.Map;
 
 import javax.xml.transform.TransformerException;
 
-import org.jboss.pressgangccms.rest.v1.entities.RESTBlobConstantV1;
-import org.jboss.pressgangccms.rest.v1.exceptions.InternalProcessingException;
-import org.jboss.pressgangccms.rest.v1.exceptions.InvalidParameterException;
-import org.jboss.pressgangccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
-import org.jboss.pressgangccms.utils.common.NotificationUtilities;
-import org.jboss.pressgangccms.utils.common.XSLTUtilities;
-import org.jboss.pressgangccms.utils.common.ZipUtilities;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTBlobConstantV1;
+import org.jboss.pressgang.ccms.rest.v1.exceptions.InternalProcessingException;
+import org.jboss.pressgang.ccms.rest.v1.exceptions.InvalidParameterException;
+import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
+import org.jboss.pressgang.ccms.utils.common.NotificationUtilities;
+import org.jboss.pressgang.ccms.utils.common.XSLTUtilities;
+import org.jboss.pressgang.ccms.utils.common.ZipUtilities;
 import org.jboss.resteasy.client.ProxyFactory;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;

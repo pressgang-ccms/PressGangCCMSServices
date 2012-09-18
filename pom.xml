@@ -42,29 +42,24 @@
   <dependencies>
   	<!-- PressGang CCMS libraries -->
 	<dependency>
-	    <groupId>org.jboss.pressgangccms</groupId>
+	    <groupId>org.jboss.pressgang.ccms</groupId>
 	    <artifactId>pressgang-ccms-utils</artifactId>
 	    <version>1.0-SNAPSHOT</version>
 	</dependency>
 	<dependency>
-	    <groupId>org.jboss.pressgangccms</groupId>
+	    <groupId>org.jboss.pressgang.ccms</groupId>
 	    <artifactId>pressgang-ccms-rest</artifactId>
 	    <version>1.0-SNAPSHOT</version>
 	</dependency>
 	<dependency>
-	    <groupId>org.jboss.pressgangccms</groupId>
+	    <groupId>org.jboss.pressgang.ccms</groupId>
 	    <artifactId>pressgang-ccms-zanata</artifactId>
 	    <version>1.0-SNAPSHOT</version>
 	</dependency>
 	<dependency>
-	    <groupId>org.jboss.pressgangccms</groupId>
+	    <groupId>org.jboss.pressgang.ccms</groupId>
 	    <artifactId>pressgang-ccms-contentspec</artifactId>
 	    <version>1.0-SNAPSHOT</version>
-	</dependency>
-	<dependency>
-		<groupId>com.google.code.regexp</groupId>
-		<artifactId>named-regexp</artifactId>
-		<version>0.0.2-SNAPSHOT</version>
 	</dependency>
 	
 	<dependency>

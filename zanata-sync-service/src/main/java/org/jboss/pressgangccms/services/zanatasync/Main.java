@@ -8,20 +8,20 @@ import javax.ws.rs.core.PathSegment;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.pressgangccms.rest.v1.client.PressGangCCMSProxyFactory;
-import org.jboss.pressgangccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
-import org.jboss.pressgangccms.rest.v1.components.ComponentTranslatedTopicV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTStringConstantV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTTopicV1;
-import org.jboss.pressgangccms.rest.v1.entities.RESTTranslatedTopicV1;
-import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataDetails;
-import org.jboss.pressgangccms.rest.v1.expansion.ExpandDataTrunk;
-import org.jboss.pressgangccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
-import org.jboss.pressgangccms.utils.common.CollectionUtilities;
-import org.jboss.pressgangccms.utils.common.ExceptionUtilities;
-import org.jboss.pressgangccms.utils.constants.CommonConstants;
-import org.jboss.pressgangccms.zanata.ZanataConstants;
-import org.jboss.pressgangccms.zanata.ZanataInterface;
+import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
+import org.jboss.pressgang.ccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
+import org.jboss.pressgang.ccms.rest.v1.components.ComponentTranslatedTopicV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTStringConstantV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTTopicV1;
+import org.jboss.pressgang.ccms.rest.v1.entities.RESTTranslatedTopicV1;
+import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataDetails;
+import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataTrunk;
+import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
+import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
+import org.jboss.pressgang.ccms.utils.common.ExceptionUtilities;
+import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
+import org.jboss.pressgang.ccms.zanata.ZanataConstants;
+import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
@@ -105,7 +105,7 @@ public class Main
 			}
 
 			/* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
-			final RESTInterfaceV1 client = PressGangCCMSProxyFactory.create(skynetServer).getRESTInterfaceV1Client();
+			final RESTInterfaceV1 client = PressGangCCMSProxyFactoryV1.create(skynetServer).getRESTClient();
 			
 			/* Get the Locale constants */
 			final RESTStringConstantV1 localeConstant = client.getJSONStringConstant(CommonConstants.LOCALES_STRING_CONSTANT_ID, "");

@@ -1,5 +1,5 @@
 package org.jboss.pressgangccms.services.zanatasync;
-import org.jboss.pressgangccms.utils.concurrency.BaseWorkQueue;
+import org.jboss.pressgang.ccms.utils.concurrency.BaseWorkQueue;
 
 public class ZanataPullWorkQueue extends BaseWorkQueue<ZanataPullTopicThread> {
 
