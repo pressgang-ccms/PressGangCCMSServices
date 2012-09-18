@@ -4,7 +4,7 @@ REST_SERVER=http://localhost:8080/TopicIndex/seam/resource/rest
 BUGZILLA_URL=bugzilla.redhat.com
 BUGZILLA_USERNAME=pressgang-ccms-dev@redhat.com
 BUGZILLA_PASSWORD=password
-MAINCLASS=org.jboss.pressgangccms.services.bugzillasync.Main
+MAINCLASS=org.jboss.pressgang.ccms.services.bugzillasync.Main
 
 # Get the directory hosting the script. This is important if the script is called from 
 # another working directory

@@ -11,7 +11,7 @@ PASS=guest
 QUEUE=jms.queue.SkynetDocbookBuildQueue
 SMTP=smtp.corp.redhat.com
 NUMBER_OF_THREADS=1
-MAINCLASS=org.jboss.pressgangccms.services.docbookbuilder.Main
+MAINCLASS=org.jboss.pressgang.ccms.services.docbookbuilder.Main
 
 # Get the directory hosting the script. This is important if the script is called from 
 # another working directory

@@ -11,7 +11,7 @@ PASS=guest
 QUEUE=jms.queue.SkynetDocbookTranslationBuildQueue
 SMTP=smtp.corp.redhat.com
 NUMBER_OF_THREADS=1
-MAINCLASS=org.jboss.pressgangccms.services.docbookbuilder.Main
+MAINCLASS=org.jboss.pressgang.ccms.services.docbookbuilder.Main
 
 java -Xmx1536m \
 -Dmail.smtp.host=${SMTP} \

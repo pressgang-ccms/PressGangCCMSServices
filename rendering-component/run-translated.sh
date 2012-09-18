@@ -6,7 +6,7 @@ PORT=61613
 USER=guest
 PASS=guest
 QUEUE=jms.queue.SkynetTranslatedTopicRenderQueue
-MAINCLASS=org.jboss.pressgangccms.services.docbookrenderer.Main
+MAINCLASS=org.jboss.pressgang.ccms.services.docbookrenderer.Main
 
 # Get the directory hosting the script. This is important if the script is called from 
 # another working directory
