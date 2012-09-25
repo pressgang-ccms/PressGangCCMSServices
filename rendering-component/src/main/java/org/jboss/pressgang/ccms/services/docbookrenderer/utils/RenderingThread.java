@@ -453,7 +453,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 		if (xmlDoc == null)
 			return;
 
-		final List<Node> imageDataNodes = XMLUtilities.getNodes(xmlDoc.getDocumentElement(), "imagedata");
+		final List<Node> imageDataNodes = XMLUtilities.getNodes(xmlDoc.getDocumentElement(), "imagedata", "inlinegraphic");
 		for (final Node imageDataNode : imageDataNodes)
 		{
 			final NamedNodeMap attributes = imageDataNode.getAttributes();
