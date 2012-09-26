@@ -172,11 +172,7 @@ public class Main
 							{
 								System.out.println("Updating details on bug " + bug.getID() + " for topic " + topicIdInt + ".");
 
-								final RESTBugzillaBugV1 removeBug = new RESTBugzillaBugV1();
-								removeBug.setId(existingBugs.get(0).getId());
-								updateTopic.getBugzillaBugs_OTM().addRemoveItem(removeBug);
-
-								addBug(ecsBug, updateTopic);
+								updateBug(ecsBug, existingBugs.get(0), updateTopic);
 							}
 							else
 							{
@@ -302,6 +298,16 @@ public class Main
 
 		updateTopic.getBugzillaBugs_OTM().addNewItem(addBug);
 	}
+	
+	static private void updateBug(final ECSBug ecsBug, final RESTBugzillaBugV1 bug, final RESTTopicV1 updateTopic)
+    {
+	    if (!bug.getSummary().equals(ecsBug.getSummary()))
+	        bug.setSummaryExplicit(ecsBug.getSummary());
+	    if (!bug.getIsOpen().equals(ecsBug.getIsOpen()))
+	        bug.setIsOpenExplicit(ecsBug.getIsOpen());
+
+        updateTopic.getBugzillaBugs_OTM().addUpdateItem(bug);
+    }
 
 	static private RESTTopicV1 findTopic(final Integer topicId, final RESTTopicCollectionV1 topicsWithBugs)
 	{
