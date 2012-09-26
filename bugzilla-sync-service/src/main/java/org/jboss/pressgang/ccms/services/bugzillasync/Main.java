@@ -10,6 +10,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.RESTBugzillaBugCollectionV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.RESTTopicCollectionV1;
+import org.jboss.pressgang.ccms.rest.v1.collections.items.RESTTopicCollectionItemV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTBugzillaBugV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTTopicV1;
 import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataDetails;
@@ -219,7 +220,7 @@ public class Main
 			 */
 			for (final RESTTopicV1 topic : topicsWithBugs.returnItems())
 			{
-				if (!processedTopics.keySet().contains(topic.getId()))
+				if (!processedTopics.containsKey(topic.getId()))
 				{
 					final RESTTopicV1 updateTopic = new RESTTopicV1();
 					updateTopic.setId(topic.getId());
@@ -258,23 +259,25 @@ public class Main
 			}
 
 			/* find the RESTTopicV1 objects that are invalid */
-			final List<RESTTopicV1> removeList = new ArrayList<RESTTopicV1>();
+			final List<RESTTopicCollectionItemV1> removeList = new ArrayList<RESTTopicCollectionItemV1>();
 			for (final Integer id : invalidIds)
 			{
-				for (final RESTTopicV1 topic : dataObjects.returnItems())
+				for (final RESTTopicCollectionItemV1 topicItem : dataObjects.getItems())
 				{
+				    final RESTTopicV1 topic = topicItem.getItem();
 					if (topic.getId().equals(id))
 					{
 						System.out.println("Topic id " + topic.getId() + " was found for removal.");
-						removeList.add(topic);
+						removeList.add(topicItem);
 					}
 				}
 			}
 
 			/* remove them from the collection */
-			for (final RESTTopicV1 topic : removeList)
+			for (final RESTTopicCollectionItemV1 topicItem : removeList)
 			{
-				if (!dataObjects.returnItems().remove(topic))
+			    final RESTTopicV1 topic = topicItem.getItem();
+				if (!dataObjects.getItems().remove(topicItem))
 					System.out.println("Topic id " + topic.getId() + " could not be removed.");
 				else
 					System.out.println("Topic id " + topic.getId() + " was removed.");
@@ -311,7 +314,7 @@ public class Main
 
 	static private RESTTopicV1 findTopic(final Integer topicId, final RESTTopicCollectionV1 topicsWithBugs)
 	{
-		if (topicsWithBugs.returnItems() == null)
+		if (topicsWithBugs.getItems() == null || topicsWithBugs.getItems().isEmpty())
 			return null;
 
 		for (final RESTTopicV1 topic : topicsWithBugs.returnItems())
@@ -327,7 +330,7 @@ public class Main
 	{
 		final List<RESTBugzillaBugV1> retValue = new ArrayList<RESTBugzillaBugV1>();
 
-		if (collection.returnItems() == null)
+		if (collection.getItems() == null || collection.getItems().isEmpty())
 			return retValue;
 
 		for (final RESTBugzillaBugV1 element : collection.returnItems())
