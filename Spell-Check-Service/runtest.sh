@@ -37,7 +37,7 @@ USER=guest
 PASS=guest
 QUEUE=none
 MAINCLASS=org.jboss.pressgang.ccms.services.spellchecker.Main
-QUERY="query;topicEditedInLastDays=2"
+QUERY="query;topicEditedInLastDays=2;tag268=0"
 #QUERY="query;tag19=1;tag119=1;catint5=And;tag133=1;tag132=1;tag14=0"
 
 java \

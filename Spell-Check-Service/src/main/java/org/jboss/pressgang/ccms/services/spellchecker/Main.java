@@ -322,7 +322,10 @@ public class Main
 
 					addGrammarErrorTag.explicitSetValue(doubleWordErrors.toString());
 
-					updateTopic.getProperties().addNewItem(addGrammarErrorTag);
+					if (foundGrammarPropertyTag == null)
+					    updateTopic.getProperties().addNewItem(addGrammarErrorTag);
+					else
+					    updateTopic.getProperties().addUpdateItem(addGrammarErrorTag);
 				}
 			}
 
@@ -389,7 +392,10 @@ public class Main
 
 					addSpellingErrorTag.explicitSetValue(spellingErrorsMessage.toString());
 
-					updateTopic.getProperties().addNewItem(addSpellingErrorTag);
+					if (foundSpellingPropertyTag == null)
+					    updateTopic.getProperties().addNewItem(addSpellingErrorTag);
+					else
+					    updateTopic.getProperties().addUpdateItem(addSpellingErrorTag);
 				}
 			}
 			else
