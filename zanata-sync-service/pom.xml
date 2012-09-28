@@ -6,6 +6,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<relativePath>..</relativePath>
   </parent>
+  
   <groupId>org.jboss.pressgang.ccms.services</groupId>
   <artifactId>zanata-sync-service</artifactId>
   <version>0.0.1-SNAPSHOT</version>
