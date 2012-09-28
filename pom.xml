@@ -1,132 +1,136 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.jboss.pressgang.ccms</groupId>
-  <artifactId>services</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <name>PressGang CCMS Services</name>
-  
-  <repositories>
-	<repository>
-		<id>JBoss</id>
-		<url>https://repository.jboss.org/nexus/</url>
-	</repository>
-	<repository>
-		<id>Apache</id>
-		<url>http://repository.apache.org</url>
-	</repository>
-	<repository>
-		<id>Zanata</id>
-		<url>http://repository-zanata.forge.cloudbees.com/release/</url>
-	</repository>
-	<repository>
-		<id>ECS Maven</id>
-		<url>http://ecsmaven.usersys.redhat.com/nexus/content/groups/public/</url>
-	</repository>
-  </repositories>
-  
-  <build>
-	<plugins>
-		<plugin>
-        	<groupId>org.apache.maven.plugins</groupId>
-        	<artifactId>maven-compiler-plugin</artifactId>
-        	<configuration>
-          		<source>1.7</source>
-          		<target>1.7</target>
-        	</configuration>
-      	</plugin>
-   	</plugins>
-  </build>
-  
-  <dependencies>
-  	<!-- PressGang CCMS libraries -->
-	<dependency>
-	    <groupId>org.jboss.pressgang.ccms</groupId>
-	    <artifactId>pressgang-ccms-utils</artifactId>
-	    <version>1.0-SNAPSHOT</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.jboss.pressgang.ccms</groupId>
-	    <artifactId>pressgang-ccms-rest</artifactId>
-	    <version>1.0-SNAPSHOT</version>
-	</dependency>
-	<dependency>
-		<groupId>org.jboss.pressgang.ccms</groupId>
-		<artifactId>pressgang-ccms-restv1</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.jboss.pressgang.ccms</groupId>
+	<artifactId>services</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>PressGang CCMS Services</name>
+
+	<parent>
+		<groupId>org.jboss.pressgang</groupId>
+		<artifactId>pressgang-parent</artifactId>
 		<version>1.0-SNAPSHOT</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.jboss.pressgang.ccms</groupId>
-	    <artifactId>pressgang-ccms-zanata</artifactId>
-	    <version>1.0-SNAPSHOT</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.jboss.pressgang.ccms</groupId>
-	    <artifactId>pressgang-ccms-contentspec</artifactId>
-	    <version>1.0-SNAPSHOT</version>
-	</dependency>
-	
-	<dependency>
-		<groupId>org.codehaus.jackson</groupId>
-		<artifactId>jackson-mapper-asl</artifactId>
-		<version>1.9.6</version>
-	</dependency>
-	<dependency>
-		<groupId>org.codehaus.jackson</groupId>
-		<artifactId>jackson-core-asl</artifactId>
-		<version>1.9.6</version>
-	</dependency>
-	
-	<!-- RESTEasy libraries -->
-  	<dependency>
-  		<groupId>org.jboss.resteasy</groupId>
-  		<artifactId>resteasy-atom-provider</artifactId>
-  		<version>2.3.4.Final</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.jboss.resteasy</groupId>
-  		<artifactId>resteasy-jaxrs</artifactId>
-  		<version>2.3.4.Final</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>javax.ws.rs</groupId>
-  		<artifactId>javax.ws.rs-api</artifactId>
-  		<version>2.0-m04</version>
-  	</dependency>
-	<dependency>
-  		<groupId>org.jboss.resteasy</groupId>
-  		<artifactId>resteasy-jackson-provider</artifactId>
-  		<version>2.3.4.Final</version>
-  	</dependency>
-  	
-  	<!-- Various Libraries -->
-  	<dependency>
-  		<groupId>commons-codec</groupId>
-  		<artifactId>commons-codec</artifactId>
-  		<version>1.6</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>commons-io</groupId>
-  		<artifactId>commons-io</artifactId>
-  		<version>2.1</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.apache.directory.studio</groupId>
-  		<artifactId>org.apache.commons.lang</artifactId>
-  		<version>2.6</version>
-  	</dependency>
-  	<dependency>
-  		<groupId>org.jboss.resteasy</groupId>
-  		<artifactId>resteasy-jaxb-provider</artifactId>
-  		<version>2.3.4.Final</version>
-  	</dependency>
-  </dependencies>
-  <modules>
-	<module>bugzilla-sync-service</module>
-	<module>docbook-builder-component</module>
-	<module>rendering-component</module>
-	<module>Spell-Check-Service</module>
-	<module>zanata-sync-service</module>
-  </modules>
+	</parent>
+
+	<repositories>
+		<repository>
+			<id>JBoss</id>
+			<url>https://repository.jboss.org/nexus/</url>
+		</repository>
+		<repository>
+			<id>Apache</id>
+			<url>http://repository.apache.org</url>
+		</repository>
+		<repository>
+			<id>Zanata</id>
+			<url>http://repository-zanata.forge.cloudbees.com/release/</url>
+		</repository>
+		<repository>
+			<id>SonatypeSnapshotRepository</id>
+			<name>Sonatype Snapshot Repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<!-- PressGang CCMS libraries -->
+		<dependency>
+			<groupId>org.jboss.pressgang.ccms</groupId>
+			<artifactId>pressgang-ccms-utils</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.pressgang.ccms</groupId>
+			<artifactId>pressgang-ccms-restv1</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.pressgang.ccms</groupId>
+			<artifactId>pressgang-ccms-zanata</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.pressgang.ccms</groupId>
+			<artifactId>pressgang-ccms-contentspec</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+			<version>1.9.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-core-asl</artifactId>
+			<version>1.9.6</version>
+		</dependency>
+
+		<!-- RESTEasy libraries -->
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-atom-provider</artifactId>
+			<version>2.3.4.Final</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jaxrs</artifactId>
+			<version>2.3.4.Final</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.ws.rs</groupId>
+			<artifactId>javax.ws.rs-api</artifactId>
+			<version>2.0-m04</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jackson-provider</artifactId>
+			<version>2.3.4.Final</version>
+		</dependency>
+
+		<!-- Various Libraries -->
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.studio</groupId>
+			<artifactId>org.apache.commons.lang</artifactId>
+			<version>2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jaxb-provider</artifactId>
+			<version>2.3.4.Final</version>
+		</dependency>
+	</dependencies>
+	<modules>
+		<module>bugzilla-sync-service</module>
+		<module>docbook-builder-component</module>
+		<module>rendering-component</module>
+		<module>Spell-Check-Service</module>
+		<module>zanata-sync-service</module>
+	</modules>
 </project>
