@@ -160,6 +160,7 @@ public class Main
 			final String query = "query;locale1=" + CommonConstants.DEFAULT_LOCALE + "1";
 			final PathSegment path = new PathSegmentImpl(query, false);
 
+			System.out.println("Getting the existing translations. This can take a while.");
 			final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(path, expandString);
 			System.out.println("Found " + translatedTopics.returnItems().size() + " topics in Skynet.");
 
