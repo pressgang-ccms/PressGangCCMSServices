@@ -1,9 +1,11 @@
 #!/bin/bash
 
-ZANATA_SERVER=http://zanatatest.usersys.redhat.com/
+#ZANATA_SERVER=http://zanatatest.usersys.redhat.com/
+ZANATA_SERVER=http://zanata-master-nukes.lab.eng.bne.redhat.com:8080/
 REST_SERVER=http://localhost:8080/TopicIndex/seam/resource/rest
 USERNAME=admin
-TOKEN=b6d7044e9ee3b2447c28fb7c50d86d98
+#TOKEN=b6d7044e9ee3b2447c28fb7c50d86d98
+TOKEN=1fb75f14f8c0c791b628c9ff8cd2fd75
 PROJECT=skynet-topics
 PROJECT_VERSION=1
 MAINCLASS=org.jboss.pressgang.ccms.services.zanatasync.Main
