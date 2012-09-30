@@ -27,6 +27,7 @@ import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataDetails;
 import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataTrunk;
 import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
 import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
+import org.jboss.pressgang.ccms.utils.common.ExceptionUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.utils.structures.StringToNodeCollection;
@@ -150,10 +151,10 @@ public class SyncMaster {
 
         final float resourceSize = zanataResources.size();
         float resourceProgress = 0;
-        
+
         for (final ResourceMeta resource : zanataResources) {
             try {
-                
+
                 /* Work out progress */
                 float progress = Math.round(resourceProgress / resourceSize * 100.0f);
                 ++resourceProgress;
@@ -165,7 +166,7 @@ public class SyncMaster {
                 /* get the translated topic in the CCMS */
                 final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(query,
                         getExpansion());
-                
+
                 /*
                  * zanataInterface.getLocaleManager().getLocales() can change as the responses from the Zanata server indicate
                  * that certain locales do not exist. Create a copy of the list here so we don't try to loop over a modified
@@ -173,121 +174,137 @@ public class SyncMaster {
                  */
                 final List<LocaleId> locales = new ArrayList<LocaleId>();
                 locales.addAll(zanataInterface.getLocaleManager().getLocales());
-                
+
                 final int localesSise = locales.size();
                 int localesProgress = 0;
 
                 for (final LocaleId locale : locales) {
 
-                    /* Work out progress */
-                    int thisLocalesProgress = Math.round(progress + (localesProgress / localesSise * 100.0f / resourceSize));
-                    ++localesProgress;                    
-                    
-                    log.info(thisLocalesProgress + "% Synchronising " + resource.getName() + " for locale " + locale.toString());
+                    try {
+                        /* Work out progress */
+                        int thisLocalesProgress = Math
+                                .round(progress + (localesProgress / localesSise * 100.0f / resourceSize));
+                        ++localesProgress;
 
-                    if (zanataInterface.getTranslationsExists(resource.getName(), locale)) {
-                        /* find a translation */
-                        final TranslationsResource translationsResource = zanataInterface.getTranslations(resource.getName(),
-                                locale);
-                        /* and find the original resource */
-                        final Resource originalTextResource = zanataInterface.getZanataResource(resource.getName());
+                        log.info(thisLocalesProgress + "% Synchronising " + resource.getName() + " for locale "
+                                + locale.toString());
 
-                        /* The translated topic to store the results */
-                        RESTTranslatedTopicV1 translatedTopic = null;
+                        if (zanataInterface.getTranslationsExists(resource.getName(), locale)) {
+                            /* find a translation */
+                            final TranslationsResource translationsResource = zanataInterface.getTranslations(
+                                    resource.getName(), locale);
+                            /* and find the original resource */
+                            final Resource originalTextResource = zanataInterface.getZanataResource(resource.getName());
 
-                        if (translatedTopics.returnItems().size() != 0) {
+                            /* The translated topic to store the results */
+                            RESTTranslatedTopicV1 translatedTopic = null;
 
-                            /* Find the original translation (the query results will return all locales */
-                            for (final RESTTranslatedTopicV1 transTopic : translatedTopics.returnItems()) {
-                                if (transTopic.getLocale().equals(locale.toString())) {
-                                    translatedTopic = translatedTopics.returnItems().get(0);
+                            if (translatedTopics.returnItems().size() != 0) {
+
+                                /* Find the original translation (the query results will return all locales */
+                                for (final RESTTranslatedTopicV1 transTopic : translatedTopics.returnItems()) {
+                                    if (transTopic.getLocale().equals(locale.toString())) {
+                                        translatedTopic = translatedTopics.returnItems().get(0);
+                                    }
                                 }
+
+                            } else {
+                                /*
+                                 * final String[] zanataNameSplit = resource.getName().split("-"); final Integer topicId =
+                                 * Integer.parseInt(zanataNameSplit[0]); final Integer topicRevision =
+                                 * Integer.parseInt(zanataNameSplit[1]);
+                                 * 
+                                 * translatedTopic = new RESTTranslatedTopicV1();
+                                 * translatedTopic.explicitSetLocale(locale.toString());
+                                 * translatedTopic.explicitSetTopicId(topicId);
+                                 * translatedTopic.explicitSetTopicRevision(topicRevision);
+                                 */
+                            }
+
+                            if (translatedTopic != null) {
+
+                                /* Set the current xml of the translated topic data so we can see if it has changed */
+                                final String translatedXML = translatedTopic.getXml() == null ? "" : translatedTopic.getXml();
+
+                                /*
+                                 * a mapping of the original strings to their translations
+                                 */
+                                final Map<String, ZanataTranslation> translationDetails = new HashMap<String, ZanataTranslation>();
+                                final Map<String, String> translations = new HashMap<String, String>();
+
+                                final List<TextFlowTarget> textFlowTargets = translationsResource.getTextFlowTargets();
+                                final List<TextFlow> textFlows = originalTextResource.getTextFlows();
+
+                                double wordCount = 0;
+                                double totalWordCount = 0;
+
+                                /* map the translation to the original resource */
+                                for (final TextFlow textFlow : textFlows) {
+                                    for (final TextFlowTarget textFlowTarget : textFlowTargets) {
+                                        if (textFlowTarget.getResId().equals(textFlow.getId())) {
+                                            translationDetails
+                                                    .put(textFlow.getContent(), new ZanataTranslation(textFlowTarget));
+                                            translations.put(textFlow.getContent(), textFlowTarget.getContent());
+                                            wordCount += textFlow.getContent().split(" ").length;
+                                            break;
+                                        }
+                                    }
+                                    totalWordCount += textFlow.getContent().split(" ").length;
+                                }
+
+                                /* Set the translation completion status */
+                                translatedTopic.explicitSetTranslationPercentage((int) (wordCount / totalWordCount * 100.0f));
+
+                                final boolean changed;
+                                if (ComponentBaseTopicV1
+                                        .hasTag(translatedTopic.getTopic(), CommonConstants.CONTENT_SPEC_TAG_ID)) {
+                                    changed = processContentSpec(translatedTopic, translationDetails, translations);
+                                } else {
+                                    changed = processTopic(translatedTopic, translationDetails, translations);
+                                }
+
+                                /* Only save the data if the content has changed */
+                                if (changed || !translatedXML.equals(translatedTopic.getXml())
+                                        || translatedTopic.getId() == null) {
+
+                                    /*
+                                     * make a note of the TranslatedTopicData entities that have been changed, so we can render
+                                     * them
+                                     */
+                                    final RESTTranslatedTopicV1 updatedTranslatedTopic = new RESTTranslatedTopicV1();
+                                    updatedTranslatedTopic.setId(translatedTopic.getId());
+                                    updatedTranslatedTopic.explicitSetLocale(translatedTopic.getLocale());
+                                    updatedTranslatedTopic.explicitSetTopicId(translatedTopic.getTopicId());
+                                    updatedTranslatedTopic.explicitSetTopicRevision(translatedTopic.getTopicRevision());
+                                    updatedTranslatedTopic.explicitSetXml(translatedTopic.getXml());
+                                    updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopic
+                                            .getTranslatedTopicStrings_OTM());
+
+                                    /* Save all the changed Translated Topic Datas */
+                                    client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
+
+                                    log.info(thisLocalesProgress + "% Finished synchronising translations for "
+                                            + resource.getName() + " locale " + locale);
+                                }
+
+                                log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale "
+                                        + locale);
                             }
 
                         } else {
-                            /*
-                             * final String[] zanataNameSplit = resource.getName().split("-"); final Integer topicId =
-                             * Integer.parseInt(zanataNameSplit[0]); final Integer topicRevision =
-                             * Integer.parseInt(zanataNameSplit[1]);
-                             * 
-                             * translatedTopic = new RESTTranslatedTopicV1();
-                             * translatedTopic.explicitSetLocale(locale.toString());
-                             * translatedTopic.explicitSetTopicId(topicId);
-                             * translatedTopic.explicitSetTopicRevision(topicRevision);
-                             */
+                            log.info(thisLocalesProgress + "% No translations found for " + resource.getName() + " locale "
+                                    + locale);
                         }
-
-                        if (translatedTopic != null) {
-
-                            /* Set the current xml of the translated topic data so we can see if it has changed */
-                            final String translatedXML = translatedTopic.getXml() == null ? "" : translatedTopic.getXml();
-
-                            /*
-                             * a mapping of the original strings to their translations
-                             */
-                            final Map<String, ZanataTranslation> translationDetails = new HashMap<String, ZanataTranslation>();
-                            final Map<String, String> translations = new HashMap<String, String>();
-
-                            final List<TextFlowTarget> textFlowTargets = translationsResource.getTextFlowTargets();
-                            final List<TextFlow> textFlows = originalTextResource.getTextFlows();
-
-                            double wordCount = 0;
-                            double totalWordCount = 0;
-
-                            /* map the translation to the original resource */
-                            for (final TextFlow textFlow : textFlows) {
-                                for (final TextFlowTarget textFlowTarget : textFlowTargets) {
-                                    if (textFlowTarget.getResId().equals(textFlow.getId())) {
-                                        translationDetails.put(textFlow.getContent(), new ZanataTranslation(textFlowTarget));
-                                        translations.put(textFlow.getContent(), textFlowTarget.getContent());
-                                        wordCount += textFlow.getContent().split(" ").length;
-                                        break;
-                                    }
-                                }
-                                totalWordCount += textFlow.getContent().split(" ").length;
-                            }
-
-                            /* Set the translation completion status */
-                            translatedTopic.explicitSetTranslationPercentage((int) (wordCount / totalWordCount * 100.0f));
-
-                            final boolean changed;
-                            if (ComponentBaseTopicV1.hasTag(translatedTopic.getTopic(), CommonConstants.CONTENT_SPEC_TAG_ID)) {
-                                changed = processContentSpec(translatedTopic, translationDetails, translations);
-                            } else {
-                                changed = processTopic(translatedTopic, translationDetails, translations);
-                            }
-
-                            /* Only save the data if the content has changed */
-                            if (changed || !translatedXML.equals(translatedTopic.getXml()) || translatedTopic.getId() == null) {
-
-                                /*
-                                 * make a note of the TranslatedTopicData entities that have been changed, so we can render them
-                                 */
-                                final RESTTranslatedTopicV1 updatedTranslatedTopic = new RESTTranslatedTopicV1();
-                                updatedTranslatedTopic.setId(translatedTopic.getId());
-                                updatedTranslatedTopic.explicitSetLocale(translatedTopic.getLocale());
-                                updatedTranslatedTopic.explicitSetTopicId(translatedTopic.getTopicId());
-                                updatedTranslatedTopic.explicitSetTopicRevision(translatedTopic.getTopicRevision());
-                                updatedTranslatedTopic.explicitSetXml(translatedTopic.getXml());
-                                updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopic
-                                        .getTranslatedTopicStrings_OTM());
-
-                                /* Save all the changed Translated Topic Datas */
-                                client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
-
-                                log.info(thisLocalesProgress + "% Finished synchronising translations for " + resource.getName() + " locale " + locale);
-                            }
-
-                            log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale " + locale);
-                        }
-                    } else {
-                        log.info(thisLocalesProgress + "% No translations found for " + resource.getName() + " locale " + locale);
+                    } catch (final Exception ex) {
+                        /* Error with the locale */
+                        log.error(ExceptionUtilities.getStackTrace(ex));
                     }
 
                 }
 
             } catch (final Exception ex) {
-                log.error(ex.toString());
+                /* Error with the resource */
+                log.error(ExceptionUtilities.getStackTrace(ex));
             }
         }
 
