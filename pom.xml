@@ -27,6 +27,12 @@
 			<id>Zanata</id>
 			<url>http://repository-zanata.forge.cloudbees.com/release/</url>
 		</repository>
+		<repository>
+			<id>SonatypeSnapshotRepository</id>
+			<name>Sonatype Snapshot Repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+			<layout>default</layout>
+		</repository>
 	</repositories>
 
 	<dependencies>

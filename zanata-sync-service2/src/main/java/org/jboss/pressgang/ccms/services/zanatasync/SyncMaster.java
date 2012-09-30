@@ -148,15 +148,15 @@ public class SyncMaster {
      */
     private void processZanataResources(final List<ResourceMeta> zanataResources) {
 
+        final float resourceSize = zanataResources.size();
+        float resourceProgress = 0;
+        
         for (final ResourceMeta resource : zanataResources) {
             try {
-                /*
-                 * zanataInterface.getLocaleManager().getLocales() can change as the responses from the Zanata server indicate
-                 * that certain locales do not exist. Create a copy of the list here so we don't try to loop over a modified
-                 * list.
-                 */
-                final List<LocaleId> locales = new ArrayList<LocaleId>();
-                locales.addAll(zanataInterface.getLocaleManager().getLocales());
+                
+                /* Work out progress */
+                float progress = Math.round(resourceProgress / resourceSize * 100.0f);
+                ++resourceProgress;
 
                 /* Get the translated topics in the CCMS */
                 final PathSegment query = new PathSegmentImpl("query", false);
@@ -165,10 +165,25 @@ public class SyncMaster {
                 /* get the translated topic in the CCMS */
                 final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(query,
                         getExpansion());
+                
+                /*
+                 * zanataInterface.getLocaleManager().getLocales() can change as the responses from the Zanata server indicate
+                 * that certain locales do not exist. Create a copy of the list here so we don't try to loop over a modified
+                 * list.
+                 */
+                final List<LocaleId> locales = new ArrayList<LocaleId>();
+                locales.addAll(zanataInterface.getLocaleManager().getLocales());
+                
+                final int localesSise = locales.size();
+                int localesProgress = 0;
 
                 for (final LocaleId locale : locales) {
 
-                    log.info("Synchronising " + resource.getName() + " for locale " + locale.toString());
+                    /* Work out progress */
+                    int thisLocalesProgress = Math.round(progress + (localesProgress / localesSise * 100.0f / resourceSize));
+                    ++localesProgress;                    
+                    
+                    log.info(thisLocalesProgress + "% Synchronising " + resource.getName() + " for locale " + locale.toString());
 
                     if (zanataInterface.getTranslationsExists(resource.getName(), locale)) {
                         /* find a translation */
@@ -260,13 +275,13 @@ public class SyncMaster {
                                 /* Save all the changed Translated Topic Datas */
                                 client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
 
-                                log.info("Finished synchronising translations for " + resource.getName() + " locale " + locale);
+                                log.info(thisLocalesProgress + "% Finished synchronising translations for " + resource.getName() + " locale " + locale);
                             }
 
-                            log.info("No changes were found for " + resource.getName() + " locale " + locale);
+                            log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale " + locale);
                         }
                     } else {
-                        log.info("No translations found for " + resource.getName() + " locale " + locale);
+                        log.info(thisLocalesProgress + "% No translations found for " + resource.getName() + " locale " + locale);
                     }
 
                 }

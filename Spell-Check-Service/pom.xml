@@ -14,8 +14,10 @@
 	
 	<repositories>
 		<repository>
-			<id>ECS</id>
-			<url>http://ecsmaven.usersys.redhat.com/nexus/content/groups/public/</url>
+			<id>SonatypeSnapshotRepository</id>
+			<name>Sonatype Snapshot Repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+			<layout>default</layout>
 		</repository>
 		<repository>
 			<id>JBoss</id>
