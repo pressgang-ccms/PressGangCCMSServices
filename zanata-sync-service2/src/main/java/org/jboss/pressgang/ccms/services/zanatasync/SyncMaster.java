@@ -49,14 +49,13 @@ import com.redhat.contentspec.processor.ContentSpecParser;
 
 /**
  * The class that actually does the synchronising
+ * 
  * @author Matthew Casperson
- *
+ * 
  */
 public class SyncMaster {
 
     private static final String XML_ENCODING = "UTF-8";
-    private static final String NUMBER_OF_ZANATA_LANGUAGES_PROPERTY = "topicIndex.numberOfZanataLocales";
-    private static final String TOTAL_ZANATA_SYNC_TIME_PROPERTY = "topicIndex.zanataSyncTime";
     private static final Logger log = Logger.getLogger("SkynetZanataSyncService");
 
     /** Jackson object mapper */
@@ -150,12 +149,24 @@ public class SyncMaster {
     private void processZanataResources(final List<ResourceMeta> zanataResources) {
 
         for (final ResourceMeta resource : zanataResources) {
+            try {
+                /*
+                 * zanataInterface.getLocaleManager().getLocales() can change as the responses from the Zanata server indicate
+                 * that certain locales do not exist. Create a copy of the list here so we don't try to loop over a modified
+                 * list.
+                 */
+                final List<LocaleId> locales = new ArrayList<LocaleId>();
+                locales.addAll(zanataInterface.getLocaleManager().getLocales());
 
-            final List<LocaleId> locales = zanataInterface.getLocaleManager().getLocales();
+                /* Get the translated topics in the CCMS */
+                final PathSegment query = new PathSegmentImpl("query", false);
+                query.getMatrixParameters().add(CommonFilterConstants.ZANATA_IDS_FILTER_VAR, resource.getName());
 
-            for (final LocaleId locale : locales) {
+                /* get the translated topic in the CCMS */
+                final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(query,
+                        getExpansion());
 
-                try {
+                for (final LocaleId locale : locales) {
 
                     log.info("Synchronising " + resource.getName() + " for locale " + locale.toString());
 
@@ -166,23 +177,14 @@ public class SyncMaster {
                         /* and find the original resource */
                         final Resource originalTextResource = zanataInterface.getZanataResource(resource.getName());
 
-                        final PathSegment query = new PathSegmentImpl("query", false);
-                        query.getMatrixParameters().add(CommonFilterConstants.ZANATA_IDS_FILTER_VAR, resource.getName());
-
-                        /* get the translated topic in the CCMS */
-                        final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(query,
-                                getExpansion());
-
                         /* The translated topic to store the results */
                         RESTTranslatedTopicV1 translatedTopic = null;
 
                         if (translatedTopics.returnItems().size() != 0) {
 
-                            /* The topic to place the translations into */
-                            for (final RESTTranslatedTopicV1 transTopic : translatedTopics.returnItems())
-                            {
-                                if (transTopic.getLocale().equals(locale.toString()))
-                                {
+                            /* Find the original translation (the query results will return all locales */
+                            for (final RESTTranslatedTopicV1 transTopic : translatedTopics.returnItems()) {
+                                if (transTopic.getLocale().equals(locale.toString())) {
                                     translatedTopic = translatedTopics.returnItems().get(0);
                                 }
                             }
@@ -252,11 +254,12 @@ public class SyncMaster {
                                 updatedTranslatedTopic.explicitSetTopicId(translatedTopic.getTopicId());
                                 updatedTranslatedTopic.explicitSetTopicRevision(translatedTopic.getTopicRevision());
                                 updatedTranslatedTopic.explicitSetXml(translatedTopic.getXml());
-                                updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopic.getTranslatedTopicStrings_OTM());
+                                updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopic
+                                        .getTranslatedTopicStrings_OTM());
 
                                 /* Save all the changed Translated Topic Datas */
                                 client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
-                                
+
                                 log.info("Finished synchronising translations for " + resource.getName() + " locale " + locale);
                             }
 
@@ -266,10 +269,10 @@ public class SyncMaster {
                         log.info("No translations found for " + resource.getName() + " locale " + locale);
                     }
 
-                } catch (final Exception ex) {
-                    log.error(ex.toString());
                 }
 
+            } catch (final Exception ex) {
+                log.error(ex.toString());
             }
         }
 
