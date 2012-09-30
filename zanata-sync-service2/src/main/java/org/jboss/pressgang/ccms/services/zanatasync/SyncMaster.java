@@ -204,7 +204,7 @@ public class SyncMaster {
                                 /* Find the original translation (the query results will return all locales */
                                 for (final RESTTranslatedTopicV1 transTopic : translatedTopics.returnItems()) {
                                     if (transTopic.getLocale().equals(locale.toString())) {
-                                        translatedTopic = translatedTopics.returnItems().get(0);
+                                        translatedTopic = transTopic;
                                     }
                                 }
 
@@ -286,9 +286,11 @@ public class SyncMaster {
                                     log.info(thisLocalesProgress + "% Finished synchronising translations for "
                                             + resource.getName() + " locale " + locale);
                                 }
-
-                                log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale "
+                                else
+                                {
+                                    log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale "
                                         + locale);
+                                }
                             }
 
                         } else {
