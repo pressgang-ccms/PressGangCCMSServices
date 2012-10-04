@@ -38,7 +38,7 @@
   <dependencies>	
   	<!-- j2bugzilla Extented Library -->
   	<dependency>
-  		<groupId>com.j2bugzilla</groupId>
+  		<groupId>org.jboss.pressgang.ccms</groupId>
   		<artifactId>j2bugzilla-extended</artifactId>
   		<version>1.1-SNAPSHOT</version>
   	</dependency>
