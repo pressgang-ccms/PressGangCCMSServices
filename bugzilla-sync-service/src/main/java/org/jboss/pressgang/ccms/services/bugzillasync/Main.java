@@ -3,8 +3,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
@@ -21,6 +19,8 @@ import org.jboss.pressgang.ccms.utils.common.ExceptionUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 
+import com.google.code.regexp.NamedMatcher;
+import com.google.code.regexp.NamedPattern;
 import com.j2bugzilla.base.BugzillaConnector;
 import com.j2bugzilla.base.ECSBug;
 import com.j2bugzilla.rpc.BugSearch;
@@ -54,7 +54,7 @@ public class Main
 			 * The regex pattern used to pull information out of the build id
 			 * field
 			 */
-			final Pattern pattern = Pattern.compile(CommonConstants.BUGZILLA_BUILD_ID_NAMED_RE);
+			final NamedPattern pattern = NamedPattern.compile(CommonConstants.BUGZILLA_BUILD_ID_NAMED_RE);
 
 			/* The JSON mapper */
 			final ObjectMapper mapper = new ObjectMapper();
@@ -129,7 +129,7 @@ public class Main
 				connector.executeMethod(getBug);
 				final ECSBug ecsBug = getBug.getBug();
 
-				final Matcher buildIdMatcher = pattern.matcher(ecsBug.getBuildId());
+				final NamedMatcher buildIdMatcher = pattern.matcher(ecsBug.getBuildId());
 
 				boolean foundMatch = false;
 				while (buildIdMatcher.find())
