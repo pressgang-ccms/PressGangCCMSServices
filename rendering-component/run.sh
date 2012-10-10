@@ -14,10 +14,36 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 cd ${DIR}
 
-java -DtopicIndex.stompMessageServer=${STOMP_SERVER} \
+eval java -DtopicIndex.stompMessageServer=${STOMP_SERVER} \
 -DtopicIndex.stompMessageServerPort=${PORT} \
 -DtopicIndex.stompMessageServerUser=${USER} \
 -DtopicIndex.stompMessageServerPass=${PASS} \
 -DtopicIndex.stompMessageServerQueue=${QUEUE} \
 -DtopicIndex.skynetServer=${REST_SERVER} \
--cp target/classes:target/lib/* ${MAINCLASS}
+-cp target/classes:target/lib/* ${MAINCLASS} \
+"$@" "&"
+
+PID=$!
+# Trap common signals and relay them to the service process
+trap "kill -HUP  $PID" HUP
+trap "kill -TERM $PID" INT
+trap "kill -QUIT $PID" QUIT
+trap "kill -PIPE $PID" PIPE
+trap "kill -TERM $PID" TERM
+
+# Wait until the process exits
+WAIT_STATUS=128
+while [ "$WAIT_STATUS" -ge 128 ]; do
+ wait $PID 2>/dev/null
+ WAIT_STATUS=$?
+done
+if [ "$WAIT_STATUS" -lt 127 ]; then
+ STATUS=$WAIT_STATUS
+else
+ STATUS=0
+fi
+
+# Wait for a complete shudown
+wait $PID 2>/dev/null
+
+exit $STATUS
