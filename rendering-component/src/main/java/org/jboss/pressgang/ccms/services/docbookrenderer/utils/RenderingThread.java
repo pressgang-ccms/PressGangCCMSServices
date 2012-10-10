@@ -20,8 +20,6 @@ import org.jboss.pressgang.ccms.docbook.messaging.DocbookBuildType;
 import org.jboss.pressgang.ccms.docbook.messaging.DocbookRendererMessage;
 import org.jboss.pressgang.ccms.docbook.processing.XMLPreProcessor;
 import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
-import org.jboss.pressgang.ccms.rest.v1.collections.RESTTopicCollectionV1;
-import org.jboss.pressgang.ccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.base.RESTBaseCollectionItemV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.base.RESTBaseCollectionV1;
 import org.jboss.pressgang.ccms.rest.v1.components.ComponentBaseTopicV1;
@@ -207,7 +205,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 					
-					final XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTranslatedTopicV1, RESTTranslatedTopicCollectionV1>();
+					final XMLPreProcessor xmlPreProcessor = new XMLPreProcessor();
 					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
 					specTopic.setTopic(translatedTopic);
 					
@@ -395,7 +393,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 	
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
-				final XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1> xmlPreProcessor = new XMLPreProcessor<RESTTopicV1, RESTTopicCollectionV1>();
+				final XMLPreProcessor xmlPreProcessor = new XMLPreProcessor();
 				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				

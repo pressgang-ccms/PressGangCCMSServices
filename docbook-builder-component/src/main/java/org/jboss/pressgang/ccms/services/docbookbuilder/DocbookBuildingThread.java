@@ -8,8 +8,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.mail.BodyPart;
 import javax.mail.Message;
@@ -60,6 +58,8 @@ import org.jboss.pressgang.ccms.docbook.messaging.BuildDocbookMessage;
 import org.jboss.pressgang.ccms.docbook.messaging.DocbookBuildType;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 
+import com.google.code.regexp.NamedMatcher;
+import com.google.code.regexp.NamedPattern;
 import com.redhat.contentspec.builder.DocbookBuilder;
 import com.redhat.contentspec.structures.CSDocbookBuildingOptions;
 
@@ -233,8 +233,8 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			final String searchTagsUrl = CommonConstants.FULL_SERVER_URL + "/GroupedTranslatedTopicDataLocaleList.seam?" + buildDocbookMessage.getQuery().replaceAll(";", "&amp;");
 
 			/* Find the locale for the search query */
-			final Pattern pattern = Pattern.compile(".*locale\\d*=(?<Locale>[a-zA-Z\\-]*)\\d+(;.*|$)");
-			final Matcher matcher = pattern.matcher(buildDocbookMessage.getQuery());
+			final NamedPattern pattern = NamedPattern.compile(".*locale\\d*=(?<Locale>[a-zA-Z\\-]*)\\d+(;.*|$)");
+			final NamedMatcher matcher = pattern.matcher(buildDocbookMessage.getQuery());
 			
 			String locale = CommonConstants.DEFAULT_LOCALE;
 			while(matcher.find())
@@ -445,7 +445,7 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			}
 
 			final RESTManager restManager = new RESTManager(getServiceStarter().getSkynetServer());
-			final ContentSpecGenerator<T, U> csGenerator = new ContentSpecGenerator<T, U>(restClient);
+			final ContentSpecGenerator<T, U, V> csGenerator = new ContentSpecGenerator<T, U, V>(restClient);
 
 			/* Add the topics to the cache to improve loading time */
 			restManager.getRESTEntityCache().add(topics);
