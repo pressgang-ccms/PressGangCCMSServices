@@ -168,12 +168,9 @@ public class SyncMaster {
                         getExpansion());
 
                 /*
-                 * zanataInterface.getLocaleManager().getLocales() can change as the responses from the Zanata server indicate
-                 * that certain locales do not exist. Create a copy of the list here so we don't try to loop over a modified
-                 * list.
+                 * Get a list of the locales available to sync with.
                  */
-                final List<LocaleId> locales = new ArrayList<LocaleId>();
-                locales.addAll(zanataInterface.getLocaleManager().getLocales());
+                final List<LocaleId> locales = zanataInterface.getZanataLocales();
 
                 final int localesSise = locales.size();
                 int localesProgress = 0;
