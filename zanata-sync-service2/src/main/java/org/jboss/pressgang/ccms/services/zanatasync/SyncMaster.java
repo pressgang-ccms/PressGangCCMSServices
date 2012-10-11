@@ -198,6 +198,7 @@ public class SyncMaster {
 
                             /* The translated topic to store the results */
                             RESTTranslatedTopicV1 translatedTopic = null;
+                            boolean newTranslation = false;
 
                             if (translatedTopics.returnItems().size() != 0) {
 
@@ -205,20 +206,25 @@ public class SyncMaster {
                                 for (final RESTTranslatedTopicV1 transTopic : translatedTopics.returnItems()) {
                                     if (transTopic.getLocale().equals(locale.toString())) {
                                         translatedTopic = transTopic;
+                                        break;
                                     }
                                 }
 
                             } else {
-                                /*
-                                 * final String[] zanataNameSplit = resource.getName().split("-"); final Integer topicId =
-                                 * Integer.parseInt(zanataNameSplit[0]); final Integer topicRevision =
-                                 * Integer.parseInt(zanataNameSplit[1]);
-                                 * 
-                                 * translatedTopic = new RESTTranslatedTopicV1();
-                                 * translatedTopic.explicitSetLocale(locale.toString());
-                                 * translatedTopic.explicitSetTopicId(topicId);
-                                 * translatedTopic.explicitSetTopicRevision(topicRevision);
-                                 */
+                                final String[] zanataNameSplit = resource.getName().split("-");
+                                final Integer topicId = Integer.parseInt(zanataNameSplit[0]);
+                                final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
+                                
+                                // We need the historical topic here as well.
+                                final RESTTopicV1 historicalTopic = client.getJSONTopicRevision(topicId, topicRevision, "");
+                                
+                                translatedTopic = new RESTTranslatedTopicV1();
+                                translatedTopic.setLocale(locale.toString());
+                                translatedTopic.setTopicId(topicId);
+                                translatedTopic.setTopicRevision(topicRevision);
+                                translatedTopic.setTopic(historicalTopic);
+                                
+                                newTranslation = true;
                             }
 
                             if (translatedTopic != null) {
@@ -264,9 +270,7 @@ public class SyncMaster {
                                 }
 
                                 /* Only save the data if the content has changed */
-                                if (changed || !translatedXML.equals(translatedTopic.getXml())
-                                        || translatedTopic.getId() == null) {
-
+                                if (newTranslation || changed || !translatedXML.equals(translatedTopic.getXml())) {
                                     /*
                                      * make a note of the TranslatedTopicData entities that have been changed, so we can render
                                      * them
@@ -281,7 +285,11 @@ public class SyncMaster {
                                             .getTranslatedTopicStrings_OTM());
 
                                     /* Save all the changed Translated Topic Datas */
-                                    client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
+                                    if (newTranslation) {
+                                        client.createJSONTranslatedTopic("", updatedTranslatedTopic);
+                                    } else {
+                                        client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
+                                    }
 
                                     log.info(thisLocalesProgress + "% Finished synchronising translations for "
                                             + resource.getName() + " locale " + locale);
