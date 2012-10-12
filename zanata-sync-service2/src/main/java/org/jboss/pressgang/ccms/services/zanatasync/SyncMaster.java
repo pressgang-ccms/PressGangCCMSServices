@@ -156,6 +156,8 @@ public class SyncMaster {
         for (final ResourceMeta resource : zanataResources) {
             try {
 
+                if (!resource.getName().equals("6895-204832")) continue;
+                
                 /* Work out progress */
                 float progress = Math.round(resourceProgress / resourceSize * 100.0f);
                 ++resourceProgress;
@@ -261,7 +263,7 @@ public class SyncMaster {
 
                                 final boolean changed;
                                 if (ComponentBaseTopicV1
-                                        .hasTag(translatedTopic.getTopic(), CommonConstants.CONTENT_SPEC_TAG_ID)) {
+                                        .hasTag(translatedTopic, CommonConstants.CONTENT_SPEC_TAG_ID)) {
                                     changed = processContentSpec(translatedTopic, translationDetails, translations);
                                 } else {
                                     changed = processTopic(translatedTopic, translationDetails, translations);
@@ -316,7 +318,7 @@ public class SyncMaster {
             }
         }
 
-        log.info(resourceProgress + "% Finished synchronising all translations");
+        log.info("100% Finished synchronising all translations");
     }
 
     /**
@@ -381,20 +383,24 @@ public class SyncMaster {
                         final String originalText = original.getTranslationString();
 
                         if (existingString.getOriginalString().equals(originalText)) {
-                            found = true;
-                            tempStringToNodeCollection.remove(original);
-
                             final ZanataTranslation translation = translationDetails.get(originalText);
 
-                            // Check the translations still match
-                            if (!translation.getTranslation().equals(existingString.getTranslatedString())
-                                    || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
-                                changed = true;
-
-                                existingString.explicitSetTranslatedString(translation.getTranslation());
-                                existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
-
-                                translatedTopicStrings.addUpdateItem(existingString);
+                            // Ensure that the Translation still exists in zanata
+                            if (translation != null)
+                            {
+                                found = true;
+                                tempStringToNodeCollection.remove(original);
+                                
+                                // Check the translations still match
+                                if (!translation.getTranslation().equals(existingString.getTranslatedString())
+                                        || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
+                                    changed = true;
+    
+                                    existingString.explicitSetTranslatedString(translation.getTranslation());
+                                    existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
+    
+                                    translatedTopicStrings.addUpdateItem(existingString);
+                                }
                             }
                         }
                     }
@@ -484,24 +490,28 @@ public class SyncMaster {
                             .returnItems()) {
                         boolean found = false;
 
-                        for (final StringToCSNodeCollection original : tempStringToNodeCollection) {
+                        for (final StringToCSNodeCollection original : stringToNodeCollections) {
                             final String originalText = original.getTranslationString();
 
                             if (existingString.getOriginalString().equals(originalText)) {
-                                found = true;
-                                tempStringToNodeCollection.remove(original);
-
                                 final ZanataTranslation translation = translationDetails.get(originalText);
+                                
+                                // Ensure that the Translation still exists in zanata
+                                if (translation != null)
+                                {
+                                    found = true;
+                                    tempStringToNodeCollection.remove(original);
 
-                                // Check the translations still match
-                                if (!translation.getTranslation().equals(existingString.getTranslatedString())
-                                        || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
-                                    changed = true;
-
-                                    existingString.explicitSetTranslatedString(translation.getTranslation());
-                                    existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
-
-                                    translatedTopicStrings.addUpdateItem(existingString);
+                                    // Check the translations still match
+                                    if (!translation.getTranslation().equals(existingString.getTranslatedString())
+                                            || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
+                                        changed = true;
+    
+                                        existingString.explicitSetTranslatedString(translation.getTranslation());
+                                        existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
+    
+                                        translatedTopicStrings.addUpdateItem(existingString);
+                                    }
                                 }
                             }
                         }
@@ -551,7 +561,7 @@ public class SyncMaster {
     private List<ResourceMeta> getZanataResources() {
         /* Get the Zanata resources */
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
-
+        
         final int numberZanataTopics = zanataResources.size();
 
         System.out.println("Found " + numberZanataTopics + " topics in Zanata.");

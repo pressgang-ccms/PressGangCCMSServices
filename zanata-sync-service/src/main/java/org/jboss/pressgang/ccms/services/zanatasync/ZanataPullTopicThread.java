@@ -62,6 +62,7 @@ public class ZanataPullTopicThread implements Runnable
 		this.skynetClient = ProxyFactory.create(RESTInterfaceV1.class, skynetServerUrl);
 	}
 
+    @SuppressWarnings("deprecation")
     @Override
 	public void run()
 	{
@@ -408,7 +409,7 @@ public class ZanataPullTopicThread implements Runnable
                     {
                         boolean found = false;
                         
-                        for (final StringToCSNodeCollection original : tempStringToNodeCollection)
+                        for (final StringToCSNodeCollection original : stringToNodeCollections)
                         {
                             final String originalText = original.getTranslationString();
                             
