@@ -102,7 +102,7 @@ public class SyncMaster {
 
             /* Sync the zanata resources to the CCMS */
             processZanataResources(zanataResources);
-            
+
         } catch (final Exception ex) {
             log.error(ex.toString());
         }
@@ -125,7 +125,7 @@ public class SyncMaster {
             return "";
         }
     }
-    
+
     /** Get the expansion required for the historical topics */
     private String getHistoricalTopicExpansion() {
         final ExpandDataTrunk expand = new ExpandDataTrunk();
@@ -169,7 +169,7 @@ public class SyncMaster {
 
         for (final ResourceMeta resource : zanataResources) {
             try {
-                
+
                 /* Work out progress */
                 float progress = Math.round(resourceProgress / resourceSize * 100.0f);
                 ++resourceProgress;
@@ -222,21 +222,27 @@ public class SyncMaster {
                                     }
                                 }
 
-                            } else {
+                            }
+
+                            /*
+                             * If the TranslatedTopic doesn't exist in Zanata then we need to create it
+                             */
+                            if (translatedTopic == null) {
                                 final String[] zanataNameSplit = resource.getName().split("-");
                                 final Integer topicId = Integer.parseInt(zanataNameSplit[0]);
                                 final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
-                                
+
                                 // We need the historical topic here as well.
-                                final RESTTopicV1 historicalTopic = client.getJSONTopicRevision(topicId, topicRevision, getHistoricalTopicExpansion());
-                                
+                                final RESTTopicV1 historicalTopic = client.getJSONTopicRevision(topicId, topicRevision,
+                                        getHistoricalTopicExpansion());
+
                                 translatedTopic = new RESTTranslatedTopicV1();
                                 translatedTopic.setLocale(locale.toString());
                                 translatedTopic.setTopicId(topicId);
                                 translatedTopic.setTopicRevision(topicRevision);
                                 translatedTopic.setTopic(historicalTopic);
                                 translatedTopic.setTags(historicalTopic.getTags());
-                                
+
                                 newTranslation = true;
                             }
 
@@ -275,8 +281,7 @@ public class SyncMaster {
                                 translatedTopic.setTranslationPercentage((int) (wordCount / totalWordCount * 100.0f));
 
                                 final boolean changed;
-                                if (ComponentBaseTopicV1
-                                        .hasTag(translatedTopic, CommonConstants.CONTENT_SPEC_TAG_ID)) {
+                                if (ComponentBaseTopicV1.hasTag(translatedTopic, CommonConstants.CONTENT_SPEC_TAG_ID)) {
                                     changed = processContentSpec(translatedTopic, translationDetails, translations);
                                 } else {
                                     changed = processTopic(translatedTopic, translationDetails, translations);
@@ -296,7 +301,8 @@ public class SyncMaster {
                                     updatedTranslatedTopic.explicitSetXml(translatedTopic.getXml());
                                     updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopic
                                             .getTranslatedTopicStrings_OTM());
-                                    updatedTranslatedTopic.explicitSetTranslationPercentage(translatedTopic.getTranslationPercentage());
+                                    updatedTranslatedTopic.explicitSetTranslationPercentage(translatedTopic
+                                            .getTranslationPercentage());
 
                                     /* Save all the changed Translated Topic Datas */
                                     if (newTranslation) {
@@ -307,11 +313,9 @@ public class SyncMaster {
 
                                     log.info(thisLocalesProgress + "% Finished synchronising translations for "
                                             + resource.getName() + " locale " + locale);
-                                }
-                                else
-                                {
-                                    log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale "
-                                        + locale);
+                                } else {
+                                    log.info(thisLocalesProgress + "% No changes were found for " + resource.getName()
+                                            + " locale " + locale);
                                 }
                             }
 
@@ -400,19 +404,18 @@ public class SyncMaster {
                             final ZanataTranslation translation = translationDetails.get(originalText);
 
                             // Ensure that the Translation still exists in zanata
-                            if (translation != null)
-                            {
+                            if (translation != null) {
                                 found = true;
                                 tempStringToNodeCollection.remove(original);
-                                
+
                                 // Check the translations still match
                                 if (!translation.getTranslation().equals(existingString.getTranslatedString())
                                         || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
                                     changed = true;
-    
+
                                     existingString.explicitSetTranslatedString(translation.getTranslation());
                                     existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
-    
+
                                     translatedTopicStrings.addUpdateItem(existingString);
                                 }
                             }
@@ -509,10 +512,9 @@ public class SyncMaster {
 
                             if (existingString.getOriginalString().equals(originalText)) {
                                 final ZanataTranslation translation = translationDetails.get(originalText);
-                                
+
                                 // Ensure that the Translation still exists in zanata
-                                if (translation != null)
-                                {
+                                if (translation != null) {
                                     found = true;
                                     tempStringToNodeCollection.remove(original);
 
@@ -520,10 +522,10 @@ public class SyncMaster {
                                     if (!translation.getTranslation().equals(existingString.getTranslatedString())
                                             || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
                                         changed = true;
-    
+
                                         existingString.explicitSetTranslatedString(translation.getTranslation());
                                         existingString.explicitSetFuzzyTranslation(translation.isFuzzy());
-    
+
                                         translatedTopicStrings.addUpdateItem(existingString);
                                     }
                                 }
@@ -575,7 +577,7 @@ public class SyncMaster {
     private List<ResourceMeta> getZanataResources() {
         /* Get the Zanata resources */
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
-        
+
         final int numberZanataTopics = zanataResources.size();
 
         System.out.println("Found " + numberZanataTopics + " topics in Zanata.");
