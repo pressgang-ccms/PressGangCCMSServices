@@ -1,72 +1,71 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <artifactId>services</artifactId>
-    <groupId>org.jboss.pressgang.ccms</groupId>
-    <version>0.0.1-SNAPSHOT</version>
-    <relativePath>..</relativePath>
-  </parent>
-  <groupId>org.jboss.pressgang.ccms.services</groupId>
-  <artifactId>docbook-builder-service</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <name>PressGang CCMS Docbook Builder Service</name>
-  
-  <build>
-    <plugins>
-        <plugin>
-			<groupId>org.apache.maven.plugins</groupId>
-			<artifactId>maven-dependency-plugin</artifactId>
-			<version>2.4</version>
-			<executions>
-				<execution>
-					<id>copy-dependencies</id>
-					<phase>package</phase>
-					<goals>
-						<goal>copy-dependencies</goal>
-					</goals>
-					<configuration>
-						<outputDirectory>${project.build.directory}/lib</outputDirectory>
-						<overWriteReleases>false</overWriteReleases>
-						<overWriteSnapshots>false</overWriteSnapshots>
-						<overWriteIfNewer>true</overWriteIfNewer>
-					</configuration>
-				</execution>
-			</executions>
-		</plugin>
-    </plugins>
-  </build>
-  
-  <dependencies>
-  	<!-- Gozirra Libraries -->
-  	<dependency>
-  		<groupId>germane-software</groupId>
-  		<artifactId>gozirra-extended</artifactId>
-  		<version>0.5-SNAPSHOT</version>
-  	</dependency>
-  	
-  	<dependency>
-		<groupId>com.ibm.icu</groupId>
-		<artifactId>icu4j</artifactId>
-		<version>4.8.1.1</version>
-	</dependency>
-  	<dependency>
-  		<groupId>javax.mail</groupId>
-  		<artifactId>mail</artifactId>
-  		<version>1.4.5</version>
-  	</dependency>
-  	
-  	<!-- Logging Libraries -->
-  	<dependency>
-		<groupId>log4j</groupId>
-		<artifactId>log4j</artifactId>
-		<version>1.2.16</version>
-	</dependency>
-  	
-  	<!-- CSP Builder -->
-  	<dependency>
-  		<groupId>com.redhat.contentspec</groupId>
-  		<artifactId>csbuilder</artifactId>
-  		<version>0.1.7-SNAPSHOT</version>
-  	</dependency>
-  </dependencies>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>services-parent</artifactId>
+		<groupId>org.jboss.pressgang.ccms.services</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>..</relativePath>
+	</parent>
+	<artifactId>docbook-builder-service</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>PressGang CCMS Docbook Builder Service</name>
+	
+	<properties>
+		<javax.mail.version>1.4.5</javax.mail.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>${dependencyplugin.version}</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/lib</outputDirectory>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<overWriteIfNewer>true</overWriteIfNewer>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<!-- Gozirra Libraries -->
+		<dependency>
+			<groupId>org.jboss.pressgang.ccms</groupId>
+			<artifactId>gozirra-extended</artifactId>
+			<version>${gozirra.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>${javax.mail.version}</version>
+		</dependency>
+
+		<!-- Logging Libraries -->
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>${log4j.version}</version>
+		</dependency>
+
+		<!-- CSP Builder -->
+		<dependency>
+			<groupId>org.jboss.pressgang.ccms.contentspec</groupId>
+			<artifactId>csbuilder</artifactId>
+			<version>0.1.7-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
 </project>

@@ -5,8 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.ws.rs.core.PathSegment;
 import net.htmlparser.jericho.Source;
@@ -37,6 +35,9 @@ import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 import org.xml.sax.SAXException;
 
+import com.google.code.regexp.NamedMatcher;
+import com.google.code.regexp.NamedPattern;
+
 
 import dk.dren.hunspell.Hunspell;
 import dk.dren.hunspell.Hunspell.Dictionary;
@@ -61,7 +62,7 @@ public class Main
 	/** http://en.wikipedia.org/wiki/Regular_expression#POSIX_character_classes **/
 	private static final String PUNCTUATION_CHARACTERS_RE = "[\\]\\[!\"#$%&()*+,./:;<=>?@\\^`{|}~\\s]";
 	/** A Regular expression to identify hyphenated words **/
-	private static final Pattern HYPHENATED_WORD_RE = Pattern.compile("(?<First>[^-]+)-(?<Second>[^-]+)");
+	private static final NamedPattern HYPHENATED_WORD_RE = NamedPattern.compile("(?<First>[^-]+)-(?<Second>[^-]+)");
 	/** A regex that matches an xref */
 	private static final String XREF_RE = "<xref*.?/\\s*>";
 	/** A regex that matches the opening tag of an entry */
@@ -511,7 +512,7 @@ public class Main
 						 * side was a valid word.
 						 */
 
-						final Matcher matcher = HYPHENATED_WORD_RE.matcher(word);
+						final NamedMatcher matcher = HYPHENATED_WORD_RE.matcher(word);
 						if (matcher.matches())
 						{
 							final String firstWord = matcher.group("First");

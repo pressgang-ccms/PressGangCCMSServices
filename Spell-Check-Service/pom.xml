@@ -2,32 +2,15 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<artifactId>services</artifactId>
-		<groupId>org.jboss.pressgang.ccms</groupId>
+		<artifactId>services-parent</artifactId>
+		<groupId>org.jboss.pressgang.ccms.services</groupId>
 		<version>0.0.1-SNAPSHOT</version>
 		<relativePath>..</relativePath>
 	</parent>
-	<groupId>org.jboss.pressgang.ccms.services</groupId>
 	<artifactId>spellchecker-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>PressGang CCMS Spell Checker Service</name>
-	
-	<repositories>
-		<repository>
-			<id>SonatypeSnapshotRepository</id>
-			<name>Sonatype Snapshot Repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-			<layout>default</layout>
-		</repository>
-		<repository>
-			<id>JBoss</id>
-			<url>https://repository.jboss.org/nexus/</url>
-		</repository>
-		<repository>
-			<id>Apache</id>
-			<url>http://repository.apache.org</url>
-		</repository>
-	</repositories>
+
 	<dependencies>
 		<dependency>
 			<groupId>dk.dren</groupId>
@@ -49,23 +32,13 @@
 			<version>3.2</version>
 		</dependency>
 	</dependencies>
-	<!-- <build> <plugins> <plugin> <artifactId>maven-assembly-plugin</artifactId> 
-		<configuration> <archive> <manifest> <mainClass>com.redhat.topicindex.syntaxchecker.Main</mainClass> 
-		</manifest> </archive> <descriptorRefs> <descriptorRef>jar-with-dependencies</descriptorRef> 
-		</descriptorRefs> </configuration> </plugin> </plugins> </build> -->
-	<!-- <build> <plugins> <plugin> <groupId>org.apache.maven.plugins</groupId> 
-		<artifactId>maven-shade-plugin</artifactId> <version>1.6</version> <executions> 
-		<execution> <phase>package</phase> <goals> <goal>shade</goal> </goals> <configuration> 
-		<transformers> <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"> 
-		<mainClass>com.redhat.topicindex.syntaxchecker.Main</mainClass> </transformer> 
-		</transformers> </configuration> </execution> </executions> </plugin> </plugins> 
-		</build> -->
+
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.4</version>
+				<version>${dependencyplugin.version}</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>

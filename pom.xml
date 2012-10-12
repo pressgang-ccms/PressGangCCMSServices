@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.jboss.pressgang.ccms</groupId>
-	<artifactId>services</artifactId>
+	<groupId>org.jboss.pressgang.ccms.services</groupId>
+	<artifactId>services-parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>PressGang CCMS Services</name>
@@ -28,12 +28,20 @@
 			<url>http://repository-zanata.forge.cloudbees.com/release/</url>
 		</repository>
 		<repository>
-			<id>SonatypeSnapshotRepository</id>
-			<name>Sonatype Snapshot Repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-			<layout>default</layout>
+			<id>oss-sonatype-repo</id>
+			<name>OSS Sonatype repository</name>
+			<url>https://oss.sonatype.org/content/groups/public/</url>
 		</repository>
 	</repositories>
+
+	<properties>
+		<jackson.version>1.9.8</jackson.version>
+		<resteasy.version>2.3.4.Final</resteasy.version>
+		<log4j.version>1.2.16</log4j.version>
+		<slf4j.version>1.6.4</slf4j.version>
+		<dependencyplugin.version>2.4</dependencyplugin.version>
+		<gozirra.version>0.5-SNAPSHOT</gozirra.version>
+	</properties>
 
 	<dependencies>
 		<!-- PressGang CCMS libraries -->
@@ -61,63 +69,48 @@
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-mapper-asl</artifactId>
-			<version>1.9.6</version>
+			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-core-asl</artifactId>
-			<version>1.9.6</version>
+			<version>${jackson.version}</version>
 		</dependency>
 
 		<!-- RESTEasy libraries -->
 		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-atom-provider</artifactId>
-			<version>2.3.4.Final</version>
+			<version>${resteasy.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-jaxrs</artifactId>
-			<version>2.3.4.Final</version>
+			<version>${resteasy.version}</version>
 		</dependency>
-		<dependency>
+		<!--<dependency>
 			<groupId>javax.ws.rs</groupId>
 			<artifactId>javax.ws.rs-api</artifactId>
 			<version>2.0-m04</version>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-jackson-provider</artifactId>
-			<version>2.3.4.Final</version>
-		</dependency>
-
-		<!-- Various Libraries -->
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.6</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.directory.studio</groupId>
-			<artifactId>org.apache.commons.lang</artifactId>
-			<version>2.6</version>
+			<version>${resteasy.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-jaxb-provider</artifactId>
-			<version>2.3.4.Final</version>
+			<version>${resteasy.version}</version>
 		</dependency>
 	</dependencies>
+
 	<modules>
 		<module>bugzilla-sync-service</module>
 		<module>docbook-builder-component</module>
 		<module>rendering-component</module>
 		<module>Spell-Check-Service</module>
 		<module>zanata-sync-service</module>
+		<module>zanata-sync-service2</module>
 	</modules>
 </project>

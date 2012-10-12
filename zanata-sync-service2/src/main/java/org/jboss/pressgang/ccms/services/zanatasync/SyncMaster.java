@@ -102,7 +102,7 @@ public class SyncMaster {
 
             /* Sync the zanata resources to the CCMS */
             processZanataResources(zanataResources);
-
+            
         } catch (final Exception ex) {
             log.error(ex.toString());
         }
@@ -147,6 +147,7 @@ public class SyncMaster {
      * 
      * @param zanataResources
      */
+    @SuppressWarnings("deprecation")
     private void processZanataResources(final List<ResourceMeta> zanataResources) {
 
         final float resourceSize = zanataResources.size();
@@ -315,6 +316,7 @@ public class SyncMaster {
             }
         }
 
+        log.info(resourceProgress + "% Finished synchronising all translations");
     }
 
     /**
