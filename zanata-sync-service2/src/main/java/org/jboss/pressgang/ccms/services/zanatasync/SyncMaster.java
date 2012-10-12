@@ -125,6 +125,20 @@ public class SyncMaster {
             return "";
         }
     }
+    
+    /** Get the expansion required for the historical topics */
+    private String getHistoricalTopicExpansion() {
+        final ExpandDataTrunk expand = new ExpandDataTrunk();
+        final ExpandDataTrunk expandTopicTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TAGS_NAME));
+
+        expand.setBranches(CollectionUtilities.toArrayList(expandTopicTags));
+
+        try {
+            return mapper.writeValueAsString(expand);
+        } catch (final Exception ex) {
+            return "";
+        }
+    }
 
     private List<LocaleId> getLocales() throws InvalidParameterException, InternalProcessingException {
 
@@ -155,8 +169,6 @@ public class SyncMaster {
 
         for (final ResourceMeta resource : zanataResources) {
             try {
-
-                if (!resource.getName().equals("6895-204832")) continue;
                 
                 /* Work out progress */
                 float progress = Math.round(resourceProgress / resourceSize * 100.0f);
@@ -216,13 +228,14 @@ public class SyncMaster {
                                 final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
                                 
                                 // We need the historical topic here as well.
-                                final RESTTopicV1 historicalTopic = client.getJSONTopicRevision(topicId, topicRevision, "");
+                                final RESTTopicV1 historicalTopic = client.getJSONTopicRevision(topicId, topicRevision, getHistoricalTopicExpansion());
                                 
                                 translatedTopic = new RESTTranslatedTopicV1();
                                 translatedTopic.setLocale(locale.toString());
                                 translatedTopic.setTopicId(topicId);
                                 translatedTopic.setTopicRevision(topicRevision);
                                 translatedTopic.setTopic(historicalTopic);
+                                translatedTopic.setTags(historicalTopic.getTags());
                                 
                                 newTranslation = true;
                             }
@@ -259,7 +272,7 @@ public class SyncMaster {
                                 }
 
                                 /* Set the translation completion status */
-                                translatedTopic.explicitSetTranslationPercentage((int) (wordCount / totalWordCount * 100.0f));
+                                translatedTopic.setTranslationPercentage((int) (wordCount / totalWordCount * 100.0f));
 
                                 final boolean changed;
                                 if (ComponentBaseTopicV1
@@ -283,6 +296,7 @@ public class SyncMaster {
                                     updatedTranslatedTopic.explicitSetXml(translatedTopic.getXml());
                                     updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopic
                                             .getTranslatedTopicStrings_OTM());
+                                    updatedTranslatedTopic.explicitSetTranslationPercentage(translatedTopic.getTranslationPercentage());
 
                                     /* Save all the changed Translated Topic Datas */
                                     if (newTranslation) {
