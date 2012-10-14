@@ -248,6 +248,8 @@ public class SyncMaster {
 
                             if (translatedTopic != null) {
 
+                                boolean changed = false;
+
                                 /* Set the current xml of the translated topic data so we can see if it has changed */
                                 final String translatedXML = translatedTopic.getXml() == null ? "" : translatedTopic.getXml();
 
@@ -266,7 +268,8 @@ public class SyncMaster {
                                 /* map the translation to the original resource */
                                 for (final TextFlow textFlow : textFlows) {
                                     for (final TextFlowTarget textFlowTarget : textFlowTargets) {
-                                        if (textFlowTarget.getResId().equals(textFlow.getId())) {
+                                        if (textFlowTarget.getResId().equals(textFlow.getId())
+                                                && !textFlowTarget.getContent().isEmpty()) {
                                             translationDetails
                                                     .put(textFlow.getContent(), new ZanataTranslation(textFlowTarget));
                                             translations.put(textFlow.getContent(), textFlowTarget.getContent());
@@ -278,13 +281,21 @@ public class SyncMaster {
                                 }
 
                                 /* Set the translation completion status */
-                                translatedTopic.setTranslationPercentage((int) (wordCount / totalWordCount * 100.0f));
+                                int translationPercentage = (int) (wordCount / totalWordCount * 100.0f);
+                                if (translationPercentage != translatedTopic.getTranslationPercentage()) {
+                                    changed = true;
+                                    translatedTopic.setTranslationPercentage(translationPercentage);
+                                }
 
-                                final boolean changed;
+                                /* Process the Translations and apply the changes to the XML */
                                 if (ComponentBaseTopicV1.hasTag(translatedTopic, CommonConstants.CONTENT_SPEC_TAG_ID)) {
-                                    changed = processContentSpec(translatedTopic, translationDetails, translations);
+                                    if (processContentSpec(translatedTopic, translationDetails, translations)) {
+                                        changed = true;
+                                    }
                                 } else {
-                                    changed = processTopic(translatedTopic, translationDetails, translations);
+                                    if (processTopic(translatedTopic, translationDetails, translations)) {
+                                        changed = true;
+                                    }
                                 }
 
                                 /* Only save the data if the content has changed */
