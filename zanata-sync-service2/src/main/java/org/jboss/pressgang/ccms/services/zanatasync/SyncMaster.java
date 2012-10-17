@@ -187,7 +187,7 @@ public class SyncMaster {
                  */
                 final List<LocaleId> locales = zanataInterface.getZanataLocales();
 
-                final int localesSise = locales.size();
+                final int localesSize = locales.size();
                 int localesProgress = 0;
 
                 for (final LocaleId locale : locales) {
@@ -195,17 +195,19 @@ public class SyncMaster {
                     try {
                         /* Work out progress */
                         int thisLocalesProgress = Math
-                                .round(progress + (localesProgress / localesSise * 100.0f / resourceSize));
+                                .round(progress + (localesProgress / localesSize * 100.0f / resourceSize));
                         ++localesProgress;
 
                         log.info(thisLocalesProgress + "% Synchronising " + resource.getName() + " for locale "
                                 + locale.toString());
 
-                        if (zanataInterface.getTranslationsExists(resource.getName(), locale)) {
-                            /* find a translation */
-                            final TranslationsResource translationsResource = zanataInterface.getTranslations(
-                                    resource.getName(), locale);
-                            /* and find the original resource */
+                        /* find a translation */
+                        final TranslationsResource translationsResource = zanataInterface.getTranslations(resource.getName(),
+                                locale);
+
+                        /* Check that a translation exists */
+                        if (translationsResource != null) {
+                            /* find the original resource */
                             final Resource originalTextResource = zanataInterface.getZanataResource(resource.getName());
 
                             /* The translated topic to store the results */
@@ -214,14 +216,13 @@ public class SyncMaster {
 
                             if (translatedTopics.returnItems().size() != 0) {
 
-                                /* Find the original translation (the query results will return all locales */
+                                /* Find the original translation (the query results will return all locales) */
                                 for (final RESTTranslatedTopicV1 transTopic : translatedTopics.returnItems()) {
                                     if (transTopic.getLocale().equals(locale.toString())) {
                                         translatedTopic = transTopic;
                                         break;
                                     }
                                 }
-
                             }
 
                             /*
@@ -282,7 +283,8 @@ public class SyncMaster {
 
                                 /* Set the translation completion status */
                                 int translationPercentage = (int) (wordCount / totalWordCount * 100.0f);
-                                if (translationPercentage != translatedTopic.getTranslationPercentage()) {
+                                if (translatedTopic.getTranslationPercentage() == null
+                                        || translationPercentage != translatedTopic.getTranslationPercentage()) {
                                     changed = true;
                                     translatedTopic.setTranslationPercentage(translationPercentage);
                                 }
@@ -588,6 +590,9 @@ public class SyncMaster {
     private List<ResourceMeta> getZanataResources() {
         /* Get the Zanata resources */
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
+
+        //final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
+        //zanataResources.add(new ResourceMeta("10141-162067"));
 
         final int numberZanataTopics = zanataResources.size();
 
