@@ -83,11 +83,12 @@ public class ZanataPullTopicThread implements Runnable
 				for (final LocaleId locale : locales)
 				{
 					final long startTime = System.currentTimeMillis();
-										
-					if (zanataInterface.getTranslationsExists(zanataId, locale))
+
+					/* find a translation */
+                    final TranslationsResource translationsResource = zanataInterface.getTranslations(zanataId, locale);
+
+					if (translationsResource != null)
 					{
-						/* find a translation */
-						final TranslationsResource translationsResource = zanataInterface.getTranslations(zanataId, locale);
 						/* and find the original resource */
 						final Resource originalTextResource = zanataInterface.getZanataResource(zanataId);
 
