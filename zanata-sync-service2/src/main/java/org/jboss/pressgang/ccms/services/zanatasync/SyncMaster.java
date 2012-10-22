@@ -58,6 +58,7 @@ public class SyncMaster {
 
     private static final String XML_ENCODING = "UTF-8";
     private static final Logger log = Logger.getLogger("SkynetZanataSyncService");
+    private static final Double DEFAULT_ZANATA_CALL_WAIT_TIME = 0.2;
 
     /** Jackson object mapper */
     private final static ObjectMapper mapper = new ObjectMapper();
@@ -66,14 +67,15 @@ public class SyncMaster {
     private static final String skynetServer = System.getProperty(CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY);
     private static final String zanataServer = System.getProperty(ZanataConstants.ZANATA_SERVER_PROPERTY);
     private static final String zanataToken = System.getProperty(ZanataConstants.ZANATA_TOKEN_PROPERTY);
-    private static final String zanataUsername = System.getProperty(ZanataConstants.ZANATA_USERNAME_PROPERTY);
-    private static final String zanataProject = System.getProperty(ZanataConstants.ZANATA_PROJECT_PROPERTY);
-    private static final String zanataVersion = System.getProperty(ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY);
-    private static Integer numLocales = 1;
-    /** The total time it should take to sync with Zanata */
-    private static Integer syncTime = 0;
+    private static final String ZANATA_USERNAME = System.getProperty(ZanataConstants.ZANATA_USERNAME_PROPERTY);
+    private static final String ZANATA_PROJECT = System.getProperty(ZanataConstants.ZANATA_PROJECT_PROPERTY);
+    private static final String ZANATA_VERSION = System.getProperty(ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY);
+    /** The maximum number of calls that should be performed per second to the Zanata REST API */
+    private static final String ZANATA_CALL_WAIT_TIME = System
+            .getProperty(ZanataConstants.ZANATA_CALL_WAIT_TIME_PROPERTY);
 
     private ZanataInterface zanataInterface;
+    private Double zanataCallWaitTime;
 
     /* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
     private RESTInterfaceV1 client;
@@ -83,6 +85,10 @@ public class SyncMaster {
 
             RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
 
+            zanataCallWaitTime = ZANATA_CALL_WAIT_TIME == null
+                    || !ZANATA_CALL_WAIT_TIME.matches("^\\d+$") ? DEFAULT_ZANATA_CALL_WAIT_TIME : Double
+                    .parseDouble(ZANATA_CALL_WAIT_TIME);
+            
             /* Exit if the system properties have not been set */
             if (!checkEnvironment())
                 return;
@@ -99,6 +105,9 @@ public class SyncMaster {
             /* Get the locales */
             final List<LocaleId> locales = getLocales();
             zanataInterface.getLocaleManager().setLocales(locales);
+            
+            /* Remove the default locale as it won't have any translations */
+            zanataInterface.getLocaleManager().removeLocale(new LocaleId(CommonConstants.DEFAULT_LOCALE));
 
             /* Sync the zanata resources to the CCMS */
             processZanataResources(zanataResources);
@@ -204,11 +213,13 @@ public class SyncMaster {
                         /* find a translation */
                         final TranslationsResource translationsResource = zanataInterface.getTranslations(resource.getName(),
                                 locale);
+                        zanataTimeout();
 
                         /* Check that a translation exists */
                         if (translationsResource != null) {
                             /* find the original resource */
                             final Resource originalTextResource = zanataInterface.getZanataResource(resource.getName());
+                            zanataTimeout();
 
                             /* The translated topic to store the results */
                             RESTTranslatedTopicV1 translatedTopic = null;
@@ -590,15 +601,28 @@ public class SyncMaster {
     private List<ResourceMeta> getZanataResources() {
         /* Get the Zanata resources */
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
-
-        //final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
-        //zanataResources.add(new ResourceMeta("10141-162067"));
+        zanataTimeout();
+        
+        // final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
+        // zanataResources.add(new ResourceMeta("10141-162067"));
 
         final int numberZanataTopics = zanataResources.size();
 
         System.out.println("Found " + numberZanataTopics + " topics in Zanata.");
 
         return zanataResources;
+    }
+    
+    /**
+     * Perform a timeout to allow zanata some time to process other data between requests.
+     */
+    private void zanataTimeout()
+    {
+        try {
+            Thread.sleep((long) (zanataCallWaitTime * 1000));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -608,18 +632,18 @@ public class SyncMaster {
     private boolean checkEnvironment() {
         log.info("Skynet REST: " + skynetServer);
         log.info("Zanata Server: " + zanataServer);
-        log.info("Zanata Username: " + zanataUsername);
+        log.info("Zanata Username: " + ZANATA_USERNAME);
         log.info("Zanata Token: " + zanataToken);
-        log.info("Zanata Project: " + zanataProject);
-        log.info("Zanata Project Version: " + zanataVersion);
-        log.info("Total Sync Time: " + syncTime / 1000.0 + " seconds or " + syncTime / 1000.0 / 60.0 + " minutes");
-        log.info("Estimated Number Of Locales: " + numLocales);
+        log.info("Zanata Project: " + ZANATA_PROJECT);
+        log.info("Zanata Project Version: " + ZANATA_VERSION);
+        log.info("Default Locale: " + CommonConstants.DEFAULT_LOCALE);
+        log.info("Rate Limiting: " + zanataCallWaitTime + " seconds per REST call");
 
         /* Some sanity checking */
         if (skynetServer == null || skynetServer.trim().isEmpty() || zanataServer == null || zanataServer.trim().isEmpty()
-                || zanataToken == null || zanataToken.trim().isEmpty() || zanataUsername == null
-                || zanataUsername.trim().isEmpty() || zanataProject == null || zanataProject.trim().isEmpty()
-                || zanataVersion == null || zanataVersion.trim().isEmpty()) {
+                || zanataToken == null || zanataToken.trim().isEmpty() || ZANATA_USERNAME == null
+                || ZANATA_USERNAME.trim().isEmpty() || ZANATA_PROJECT == null || ZANATA_PROJECT.trim().isEmpty()
+                || ZANATA_VERSION == null || ZANATA_VERSION.trim().isEmpty()) {
             log.error("The " + CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY
                     + ", " + ZanataConstants.ZANATA_TOKEN_PROPERTY + ", " + ZanataConstants.ZANATA_USERNAME_PROPERTY + ", "
                     + ZanataConstants.ZANATA_SERVER_PROPERTY + " and " + ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY
