@@ -187,6 +187,9 @@ public class SyncMaster {
                 /* Work out progress */
                 float progress = Math.round(resourceProgress / resourceSize * 100.0f);
                 ++resourceProgress;
+                
+                if (!resource.getName().matches("^\\d+-\\d+$"))
+                    continue;
 
                 /* Get the translated topics in the CCMS */
                 final PathSegment query = new PathSegmentImpl("query", false);
