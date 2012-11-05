@@ -227,7 +227,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 					{
 						/* add the standard boilerplate xml */
 						/* currently disabled until how the additions should be displayed are figured out */
-						xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date(), new ZanataDetails());
+						xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, new Date(), new ZanataDetails());
 	
 						/* Generate the note for the translated topics relationships that haven't been translated */
 						if (translatedTopic.getOutgoingRelationships() != null && translatedTopic.getOutgoingRelationships().returnItems() != null)
@@ -413,7 +413,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 				else
 				{
 					/* add the standard boilerplate xml */
-					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, null, new Date(), new ZanataDetails());
+					xmlPreProcessor.processTopicAdditionalInfo(specTopic, doc, null, docbookBuildingOptions, Main.NAME + " " + Main.BUILD, new Date(), new ZanataDetails());
 	
 					/* render the topic html */
 					final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);

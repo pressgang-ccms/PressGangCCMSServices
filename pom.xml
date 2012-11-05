@@ -11,7 +11,7 @@
 	<parent>
 		<groupId>org.jboss.pressgang</groupId>
 		<artifactId>pressgang-parent</artifactId>
-		<version>1.0-SNAPSHOT</version>
+		<version>1.3-SNAPSHOT</version>
 	</parent>
 
 	<repositories>
