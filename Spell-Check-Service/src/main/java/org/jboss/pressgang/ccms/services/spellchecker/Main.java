@@ -10,7 +10,7 @@ import javax.ws.rs.core.PathSegment;
 import net.htmlparser.jericho.Source;
 
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.pressgang.ccms.docbook.processing.XMLPreProcessor;
+import org.jboss.pressgang.ccms.docbook.processing.DocbookXMLPreProcessor;
 import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.RESTTagCollectionV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.RESTTopicCollectionV1;
@@ -652,9 +652,9 @@ public class Main
 	 */
 	private String replaceElementsWithMarkers(final String input)
 	{
-		return input.replaceAll(XREF_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll(ENTRY_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll(ENTRY_CLOSE_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_SEQUENCE_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
-				.replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_LIST_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_LISTITEMS_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
-				.replaceAll("<!--" + XMLPreProcessor.CUSTOM_ALPHA_SORT_INJECTION_LIST_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + XMLPreProcessor.CUSTOM_INJECTION_SINGLE_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
+		return input.replaceAll(XREF_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll(ENTRY_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll(ENTRY_CLOSE_RE, ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + DocbookXMLPreProcessor.CUSTOM_INJECTION_SEQUENCE_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
+				.replaceAll("<!--" + DocbookXMLPreProcessor.CUSTOM_INJECTION_LIST_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + DocbookXMLPreProcessor.CUSTOM_INJECTION_LISTITEMS_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
+				.replaceAll("<!--" + DocbookXMLPreProcessor.CUSTOM_ALPHA_SORT_INJECTION_LIST_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + DocbookXMLPreProcessor.CUSTOM_INJECTION_SINGLE_RE + "-->", ELEMENT_PUNCTUATION_MARKER)
 				.replaceAll("<!--" + INJECT_CONTENT_FRAGMENT_RE + "-->", ELEMENT_PUNCTUATION_MARKER).replaceAll("<!--" + INJECT_TITLE_FRAGMENT_RE + "-->", ELEMENT_PUNCTUATION_MARKER);
 	}
 

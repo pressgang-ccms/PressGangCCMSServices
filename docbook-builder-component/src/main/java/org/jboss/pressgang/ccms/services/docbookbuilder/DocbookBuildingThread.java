@@ -463,12 +463,12 @@ public class DocbookBuildingThread extends BaseStompRunnable
 			    if (clazz == RESTTranslatedTopicV1.class)
 			    {
     				final DocbookBuilder<T, U, V> builder = new DocbookBuilder<T, U, V>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE, locale);
-    				buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl, zanataDetails);
+    				buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), zanataDetails);
 			    }
 			    else
 			    {
 			        final DocbookBuilder<T, U, V> builder = new DocbookBuilder<T, U, V>(restManager, rocbookdtd, CommonConstants.DEFAULT_LOCALE);
-                    buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions), searchTagsUrl); 
+                    buildFiles = builder.buildBook(contentSpec, null, new CSDocbookBuildingOptions(docbookBuildingOptions)); 
 			    }
 
 				/*

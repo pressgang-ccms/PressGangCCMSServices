@@ -18,7 +18,7 @@ import org.jboss.pressgang.ccms.docbook.compiling.DocbookBuildingOptions;
 import org.jboss.pressgang.ccms.docbook.constants.DocbookBuilderConstants;
 import org.jboss.pressgang.ccms.docbook.messaging.DocbookBuildType;
 import org.jboss.pressgang.ccms.docbook.messaging.DocbookRendererMessage;
-import org.jboss.pressgang.ccms.docbook.processing.XMLPreProcessor;
+import org.jboss.pressgang.ccms.docbook.processing.DocbookXMLPreProcessor;
 import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.base.RESTBaseCollectionItemV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.base.RESTBaseCollectionV1;
@@ -205,7 +205,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPT_TAG_ID, DocbookBuilderConstants.CONCEPT_TAG_NAME));
 					topicTypeTagDetails.add(Pair.newPair(DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_ID, DocbookBuilderConstants.CONCEPTUALOVERVIEW_TAG_NAME));
 					
-					final XMLPreProcessor xmlPreProcessor = new XMLPreProcessor();
+					final DocbookXMLPreProcessor xmlPreProcessor = new DocbookXMLPreProcessor();
 					final SpecTopic specTopic = new SpecTopic(translatedTopic.getTopicId(), translatedTopic.getTitle());
 					specTopic.setTopic(translatedTopic);
 					
@@ -244,7 +244,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 						
 						/* render the topic html */
 						final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
-						final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
+						final String processedXMLWithDocType = DocbookXMLPreProcessor.processDocumentType(processedXML);
 	
 						try
 						{
@@ -393,7 +393,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 	
 				final ArrayList<Integer> customInjectionIds = new ArrayList<Integer>();
 				
-				final XMLPreProcessor xmlPreProcessor = new XMLPreProcessor();
+				final DocbookXMLPreProcessor xmlPreProcessor = new DocbookXMLPreProcessor();
 				final SpecTopic specTopic = new SpecTopic(topic.getId(), topic.getTitle());
 				specTopic.setTopic(topic);
 				
@@ -417,7 +417,7 @@ public class RenderingThread<T extends RESTBaseTopicV1<T, U, V>, U extends RESTB
 	
 					/* render the topic html */
 					final String processedXML = XMLUtilities.convertDocumentToString(doc, DocbookBuilderConstants.XML_ENCODING);
-					final String processedXMLWithDocType = XMLPreProcessor.processDocumentType(processedXML);
+					final String processedXMLWithDocType = DocbookXMLPreProcessor.processDocumentType(processedXML);
 	
 					try
 					{
