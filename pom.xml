@@ -11,17 +11,13 @@
 	<parent>
 		<groupId>org.jboss.pressgang</groupId>
 		<artifactId>pressgang-parent</artifactId>
-		<version>1.4</version>
+		<version>1.5</version>
 	</parent>
 
 	<repositories>
 		<repository>
 			<id>JBoss</id>
-			<url>https://repository.jboss.org/nexus/</url>
-		</repository>
-		<repository>
-			<id>Apache</id>
-			<url>http://repository.apache.org</url>
+			<url>https://repository.jboss.org/nexus/content/groups/public/</url>
 		</repository>
 		<repository>
 			<id>Zanata</id>
