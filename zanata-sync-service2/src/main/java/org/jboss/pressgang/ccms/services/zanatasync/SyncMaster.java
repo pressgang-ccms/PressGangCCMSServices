@@ -435,7 +435,7 @@ public class SyncMaster {
                     for (final StringToNodeCollection original : stringToNodeCollections) {
                         final String originalText = original.getTranslationString();
 
-                        if (existingString.getOriginalString().equals(originalText)) {
+                        if (originalText.equals(existingString.getOriginalString())) {
                             final ZanataTranslation translation = translationDetails.get(originalText);
 
                             // Ensure that the Translation still exists in zanata
@@ -613,8 +613,8 @@ public class SyncMaster {
         /* Get the Zanata resources */
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
 
-        // final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
-        // zanataResources.add(new ResourceMeta("10141-162067"));
+        //final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
+        //zanataResources.add(new ResourceMeta("7905-296542"));
 
         final int numberZanataTopics = zanataResources.size();
 
