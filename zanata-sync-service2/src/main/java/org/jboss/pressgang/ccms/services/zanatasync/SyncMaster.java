@@ -127,10 +127,11 @@ public class SyncMaster {
         final ExpandDataTrunk expand = new ExpandDataTrunk();
         final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails("translatedTopics"));
         final ExpandDataTrunk expandTopicTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TAGS_NAME));
+        final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
         final ExpandDataTrunk expandTopicTranslationStrings = new ExpandDataTrunk(new ExpandDataDetails(
                 RESTTranslatedTopicV1.TRANSLATEDTOPICSTRING_NAME));
 
-        expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslationStrings, expandTopicTags));
+        expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslationStrings, expandTopicTags, expandTopic));
         expand.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopic));
 
         try {
@@ -614,7 +615,7 @@ public class SyncMaster {
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
 
         //final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
-        //zanataResources.add(new ResourceMeta("7905-296542"));
+        //zanataResources.add(new ResourceMeta("12513-334410"));
 
         final int numberZanataTopics = zanataResources.size();
 
