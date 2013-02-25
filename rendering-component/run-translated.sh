@@ -5,7 +5,7 @@ REST_SERVER=http://localhost:8080/TopicIndex/seam/resource/rest
 PORT=61613
 USER=guest
 PASS=guest
-QUEUE=jms.queue.SkynetTranslatedTopicRenderQueue
+QUEUE=jms.queue.PressGangCCMSTranslatedTopicRenderQueue
 MAINCLASS=org.jboss.pressgang.ccms.services.docbookrenderer.Main
 
 # Get the directory hosting the script. This is important if the script is called from 

@@ -1,47 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.jboss.pressgang.ccms.services</groupId>
-	<artifactId>services-parent</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<packaging>pom</packaging>
-	<name>PressGang CCMS Services</name>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.jboss.pressgang.ccms.services</groupId>
+    <artifactId>services-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>PressGang CCMS Services</name>
 
-	<parent>
-		<groupId>org.jboss.pressgang</groupId>
-		<artifactId>pressgang-parent</artifactId>
-		<version>1.5</version>
-	</parent>
+    <parent>
+        <groupId>org.jboss.pressgang</groupId>
+        <artifactId>pressgang-parent</artifactId>
+        <version>1.5</version>
+    </parent>
 
-	<repositories>
-		<repository>
-			<id>JBoss</id>
-			<url>https://repository.jboss.org/nexus/content/groups/public/</url>
-		</repository>
-		<repository>
-			<id>Zanata</id>
-			<url>http://repository-zanata.forge.cloudbees.com/release/</url>
-		</repository>
-		<repository>
-			<id>oss-sonatype-repo</id>
-			<name>OSS Sonatype repository</name>
-			<url>https://oss.sonatype.org/content/groups/public/</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <repository>
+            <id>JBoss</id>
+            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>Zanata</id>
+            <url>http://repository-zanata.forge.cloudbees.com/release/</url>
+        </repository>
+        <repository>
+            <id>oss-sonatype-repo</id>
+            <name>OSS Sonatype repository</name>
+            <url>https://oss.sonatype.org/content/groups/public/</url>
+        </repository>
+    </repositories>
 
-	<build>
-	    <pluginManagement>
-	        <plugins>
-	            <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-	            <plugin>
-	                <groupId>org.eclipse.m2e</groupId>
-	                <artifactId>lifecycle-mapping</artifactId>
-	                <version>1.0.0</version>
-	                <configuration>
-	                    <lifecycleMappingMetadata>
-	                        <pluginExecutions>
-	                            <pluginExecution>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
                                     <pluginExecutionFilter>
                                         <groupId>org.jacoco</groupId>
                                         <artifactId>
@@ -58,106 +58,101 @@
                                         <ignore></ignore>
                                     </action>
                                 </pluginExecution>
-				    <pluginExecution>
-	                                <pluginExecutionFilter>
-	                                    <groupId>org.apache.maven.plugins</groupId>
-	                                    <artifactId>maven-dependency-plugin</artifactId>
-	                                    <versionRange>
-	                                        [${dependencyplugin.version},)
-	                                    </versionRange>
-	                                    <goals>
-	                                        <goal>copy-dependencies</goal>
-	                                    </goals>
-	                                </pluginExecutionFilter>
-	                                <action>
-	                                    <ignore></ignore>
-	                                </action>
-	                            </pluginExecution>
-	                        </pluginExecutions>
-	                    </lifecycleMappingMetadata>
-	                </configuration>
-	            </plugin>
-	        </plugins>
-	    </pluginManagement>
-	</build>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-dependency-plugin</artifactId>
+                                        <versionRange>
+                                            [${dependencyplugin.version},)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>copy-dependencies</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
-	<properties>
-		<jackson.version>1.9.8</jackson.version>
-		<resteasy.version>2.3.4.Final</resteasy.version>
-		<log4j.version>1.2.16</log4j.version>
-		<slf4j.version>1.6.4</slf4j.version>
-		<dependencyplugin.version>2.4</dependencyplugin.version>
-		<gozirra.version>0.5-SNAPSHOT</gozirra.version>
-	</properties>
+    <properties>
+        <jackson.version>1.9.8</jackson.version>
+        <resteasy.version>2.3.4.Final</resteasy.version>
+        <log4j.version>1.2.16</log4j.version>
+        <slf4j.version>1.6.4</slf4j.version>
+        <dependencyplugin.version>2.4</dependencyplugin.version>
+        <gozirra.version>0.5-SNAPSHOT</gozirra.version>
+    </properties>
 
-	<dependencies>
-		<!-- PressGang CCMS libraries -->
-		<dependency>
-			<groupId>org.jboss.pressgang.ccms</groupId>
-			<artifactId>pressgang-ccms-utils</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.pressgang.ccms</groupId>
-			<artifactId>pressgang-ccms-restv1</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.pressgang.ccms</groupId>
-			<artifactId>pressgang-ccms-zanata</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.pressgang.ccms</groupId>
-			<artifactId>pressgang-ccms-contentspec</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
+    <dependencies>
+        <!-- PressGang CCMS libraries -->
+        <dependency>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>pressgang-ccms-utils</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>pressgang-ccms-restv1</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>pressgang-ccms-zanata</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>pressgang-ccms-contentspec</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.codehaus.jackson</groupId>
-			<artifactId>jackson-mapper-asl</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.codehaus.jackson</groupId>
-			<artifactId>jackson-core-asl</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
 
-		<!-- RESTEasy libraries -->
-		<dependency>
-			<groupId>org.jboss.resteasy</groupId>
-			<artifactId>resteasy-atom-provider</artifactId>
-			<version>${resteasy.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.resteasy</groupId>
-			<artifactId>resteasy-jaxrs</artifactId>
-			<version>${resteasy.version}</version>
-		</dependency>
-		<!--<dependency>
-			<groupId>javax.ws.rs</groupId>
-			<artifactId>javax.ws.rs-api</artifactId>
-			<version>2.0-m04</version>
-		</dependency>-->
-		<dependency>
-			<groupId>org.jboss.resteasy</groupId>
-			<artifactId>resteasy-jackson-provider</artifactId>
-			<version>${resteasy.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.resteasy</groupId>
-			<artifactId>resteasy-jaxb-provider</artifactId>
-			<version>${resteasy.version}</version>
-		</dependency>
-	</dependencies>
+        <!-- RESTEasy libraries -->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-atom-provider</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxrs</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson-provider</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+    </dependencies>
 
-	<modules>
-		<module>bugzilla-sync-service</module>
-		<module>docbook-builder-component</module>
-		<module>rendering-component</module>
-		<module>Spell-Check-Service</module>
-		<module>zanata-sync-service</module>
-		<module>zanata-sync-service2</module>
-	</modules>
+    <modules>
+        <module>bugzilla-sync-service</module>
+        <module>docbook-builder-component</module>
+        <module>rendering-component</module>
+        <module>Spell-Check-Service</module>
+        <module>zanata-sync-service</module>
+        <module>zanata-sync-service2</module>
+    </modules>
 </project>
