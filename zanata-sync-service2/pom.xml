@@ -2,7 +2,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>zanata-sync-service2</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
 
     <parent>
         <artifactId>services-parent</artifactId>
@@ -10,6 +10,11 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
+
+    <properties>
+        <pressgang.ccms.version>1.1-SNAPSHOT</pressgang.ccms.version>
+        <jcommander.version>1.24-SNAPSHOT</jcommander.version>
+    </properties>
 
     <build>
         <plugins>
@@ -49,11 +54,18 @@
             <version>${slf4j.version}</version>
         </dependency>
 
-        <!-- CSP based libraries -->
+        <!-- REST Provider Library -->
         <dependency>
-            <groupId>org.jboss.pressgang.ccms.contentspec</groupId>
-            <artifactId>csprocessor</artifactId>
-            <version>0.0.4-SNAPSHOT</version>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>rest-provider</artifactId>
+            <version>${pressgang.ccms.version}</version>
+        </dependency>
+
+        <!-- JCommander -->
+        <dependency>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>jcommander-extended</artifactId>
+            <version>${jcommander.version}</version>
         </dependency>
     </dependencies>
 </project>
