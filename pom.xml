@@ -14,22 +14,6 @@
         <version>1.5</version>
     </parent>
 
-    <repositories>
-        <repository>
-            <id>JBoss</id>
-            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-        </repository>
-        <repository>
-            <id>Zanata</id>
-            <url>http://repository-zanata.forge.cloudbees.com/release/</url>
-        </repository>
-        <repository>
-            <id>oss-sonatype-repo</id>
-            <name>OSS Sonatype repository</name>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
-        </repository>
-    </repositories>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -82,6 +66,7 @@
     </build>
 
     <properties>
+        <pressgang.ccms.version>1.0-SNAPSHOT</pressgang.ccms.version>
         <jackson.version>1.9.8</jackson.version>
         <resteasy.version>2.3.4.Final</resteasy.version>
         <log4j.version>1.2.16</log4j.version>
@@ -95,22 +80,22 @@
         <dependency>
             <groupId>org.jboss.pressgang.ccms</groupId>
             <artifactId>pressgang-ccms-utils</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${pressgang.ccms.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.pressgang.ccms</groupId>
             <artifactId>pressgang-ccms-restv1</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${pressgang.ccms.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.pressgang.ccms</groupId>
             <artifactId>pressgang-ccms-zanata</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${pressgang.ccms.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.pressgang.ccms</groupId>
             <artifactId>pressgang-ccms-contentspec</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${pressgang.ccms.version}</version>
         </dependency>
 
         <dependency>

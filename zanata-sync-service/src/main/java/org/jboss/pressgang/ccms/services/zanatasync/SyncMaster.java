@@ -1,12 +1,12 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
+import javax.ws.rs.core.PathSegment;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.PathSegment;
-
+import com.redhat.contentspec.processor.ContentSpecParser;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgang.ccms.contentspec.ContentSpec;
@@ -21,8 +21,6 @@ import org.jboss.pressgang.ccms.rest.v1.entities.RESTStringConstantV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTTopicV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTTranslatedTopicStringV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTTranslatedTopicV1;
-import org.jboss.pressgang.ccms.rest.v1.exceptions.InternalProcessingException;
-import org.jboss.pressgang.ccms.rest.v1.exceptions.InvalidParameterException;
 import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataDetails;
 import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataTrunk;
 import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
@@ -46,26 +44,27 @@ import org.zanata.rest.dto.resource.TextFlow;
 import org.zanata.rest.dto.resource.TextFlowTarget;
 import org.zanata.rest.dto.resource.TranslationsResource;
 
-import com.redhat.contentspec.processor.ContentSpecParser;
-
 /**
  * The class that actually does the synchronising
- * 
+ *
  * @author Matthew Casperson
- * 
  */
 public class SyncMaster {
 
     private static final String XML_ENCODING = "UTF-8";
-    private static final Logger log = Logger.getLogger("SkynetZanataSyncService");
-    /** The Default amount of time that should be waited between Zanata REST API Calls. */
+    private static final Logger log = Logger.getLogger("PressGangCCMSZanataSyncService");
+    /**
+     * The Default amount of time that should be waited between Zanata REST API Calls.
+     */
     private static final Double DEFAULT_ZANATA_CALL_INTERVAL = 0.2;
 
-    /** Jackson object mapper */
+    /**
+     * Jackson object mapper
+     */
     private final static ObjectMapper mapper = new ObjectMapper();
 
     /* Get the system properties */
-    private static final String skynetServer = System.getProperty(CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY);
+    private static final String skynetServer = System.getProperty(CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY);
     private static final String zanataServer = System.getProperty(ZanataConstants.ZANATA_SERVER_PROPERTY);
     private static final String zanataToken = System.getProperty(ZanataConstants.ZANATA_TOKEN_PROPERTY);
     private static final String ZANATA_USERNAME = System.getProperty(ZanataConstants.ZANATA_USERNAME_PROPERTY);
@@ -74,7 +73,9 @@ public class SyncMaster {
     private static final String MIN_ZANATA_CALL_INTERVAL = System.getProperty(ZanataConstants.MIN_ZANATA_CALL_INTERNAL_PROPERTY);
 
     private ZanataInterface zanataInterface;
-    /** The minimum amount of time in seconds between calls to the Zanata REST API */
+    /**
+     * The minimum amount of time in seconds between calls to the Zanata REST API
+     */
     private Double zanataRESTCallInterval;
 
     /* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
@@ -95,8 +96,7 @@ public class SyncMaster {
             }
             
             /* Exit if the system properties have not been set */
-            if (!checkEnvironment())
-                return;
+            if (!checkEnvironment()) return;
 
             /* Get an instance of the zanata interface */
             zanataInterface = new ZanataInterface(zanataRESTCallInterval);
@@ -122,14 +122,16 @@ public class SyncMaster {
         }
     }
 
-    /** Get the expansion required for the translatedTopics */
+    /**
+     * Get the expansion required for the translatedTopics
+     */
     private String getExpansion() {
         final ExpandDataTrunk expand = new ExpandDataTrunk();
         final ExpandDataTrunk expandTranslatedTopic = new ExpandDataTrunk(new ExpandDataDetails("translatedTopics"));
         final ExpandDataTrunk expandTopicTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TAGS_NAME));
         final ExpandDataTrunk expandTopic = new ExpandDataTrunk(new ExpandDataDetails(RESTTranslatedTopicV1.TOPIC_NAME));
-        final ExpandDataTrunk expandTopicTranslationStrings = new ExpandDataTrunk(new ExpandDataDetails(
-                RESTTranslatedTopicV1.TRANSLATEDTOPICSTRING_NAME));
+        final ExpandDataTrunk expandTopicTranslationStrings = new ExpandDataTrunk(
+                new ExpandDataDetails(RESTTranslatedTopicV1.TRANSLATEDTOPICSTRING_NAME));
 
         expandTranslatedTopic.setBranches(CollectionUtilities.toArrayList(expandTopicTranslationStrings, expandTopicTags, expandTopic));
         expand.setBranches(CollectionUtilities.toArrayList(expandTranslatedTopic));
@@ -141,7 +143,9 @@ public class SyncMaster {
         }
     }
 
-    /** Get the expansion required for the historical topics */
+    /**
+     * Get the expansion required for the historical topics
+     */
     private String getHistoricalTopicExpansion() {
         final ExpandDataTrunk expand = new ExpandDataTrunk();
         final ExpandDataTrunk expandTopicTags = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.TAGS_NAME));
@@ -155,14 +159,12 @@ public class SyncMaster {
         }
     }
 
-    private List<LocaleId> getLocales() throws InvalidParameterException, InternalProcessingException {
+    private List<LocaleId> getLocales() {
 
         /* Get the Locale constants */
-        final RESTStringConstantV1 localeConstant = client
-                .getJSONStringConstant(CommonConstants.LOCALES_STRING_CONSTANT_ID, "");
-        final List<String> locales = CollectionUtilities.replaceStrings(
-                CollectionUtilities.sortAndReturn(CollectionUtilities.toArrayList(localeConstant.getValue().split(
-                        "[\\s\r\n]*,[\\s\r\n]*"))), "_", "-");
+        final RESTStringConstantV1 localeConstant = client.getJSONStringConstant(CommonConstants.LOCALES_STRING_CONSTANT_ID, "");
+        final List<String> locales = CollectionUtilities.replaceStrings(CollectionUtilities.sortAndReturn(
+                CollectionUtilities.toArrayList(localeConstant.getValue().split("[\\s\r\n]*,[\\s\r\n]*"))), "_", "-");
         final List<LocaleId> localeIds = new ArrayList<LocaleId>();
         for (final String locale : locales) {
             localeIds.add(LocaleId.fromJavaName(locale));
@@ -173,7 +175,7 @@ public class SyncMaster {
 
     /**
      * Sync the translated resources
-     * 
+     *
      * @param zanataResources
      */
     @SuppressWarnings("deprecation")
@@ -188,17 +190,15 @@ public class SyncMaster {
                 /* Work out progress */
                 float progress = Math.round(resourceProgress / resourceSize * 100.0f);
                 ++resourceProgress;
-                
-                if (!resource.getName().matches("^\\d+-\\d+$"))
-                    continue;
+
+                if (!resource.getName().matches("^\\d+-\\d+$")) continue;
 
                 /* Get the translated topics in the CCMS */
                 final PathSegment query = new PathSegmentImpl("query", false);
                 query.getMatrixParameters().add(CommonFilterConstants.ZANATA_IDS_FILTER_VAR, resource.getName());
 
                 /* get the translated topic in the CCMS */
-                final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(query,
-                        getExpansion());
+                final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(query, getExpansion());
 
                 /* The original Zanata Document Text Resources. This will be populated later. */
                 Resource originalTextResource = null;
@@ -215,16 +215,13 @@ public class SyncMaster {
 
                     try {
                         /* Work out progress */
-                        int thisLocalesProgress = Math
-                                .round(progress + (localesProgress / localesSize * 100.0f / resourceSize));
+                        int thisLocalesProgress = Math.round(progress + (localesProgress / localesSize * 100.0f / resourceSize));
                         ++localesProgress;
 
-                        log.info(thisLocalesProgress + "% Synchronising " + resource.getName() + " for locale "
-                                + locale.toString());
+                        log.info(thisLocalesProgress + "% Synchronising " + resource.getName() + " for locale " + locale.toString());
 
                         /* find a translation */
-                        final TranslationsResource translationsResource = zanataInterface.getTranslations(resource.getName(),
-                                locale);
+                        final TranslationsResource translationsResource = zanataInterface.getTranslations(resource.getName(), locale);
 
                         /* Check that a translation exists */
                         if (translationsResource != null) {
@@ -292,10 +289,8 @@ public class SyncMaster {
                                 /* map the translation to the original resource */
                                 for (final TextFlow textFlow : textFlows) {
                                     for (final TextFlowTarget textFlowTarget : textFlowTargets) {
-                                        if (textFlowTarget.getResId().equals(textFlow.getId())
-                                                && !textFlowTarget.getContent().isEmpty()) {
-                                            translationDetails
-                                                    .put(textFlow.getContent(), new ZanataTranslation(textFlowTarget));
+                                        if (textFlowTarget.getResId().equals(textFlow.getId()) && !textFlowTarget.getContent().isEmpty()) {
+                                            translationDetails.put(textFlow.getContent(), new ZanataTranslation(textFlowTarget));
                                             translations.put(textFlow.getContent(), textFlowTarget.getContent());
                                             wordCount += textFlow.getContent().split(" ").length;
                                             break;
@@ -306,8 +301,8 @@ public class SyncMaster {
 
                                 /* Set the translation completion status */
                                 int translationPercentage = (int) (wordCount / totalWordCount * 100.0f);
-                                if (translatedTopic.getTranslationPercentage() == null
-                                        || translationPercentage != translatedTopic.getTranslationPercentage()) {
+                                if (translatedTopic.getTranslationPercentage() == null || translationPercentage != translatedTopic
+                                        .getTranslationPercentage()) {
                                     changed = true;
                                     translatedTopic.setTranslationPercentage(translationPercentage);
                                 }
@@ -335,10 +330,9 @@ public class SyncMaster {
                                     updatedTranslatedTopic.explicitSetTopicId(translatedTopic.getTopicId());
                                     updatedTranslatedTopic.explicitSetTopicRevision(translatedTopic.getTopicRevision());
                                     updatedTranslatedTopic.explicitSetXml(translatedTopic.getXml());
-                                    updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(translatedTopic
-                                            .getTranslatedTopicStrings_OTM());
-                                    updatedTranslatedTopic.explicitSetTranslationPercentage(translatedTopic
-                                            .getTranslationPercentage());
+                                    updatedTranslatedTopic.explicitSetTranslatedTopicString_OTM(
+                                            translatedTopic.getTranslatedTopicStrings_OTM());
+                                    updatedTranslatedTopic.explicitSetTranslationPercentage(translatedTopic.getTranslationPercentage());
 
                                     /* Save all the changed Translated Topic Datas */
                                     if (newTranslation) {
@@ -347,17 +341,16 @@ public class SyncMaster {
                                         client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
                                     }
 
-                                    log.info(thisLocalesProgress + "% Finished synchronising translations for "
-                                            + resource.getName() + " locale " + locale);
+                                    log.info(thisLocalesProgress + "% Finished synchronising translations for " + resource.getName() + " " +
+                                            "locale " + locale);
                                 } else {
-                                    log.info(thisLocalesProgress + "% No changes were found for " + resource.getName()
-                                            + " locale " + locale);
+                                    log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale " +
+                                            locale);
                                 }
                             }
 
                         } else {
-                            log.info(thisLocalesProgress + "% No translations found for " + resource.getName() + " locale "
-                                    + locale);
+                            log.info(thisLocalesProgress + "% No translations found for " + resource.getName() + " locale " + locale);
                         }
                     } catch (final Exception ex) {
                         /* Error with the locale */
@@ -378,17 +371,16 @@ public class SyncMaster {
     /**
      * Processes a Translated Topic and updates or removes the translation strings in that topic to match the new values pulled
      * down from Zanata. It also updates the XML using the strings pulled from Zanata.
-     * 
-     * @param translatedTopic The Translated Topic to update.
+     *
+     * @param translatedTopic    The Translated Topic to update.
      * @param translationDetails The mapping of Original Translation strings to Zanata Translation information.
-     * @param translations A direct mapping of Original strings to Translation strings.
+     * @param translations       A direct mapping of Original strings to Translation strings.
      * @return True if anything in the translated topic changed, otherwise false.
      * @throws SAXException Thrown if the XML in the historical topic has invalid XML and can't be parsed.
      */
     @SuppressWarnings("deprecation")
-    private boolean processTopic(final RESTTranslatedTopicV1 translatedTopic,
-            final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations)
-            throws SAXException {
+    private boolean processTopic(final RESTTranslatedTopicV1 translatedTopic, final Map<String, ZanataTranslation> translationDetails,
+            final Map<String, String> translations) throws SAXException {
         /* The collection used to modify the TranslatedTopicString entities */
         final RESTTranslatedTopicStringCollectionV1 translatedTopicStrings = new RESTTranslatedTopicStringCollectionV1();
         boolean changed = false;
@@ -418,8 +410,8 @@ public class SyncMaster {
             /* Add any StringToNode's that match the original translations and weren't added already by the V2 method */
             for (final StringToNodeCollection stringToNodeCollectionV1 : stringToNodeCollectionsV1) {
                 for (final String originalString : translations.keySet()) {
-                    if (originalString.equals(stringToNodeCollectionV1.getTranslationString())
-                            && !stringToNodeCollections.contains(stringToNodeCollectionV1)) {
+                    if (originalString.equals(stringToNodeCollectionV1.getTranslationString()) && !stringToNodeCollections.contains(
+                            stringToNodeCollectionV1)) {
                         stringToNodeCollections.add(stringToNodeCollectionV1);
                         tempStringToNodeCollection.add(stringToNodeCollectionV1);
                     }
@@ -427,10 +419,9 @@ public class SyncMaster {
             }
 
             // Remove or update any existing translation strings
-            if (translatedTopic.getTranslatedTopicStrings_OTM() != null
-                    && translatedTopic.getTranslatedTopicStrings_OTM().returnItems() != null) {
-                for (final RESTTranslatedTopicStringV1 existingString : translatedTopic.getTranslatedTopicStrings_OTM()
-                        .returnItems()) {
+            if (translatedTopic.getTranslatedTopicStrings_OTM() != null && translatedTopic.getTranslatedTopicStrings_OTM().returnItems()
+                    != null) {
+                for (final RESTTranslatedTopicStringV1 existingString : translatedTopic.getTranslatedTopicStrings_OTM().returnItems()) {
                     boolean found = false;
 
                     for (final StringToNodeCollection original : stringToNodeCollections) {
@@ -445,8 +436,9 @@ public class SyncMaster {
                                 tempStringToNodeCollection.remove(original);
 
                                 // Check the translations still match
-                                if (!translation.getTranslation().equals(existingString.getTranslatedString())
-                                        || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
+                                if (!translation.getTranslation().equals(
+                                        existingString.getTranslatedString()) || translation.isFuzzy() != existingString
+                                        .getFuzzyTranslation()) {
                                     changed = true;
 
                                     existingString.explicitSetTranslatedString(translation.getTranslation());
@@ -504,10 +496,10 @@ public class SyncMaster {
     /**
      * Processes a Translated Topic and updates or removes the translation strings in that topic to match the new values pulled
      * down from Zanata. It also updates the Content Spec using the strings pulled from Zanata.
-     * 
-     * @param translatedTopic The Translated Topic to update.
+     *
+     * @param translatedTopic    The Translated Topic to update.
      * @param translationDetails The mapping of Original Translation strings to Zanata Translation information.
-     * @param translations A direct mapping of Original strings to Translation strings.
+     * @param translations       A direct mapping of Original strings to Translation strings.
      * @return True if anything in the translated topic changed, otherwise false.
      * @throws Exception Thrown if there is an error in the Content Specification syntax.
      */
@@ -527,8 +519,7 @@ public class SyncMaster {
             final ContentSpec spec = parser.getContentSpec();
 
             if (spec != null) {
-                final List<StringToCSNodeCollection> stringToNodeCollections = ContentSpecUtilities.getTranslatableStrings(
-                        spec, false);
+                final List<StringToCSNodeCollection> stringToNodeCollections = ContentSpecUtilities.getTranslatableStrings(spec, false);
 
                 /* create a temporary collection that we can freely remove items from */
                 final List<StringToCSNodeCollection> tempStringToNodeCollection = new ArrayList<StringToCSNodeCollection>();
@@ -537,10 +528,9 @@ public class SyncMaster {
                 }
 
                 // Remove or update any existing translation strings
-                if (translatedTopic.getTranslatedTopicStrings_OTM() != null
-                        && translatedTopic.getTranslatedTopicStrings_OTM().returnItems() != null) {
-                    for (final RESTTranslatedTopicStringV1 existingString : translatedTopic.getTranslatedTopicStrings_OTM()
-                            .returnItems()) {
+                if (translatedTopic.getTranslatedTopicStrings_OTM() != null && translatedTopic.getTranslatedTopicStrings_OTM()
+                        .returnItems() != null) {
+                    for (final RESTTranslatedTopicStringV1 existingString : translatedTopic.getTranslatedTopicStrings_OTM().returnItems()) {
                         boolean found = false;
 
                         for (final StringToCSNodeCollection original : stringToNodeCollections) {
@@ -555,8 +545,9 @@ public class SyncMaster {
                                     tempStringToNodeCollection.remove(original);
 
                                     // Check the translations still match
-                                    if (!translation.getTranslation().equals(existingString.getTranslatedString())
-                                            || translation.isFuzzy() != existingString.getFuzzyTranslation()) {
+                                    if (!translation.getTranslation().equals(
+                                            existingString.getTranslatedString()) || translation.isFuzzy() != existingString
+                                            .getFuzzyTranslation()) {
                                         changed = true;
 
                                         existingString.explicitSetTranslatedString(translation.getTranslation());
@@ -607,7 +598,7 @@ public class SyncMaster {
 
     /**
      * Gets the zanata translated resources
-     * 
+     *
      * @return
      */
     private List<ResourceMeta> getZanataResources() {
@@ -615,7 +606,7 @@ public class SyncMaster {
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
 
         //final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
-        //zanataResources.add(new ResourceMeta("12513-334410"));
+        //zanataResources.add(new ResourceMeta("7555-428580"));
 
         final int numberZanataTopics = zanataResources.size();
 
@@ -625,7 +616,6 @@ public class SyncMaster {
     }
 
     /**
-     * 
      * @return true if all environment variables were set, false otherwise
      */
     private boolean checkEnvironment() {
@@ -639,14 +629,12 @@ public class SyncMaster {
         log.info("Rate Limiting: " + zanataRESTCallInterval + " seconds per REST call");
 
         /* Some sanity checking */
-        if (skynetServer == null || skynetServer.trim().isEmpty() || zanataServer == null || zanataServer.trim().isEmpty()
-                || zanataToken == null || zanataToken.trim().isEmpty() || ZANATA_USERNAME == null
-                || ZANATA_USERNAME.trim().isEmpty() || ZANATA_PROJECT == null || ZANATA_PROJECT.trim().isEmpty()
-                || ZANATA_VERSION == null || ZANATA_VERSION.trim().isEmpty()) {
-            log.error("The " + CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY
-                    + ", " + ZanataConstants.ZANATA_TOKEN_PROPERTY + ", " + ZanataConstants.ZANATA_USERNAME_PROPERTY + ", "
-                    + ZanataConstants.ZANATA_SERVER_PROPERTY + " and " + ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY
-                    + " system properties need to be defined.");
+        if (skynetServer == null || skynetServer.trim().isEmpty() || zanataServer == null || zanataServer.trim().isEmpty() || zanataToken
+                == null || zanataToken.trim().isEmpty() || ZANATA_USERNAME == null || ZANATA_USERNAME.trim().isEmpty() || ZANATA_PROJECT
+                == null || ZANATA_PROJECT.trim().isEmpty() || ZANATA_VERSION == null || ZANATA_VERSION.trim().isEmpty()) {
+            log.error(
+                    "The " + CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY + ", " +
+                            "" + ZanataConstants.ZANATA_TOKEN_PROPERTY + ", " + ZanataConstants.ZANATA_USERNAME_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY + " and " + ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY + " system properties need to be defined.");
             return false;
         }
 

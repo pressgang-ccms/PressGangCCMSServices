@@ -5,6 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.code.regexp.NamedMatcher;
+import com.google.code.regexp.NamedPattern;
+import com.j2bugzilla.base.BugzillaConnector;
+import com.j2bugzilla.base.ECSBug;
+import com.j2bugzilla.rpc.BugSearch;
+import com.j2bugzilla.rpc.LogIn;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.RESTBugzillaBugCollectionV1;
@@ -20,14 +26,6 @@ import org.jboss.pressgang.ccms.utils.common.ExceptionUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 
-import com.google.code.regexp.NamedMatcher;
-import com.google.code.regexp.NamedPattern;
-import com.j2bugzilla.base.BugzillaConnector;
-import com.j2bugzilla.base.ECSBug;
-import com.j2bugzilla.rpc.BugSearch;
-import com.j2bugzilla.rpc.GetBug;
-import com.j2bugzilla.rpc.LogIn;
-
 public class Main {
     /** The Default amount of time that should be waited between Zanata REST API Calls. */
     private static final Double DEFAULT_BUGZILLA_API_CALL_INTERVAL = 0.2;
@@ -37,7 +35,7 @@ public class Main {
     public static void main(String args[]) {
         try {
             /* Get the system properties */
-            final String skynetServer = System.getProperty(CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY);
+            final String skynetServer = System.getProperty(CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY);
             final String bugzillaServer = System.getProperty(CommonConstants.BUGZILLA_URL_PROPERTY);
             final String bugzillaPassword = System.getProperty(CommonConstants.BUGZILLA_PASSWORD_PROPERTY);
             final String bugzillaUsername = System.getProperty(CommonConstants.BUGZILLA_USERNAME_PROPERTY);
@@ -51,7 +49,7 @@ public class Main {
             if (skynetServer == null || skynetServer.trim().isEmpty() || bugzillaServer == null
                     || bugzillaServer.trim().isEmpty() || bugzillaPassword == null || bugzillaPassword.trim().isEmpty()
                     || bugzillaUsername == null || bugzillaUsername.trim().isEmpty()) {
-                System.out.println("The " + CommonConstants.SKYNET_SERVER_SYSTEM_PROPERTY + ", "
+                System.out.println("The " + CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY + ", "
                         + CommonConstants.BUGZILLA_URL_PROPERTY + ", " + CommonConstants.BUGZILLA_PASSWORD_PROPERTY + " and "
                         + CommonConstants.BUGZILLA_USERNAME_PROPERTY + " system properties need to be defined.");
                 return;
@@ -79,13 +77,10 @@ public class Main {
 
             /* Get the topics from Skynet that have bugs assigned to them */
             final ExpandDataTrunk expand = new ExpandDataTrunk();
-
             final ExpandDataDetails topicsExpand = new ExpandDataDetails("topics");
-
             final ExpandDataTrunk topics = new ExpandDataTrunk(topicsExpand);
-
-            expand.setBranches(CollectionUtilities.toArrayList(topics));
             final ExpandDataTrunk bugzillaBugz = new ExpandDataTrunk(new ExpandDataDetails(RESTTopicV1.BUGZILLABUGS_NAME));
+            expand.setBranches(CollectionUtilities.toArrayList(topics));
             topics.setBranches(CollectionUtilities.toArrayList(bugzillaBugz));
 
             final String expandString = mapper.writeValueAsString(expand);
@@ -137,11 +132,12 @@ public class Main {
                 ++current;
                 System.out.print("[" + percentDone + "%] Getting details on bug " + bug.getID() + ". ");
 
-                final GetBug<ECSBug> getBug = new GetBug<ECSBug>(ECSBug.class, bug.getID());
+                /*final GetBug<ECSBug> getBug = new GetBug<ECSBug>(ECSBug.class, bug.getID());
                 connector.executeMethod(getBug);
-                waitForMinimumCallInterval();
+                waitForMinimumCallInterval();*/
                 
-                final ECSBug ecsBug = getBug.getBug();
+                //final ECSBug ecsBug = getBug.getBug();
+                final ECSBug ecsBug = bug;
 
                 final NamedMatcher buildIdMatcher = pattern.matcher(ecsBug.getBuildId());
 
