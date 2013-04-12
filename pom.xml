@@ -138,6 +138,5 @@
         <module>rendering-component</module>
         <module>Spell-Check-Service</module>
         <module>zanata-sync-service</module>
-        <module>zanata-sync-service2</module>
     </modules>
 </project>
