@@ -3,8 +3,10 @@ package org.jboss.pressgang.ccms.services.zanatasync;
 import javax.ws.rs.core.PathSegment;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.redhat.contentspec.processor.ContentSpecParser;
 import org.apache.log4j.Logger;
@@ -12,12 +14,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.pressgang.ccms.contentspec.ContentSpec;
 import org.jboss.pressgang.ccms.contentspec.structures.StringToCSNodeCollection;
 import org.jboss.pressgang.ccms.contentspec.utils.ContentSpecUtilities;
-import org.jboss.pressgang.ccms.rest.v1.client.PressGangCCMSProxyFactoryV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.RESTTranslatedTopicCollectionV1;
 import org.jboss.pressgang.ccms.rest.v1.collections.RESTTranslatedTopicStringCollectionV1;
 import org.jboss.pressgang.ccms.rest.v1.components.ComponentBaseTopicV1;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
-import org.jboss.pressgang.ccms.rest.v1.entities.RESTStringConstantV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTTopicV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTTranslatedTopicStringV1;
 import org.jboss.pressgang.ccms.rest.v1.entities.RESTTranslatedTopicV1;
@@ -25,16 +25,12 @@ import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataDetails;
 import org.jboss.pressgang.ccms.rest.v1.expansion.ExpandDataTrunk;
 import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
 import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
-import org.jboss.pressgang.ccms.utils.common.ExceptionUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.utils.structures.StringToNodeCollection;
-import org.jboss.pressgang.ccms.zanata.ZanataConstants;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.pressgang.ccms.zanata.ZanataTranslation;
-import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import org.zanata.common.LocaleId;
@@ -50,76 +46,22 @@ import org.zanata.rest.dto.resource.TranslationsResource;
  * @author Matthew Casperson
  */
 public class SyncMaster {
-
     private static final String XML_ENCODING = "UTF-8";
     private static final Logger log = Logger.getLogger("PressGangCCMSZanataSyncService");
-    /**
-     * The Default amount of time that should be waited between Zanata REST API Calls.
-     */
-    private static final Double DEFAULT_ZANATA_CALL_INTERVAL = 0.2;
 
     /**
      * Jackson object mapper
      */
     private final static ObjectMapper mapper = new ObjectMapper();
 
-    /* Get the system properties */
-    private static final String skynetServer = System.getProperty(CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY);
-    private static final String zanataServer = System.getProperty(ZanataConstants.ZANATA_SERVER_PROPERTY);
-    private static final String zanataToken = System.getProperty(ZanataConstants.ZANATA_TOKEN_PROPERTY);
-    private static final String ZANATA_USERNAME = System.getProperty(ZanataConstants.ZANATA_USERNAME_PROPERTY);
-    private static final String ZANATA_PROJECT = System.getProperty(ZanataConstants.ZANATA_PROJECT_PROPERTY);
-    private static final String ZANATA_VERSION = System.getProperty(ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY);
-    private static final String MIN_ZANATA_CALL_INTERVAL = System.getProperty(ZanataConstants.MIN_ZANATA_CALL_INTERNAL_PROPERTY);
+    private final ZanataInterface zanataInterface;
+    private final RESTInterfaceV1 client;
+    private final String pressGangServerURL;
 
-    private ZanataInterface zanataInterface;
-    /**
-     * The minimum amount of time in seconds between calls to the Zanata REST API
-     */
-    private Double zanataRESTCallInterval;
-
-    /* Create a custom ObjectMapper to handle the mapping between the interfaces and the concrete classes */
-    private RESTInterfaceV1 client;
-
-    public SyncMaster() {
-        try {
-
-            RegisterBuiltin.register(ResteasyProviderFactory.getInstance());
-
-            /* Parse the specified time from the System Variables. If no time is set or is invalid then use the default value */
-            try {
-                zanataRESTCallInterval = Double.parseDouble(MIN_ZANATA_CALL_INTERVAL);
-            } catch (NumberFormatException ex) {
-                zanataRESTCallInterval = DEFAULT_ZANATA_CALL_INTERVAL;
-            } catch (NullPointerException ex) {
-                zanataRESTCallInterval = DEFAULT_ZANATA_CALL_INTERVAL;
-            }
-            
-            /* Exit if the system properties have not been set */
-            if (!checkEnvironment()) return;
-
-            /* Get an instance of the zanata interface */
-            zanataInterface = new ZanataInterface(zanataRESTCallInterval);
-
-            /* Get in instance of the CCMS interface */
-            client = PressGangCCMSProxyFactoryV1.create(skynetServer).getRESTClient();
-
-            /* Get the existing zanata resources */
-            final List<ResourceMeta> zanataResources = getZanataResources();
-
-            /* Get the locales */
-            final List<LocaleId> locales = getLocales();
-            zanataInterface.getLocaleManager().setLocales(locales);
-
-            /* Remove the default locale as it won't have any translations */
-            zanataInterface.getLocaleManager().removeLocale(new LocaleId(CommonConstants.DEFAULT_LOCALE));
-
-            /* Sync the zanata resources to the CCMS */
-            processZanataResources(zanataResources);
-
-        } catch (final Exception ex) {
-            log.error(ex.toString());
-        }
+    public SyncMaster(final String pressGangServerURL, final RESTInterfaceV1 client, final ZanataInterface zanataInterface) {
+        this.zanataInterface = zanataInterface;
+        this.client = client;
+        this.pressGangServerURL = pressGangServerURL;
     }
 
     /**
@@ -159,43 +101,29 @@ public class SyncMaster {
         }
     }
 
-    private List<LocaleId> getLocales() {
-
-        /* Get the Locale constants */
-        final RESTStringConstantV1 localeConstant = client.getJSONStringConstant(CommonConstants.LOCALES_STRING_CONSTANT_ID, "");
-        final List<String> locales = CollectionUtilities.replaceStrings(CollectionUtilities.sortAndReturn(
-                CollectionUtilities.toArrayList(localeConstant.getValue().split("[\\s\r\n]*,[\\s\r\n]*"))), "_", "-");
-        final List<LocaleId> localeIds = new ArrayList<LocaleId>();
-        for (final String locale : locales) {
-            localeIds.add(LocaleId.fromJavaName(locale));
-        }
-
-        return localeIds;
-    }
-
     /**
      * Sync the translated resources
      *
      * @param zanataResources
      */
     @SuppressWarnings("deprecation")
-    private void processZanataResources(final List<ResourceMeta> zanataResources) {
+    public void processZanataResources(final Set<String> zanataResources) {
 
         final float resourceSize = zanataResources.size();
         float resourceProgress = 0;
 
-        for (final ResourceMeta resource : zanataResources) {
+        for (final String zanataId : zanataResources) {
             try {
 
                 /* Work out progress */
                 float progress = Math.round(resourceProgress / resourceSize * 100.0f);
                 ++resourceProgress;
 
-                if (!resource.getName().matches("^\\d+-\\d+$")) continue;
+                if (!zanataId.matches("^\\d+-\\d+$")) continue;
 
                 /* Get the translated topics in the CCMS */
                 final PathSegment query = new PathSegmentImpl("query", false);
-                query.getMatrixParameters().add(CommonFilterConstants.ZANATA_IDS_FILTER_VAR, resource.getName());
+                query.getMatrixParameters().add(CommonFilterConstants.ZANATA_IDS_FILTER_VAR, zanataId);
 
                 /* get the translated topic in the CCMS */
                 final RESTTranslatedTopicCollectionV1 translatedTopics = client.getJSONTranslatedTopicsWithQuery(query, getExpansion());
@@ -218,16 +146,16 @@ public class SyncMaster {
                         int thisLocalesProgress = Math.round(progress + (localesProgress / localesSize * 100.0f / resourceSize));
                         ++localesProgress;
 
-                        log.info(thisLocalesProgress + "% Synchronising " + resource.getName() + " for locale " + locale.toString());
+                        log.info(thisLocalesProgress + "% Synchronising " + zanataId + " for locale " + locale.toString());
 
                         /* find a translation */
-                        final TranslationsResource translationsResource = zanataInterface.getTranslations(resource.getName(), locale);
+                        final TranslationsResource translationsResource = zanataInterface.getTranslations(zanataId, locale);
 
                         /* Check that a translation exists */
                         if (translationsResource != null) {
                             if (originalTextResource == null) {
                                 /* find the original resource */
-                                originalTextResource = zanataInterface.getZanataResource(resource.getName());
+                                originalTextResource = zanataInterface.getZanataResource(zanataId);
                             }
 
                             /* The translated topic to store the results */
@@ -249,7 +177,7 @@ public class SyncMaster {
                              * If the TranslatedTopic doesn't exist in Zanata then we need to create it
                              */
                             if (translatedTopic == null) {
-                                final String[] zanataNameSplit = resource.getName().split("-");
+                                final String[] zanataNameSplit = zanataId.split("-");
                                 final Integer topicId = Integer.parseInt(zanataNameSplit[0]);
                                 final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
 
@@ -341,27 +269,27 @@ public class SyncMaster {
                                         client.updateJSONTranslatedTopic("", updatedTranslatedTopic);
                                     }
 
-                                    log.info(thisLocalesProgress + "% Finished synchronising translations for " + resource.getName() + " " +
+                                    log.info(thisLocalesProgress + "% Finished synchronising translations for " + zanataId + " " +
                                             "locale " + locale);
                                 } else {
-                                    log.info(thisLocalesProgress + "% No changes were found for " + resource.getName() + " locale " +
+                                    log.info(thisLocalesProgress + "% No changes were found for " + zanataId + " locale " +
                                             locale);
                                 }
                             }
 
                         } else {
-                            log.info(thisLocalesProgress + "% No translations found for " + resource.getName() + " locale " + locale);
+                            log.info(thisLocalesProgress + "% No translations found for " + zanataId + " locale " + locale);
                         }
                     } catch (final Exception ex) {
                         /* Error with the locale */
-                        log.error(ExceptionUtilities.getStackTrace(ex));
+                        log.error(ex);
                     }
 
                 }
 
             } catch (final Exception ex) {
                 /* Error with the resource */
-                log.error(ExceptionUtilities.getStackTrace(ex));
+                log.error(ex);
             }
         }
 
@@ -510,7 +438,7 @@ public class SyncMaster {
         boolean changed = false;
 
         /* Parse the Content Spec stored in the XML Field */
-        final ContentSpecParser parser = new ContentSpecParser(skynetServer);
+        final ContentSpecParser parser = new ContentSpecParser(pressGangServerURL);
 
         /*
          * replace the translated strings, and save the result into the TranslatedTopicData entity
@@ -601,43 +529,19 @@ public class SyncMaster {
      *
      * @return
      */
-    private List<ResourceMeta> getZanataResources() {
+    public Set<String> getZanataResources() {
         /* Get the Zanata resources */
         final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
 
-        //final List<ResourceMeta> zanataResources = new ArrayList<ResourceMeta>();
-        //zanataResources.add(new ResourceMeta("7555-428580"));
-
         final int numberZanataTopics = zanataResources.size();
 
-        System.out.println("Found " + numberZanataTopics + " topics in Zanata.");
+        log.info("Found " + numberZanataTopics + " topics in Zanata.");
 
-        return zanataResources;
-    }
-
-    /**
-     * @return true if all environment variables were set, false otherwise
-     */
-    private boolean checkEnvironment() {
-        log.info("Skynet REST: " + skynetServer);
-        log.info("Zanata Server: " + zanataServer);
-        log.info("Zanata Username: " + ZANATA_USERNAME);
-        log.info("Zanata Token: " + zanataToken);
-        log.info("Zanata Project: " + ZANATA_PROJECT);
-        log.info("Zanata Project Version: " + ZANATA_VERSION);
-        log.info("Default Locale: " + CommonConstants.DEFAULT_LOCALE);
-        log.info("Rate Limiting: " + zanataRESTCallInterval + " seconds per REST call");
-
-        /* Some sanity checking */
-        if (skynetServer == null || skynetServer.trim().isEmpty() || zanataServer == null || zanataServer.trim().isEmpty() || zanataToken
-                == null || zanataToken.trim().isEmpty() || ZANATA_USERNAME == null || ZANATA_USERNAME.trim().isEmpty() || ZANATA_PROJECT
-                == null || ZANATA_PROJECT.trim().isEmpty() || ZANATA_VERSION == null || ZANATA_VERSION.trim().isEmpty()) {
-            log.error(
-                    "The " + CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY + ", " +
-                            "" + ZanataConstants.ZANATA_TOKEN_PROPERTY + ", " + ZanataConstants.ZANATA_USERNAME_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY + " and " + ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY + " system properties need to be defined.");
-            return false;
+        final Set<String> zanataIds = new HashSet<String>();
+        for (final ResourceMeta zanataResource : zanataResources) {
+            zanataIds.add(zanataResource.getName());
         }
 
-        return true;
+        return zanataIds;
     }
 }
