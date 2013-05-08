@@ -93,7 +93,7 @@ public class Main {
      * @return true if all environment variables were set, false otherwise
      */
     private static boolean checkEnvironment(final Double zanataRESTCallInterval) {
-        log.info("Skynet REST: " + PRESS_GANG_SERVER);
+        log.info("PressGang REST: " + PRESS_GANG_SERVER);
         log.info("Zanata Server: " + ZANATA_SERVER);
         log.info("Zanata Username: " + ZANATA_USERNAME);
         log.info("Zanata Token: " + ZANATA_TOKEN);
