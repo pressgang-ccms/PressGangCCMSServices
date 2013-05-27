@@ -12,6 +12,10 @@
         <relativePath>..</relativePath>
     </parent>
 
+    <properties>
+        <jcommander.version>1.24-SNAPSHOT</jcommander.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -45,11 +49,18 @@
             <version>${slf4j.version}</version>
         </dependency>
 
-        <!-- CSP based libraries -->
+        <!-- REST Provider Library -->
         <dependency>
-            <groupId>org.jboss.pressgang.ccms.contentspec</groupId>
-            <artifactId>processor</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>rest-provider</artifactId>
+            <version>${pressgang.ccms.version}</version>
+        </dependency>
+
+        <!-- JCommander -->
+        <dependency>
+            <groupId>org.jboss.pressgang.ccms</groupId>
+            <artifactId>jcommander-pressgang</artifactId>
+            <version>${jcommander.version}</version>
         </dependency>
     </dependencies>
 </project>
