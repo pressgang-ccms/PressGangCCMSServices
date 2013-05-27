@@ -40,7 +40,7 @@
 		<!-- Gozirra Libraries -->
 		<dependency>
 			<groupId>org.jboss.pressgang.ccms</groupId>
-			<artifactId>gozirra-extended</artifactId>
+			<artifactId>gozirra-pressgang</artifactId>
 			<version>${gozirra.version}</version>
 		</dependency>
 	</dependencies>

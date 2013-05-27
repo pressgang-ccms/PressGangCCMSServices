@@ -14,22 +14,6 @@
         <version>1.5</version>
     </parent>
 
-    <repositories>
-        <repository>
-            <id>JBoss</id>
-            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-        </repository>
-        <repository>
-            <id>Zanata</id>
-            <url>http://repository-zanata.forge.cloudbees.com/release/</url>
-        </repository>
-        <repository>
-            <id>oss-sonatype-repo</id>
-            <name>OSS Sonatype repository</name>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
-        </repository>
-    </repositories>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -154,6 +138,5 @@
         <module>rendering-component</module>
         <module>Spell-Check-Service</module>
         <module>zanata-sync-service</module>
-        <module>zanata-sync-service2</module>
     </modules>
 </project>
