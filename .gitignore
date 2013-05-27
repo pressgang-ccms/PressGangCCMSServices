@@ -4,5 +4,7 @@
 .metadata
 *.iml
 */target
+target/
 */bin
-*.iml
+bin/
+.idea/
