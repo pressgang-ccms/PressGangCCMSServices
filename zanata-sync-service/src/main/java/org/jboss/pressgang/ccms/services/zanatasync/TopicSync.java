@@ -12,7 +12,6 @@ import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicStringProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
-import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.utils.structures.StringToNodeCollection;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicStringWrapper;
@@ -165,7 +164,7 @@ public class TopicSync extends BaseZanataSync {
         }
 
         // Process the Translations and apply the changes to the XML
-        if (translatedTopic.hasTag(CommonConstants.CONTENT_SPEC_TAG_ID)) {
+        if (translatedTopic.hasTag(268)) {
             // Ignore syncing Content Specs
             return false;
         } else {

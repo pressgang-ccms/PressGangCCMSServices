@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.pressgang.ccms.contentspec.structures.StringToCSNodeCollection;
-import org.jboss.pressgang.ccms.contentspec.utils.ContentSpecUtilities;
 import org.jboss.pressgang.ccms.contentspec.utils.TranslationUtilities;
 import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
@@ -65,7 +64,7 @@ public class ContentSpecSync extends BaseZanataSync {
                 boolean newTranslation = translatedContentSpec.getId() == null;
 
                 // Get the translatable nodes and source strings.
-                final List<StringToCSNodeCollection> stringToNodeCollections = ContentSpecUtilities.getTranslatableStrings(
+                final List<StringToCSNodeCollection> stringToNodeCollections = TranslationUtilities.getTranslatableStrings(
                         translatedContentSpec.getContentSpec(), false);
 
                 // Get the matching TranslatedCSNodes for the translatable CSNodes
