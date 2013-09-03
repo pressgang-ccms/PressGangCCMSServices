@@ -1,6 +1,5 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +16,7 @@ import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeStringWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedContentSpecWrapper;
 import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
+import org.jboss.pressgang.ccms.wrapper.collection.UpdateableCollectionWrapper;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.pressgang.ccms.zanata.ZanataTranslation;
 import org.slf4j.Logger;
@@ -65,10 +65,6 @@ public class ContentSpecSync extends BaseZanataSync {
                         contentSpecProvider, zanataId);
                 boolean newTranslation = translatedContentSpec.getId() == null;
 
-                // Get the matching TranslatedCSNodes for the translatable CSNodes
-                final List<TranslatedCSNodeWrapper> translatableNodes = getTranslatableCSNodes(translatedContentSpec);
-
-
                 boolean changed = false;
                 for (final LocaleId locale : locales) {
                     try {
@@ -83,7 +79,7 @@ public class ContentSpecSync extends BaseZanataSync {
                             }
 
                             // Sync the translations for the locale.
-                            if (syncTranslatedContentSpecNodesForLocale(translatableNodes, originalTextResource, locale,
+                            if (syncTranslatedContentSpecNodesForLocale(translatedContentSpec.getTranslatedNodes(), originalTextResource, locale,
                                     translationsResource)) {
                                 changed = true;
                             }
@@ -103,7 +99,7 @@ public class ContentSpecSync extends BaseZanataSync {
                         translatedContentSpecProvider.createTranslatedContentSpec(translatedContentSpec);
                     } else {
                         translatedContentSpec.setTranslatedNodes(translatedContentSpec.getTranslatedNodes());
-                        translatedContentSpecProvider.createTranslatedContentSpec(translatedContentSpec);
+                        translatedContentSpecProvider.updateTranslatedContentSpec(translatedContentSpec);
                     }
 
                     log.info(progress + "% Finished synchronising translations for " + zanataId);
@@ -153,27 +149,6 @@ public class ContentSpecSync extends BaseZanataSync {
     }
 
     /**
-     * Gets the existing Translated Nodes for a Content Specs translatable nodes, or creates new ones if one doesn't exist.
-     *
-     * @param translatedContentSpec
-     * @param stringToNodeCollections
-     * @return
-     */
-    protected List<TranslatedCSNodeWrapper> getTranslatableCSNodes(final TranslatedContentSpecWrapper translatedContentSpec) {
-        final List<TranslatedCSNodeWrapper> retValue = new ArrayList<TranslatedCSNodeWrapper>();
-
-        // Try and find an existing matching translated node
-        final List<TranslatedCSNodeWrapper> translatedCSNodes = translatedContentSpec.getTranslatedNodes().getItems();
-        for (final TranslatedCSNodeWrapper translatedCSNode : translatedCSNodes) {
-            if (translatedCSNode.getOriginalString() != null) {
-                retValue.add(translatedCSNode);
-            }
-        }
-
-        return retValue;
-    }
-
-    /**
      * Syncs a Content Specs translatable nodes with the Translations from Zanata for a specific locale.
      *
      * @param translatedNodes      The content spec nodes to be synced.
@@ -182,7 +157,7 @@ public class ContentSpecSync extends BaseZanataSync {
      * @param translationsResource The Translation Resource that holds the translated strings from Zanata.
      * @return
      */
-    protected boolean syncTranslatedContentSpecNodesForLocale(final List<TranslatedCSNodeWrapper> translatedNodes,
+    protected boolean syncTranslatedContentSpecNodesForLocale(final UpdateableCollectionWrapper<TranslatedCSNodeWrapper> translatedNodes,
             final Resource originalTextResource, final LocaleId locale, final TranslationsResource translationsResource) {
         boolean changed = false;
 
@@ -204,22 +179,38 @@ public class ContentSpecSync extends BaseZanataSync {
         }
 
         // Iterate over the translatable nodes and set the translation
-        for (final TranslatedCSNodeWrapper translatedCSNode : translatedNodes) {
-            final TranslatedCSNodeStringWrapper translatedCSNodeString = getTranslatedCSNodeString(translatedCSNode, locale);
-            boolean newTranslation = translatedCSNodeString.getId() == null;
+        final List<TranslatedCSNodeWrapper> translatedCSNodeList = translatedNodes.getItems();
+        for (final TranslatedCSNodeWrapper translatedCSNode : translatedCSNodeList) {
+            // Ignore nodes without a original string, as it means it wasn't pushed to zanata
+            if (translatedCSNode.getOriginalString() == null) {
+                continue;
+            } else if (translations.containsKey(translatedCSNode.getOriginalString())) {
+                // If the string matches then sync the translation
+                final TranslatedCSNodeStringWrapper translatedCSNodeString = getTranslatedCSNodeString(translatedCSNode, locale);
+                boolean newTranslation = translatedCSNodeString.getId() == null;
 
-            if (syncTranslatedContentSpecNodeForLocale(translatedCSNode, translatedCSNodeString, translations)) {
-                changed = true;
+                if (syncTranslatedContentSpecNodeForLocale(translatedCSNode, translatedCSNodeString, translations)) {
+                    changed = true;
 
-                // If the translation string has changed or is new then set it as new/updated in the collection
-                if (newTranslation) {
-                    translatedCSNode.getTranslatedStrings().addNewItem(translatedCSNodeString);
-                } else {
-                    translatedCSNode.getTranslatedStrings().remove(translatedCSNodeString);
-                    translatedCSNode.getTranslatedStrings().addUpdateItem(translatedCSNodeString);
+                    // If the translation string has changed or is new then set it as new/updated in the collection
+                    if (newTranslation) {
+                        translatedCSNode.getTranslatedStrings().addNewItem(translatedCSNodeString);
+                    } else {
+                        translatedCSNode.getTranslatedStrings().remove(translatedCSNodeString);
+                        translatedCSNode.getTranslatedStrings().addUpdateItem(translatedCSNodeString);
+                    }
+                    translatedCSNode.setTranslatedStrings(translatedCSNode.getTranslatedStrings());
+
+                    // Set the translated node as updated/created
+                    translatedNodes.remove(translatedCSNode);
+                    if (translatedCSNode.getId() == null) {
+                        translatedNodes.addNewItem(translatedCSNode);
+                    } else {
+                        translatedNodes.addUpdateItem(translatedCSNode);
+                    }
                 }
+                break;
             }
-            break;
         }
 
         return changed;
@@ -260,7 +251,7 @@ public class ContentSpecSync extends BaseZanataSync {
 
         // Check if a translation exists for the original string
         if (translations.containsKey(translatedCSNode.getOriginalString())) {
-            final ZanataTranslation translation = translations.get(translatedCSNode);
+            final ZanataTranslation translation = translations.get(translatedCSNode.getOriginalString());
 
             // Check that the translation string still matches
             if (!translation.getTranslation().equals(translatedCSNodeString.getTranslatedString())) {
