@@ -69,6 +69,6 @@ public class SyncMaster extends BaseZanataSync {
 
         topicSync.processZanataResources(topicZanataIds, locales);
         contentSpecTopicSync.processZanataResources(contentSpecTopicZanataIds, locales);
-        contentSpecSync.processZanataResources(topicZanataIds, locales);
+        contentSpecSync.processZanataResources(contentSpecZanataIds, locales);
     }
 }
