@@ -1,18 +1,26 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
+import org.jboss.pressgang.ccms.contentspec.structures.XMLFormatProperties;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
+import org.jboss.pressgang.ccms.provider.StringConstantProvider;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicStringProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
+import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
+import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.utils.structures.StringToNodeCollection;
+import org.jboss.pressgang.ccms.wrapper.StringConstantWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicStringWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicWrapper;
@@ -33,13 +41,39 @@ import org.zanata.rest.dto.resource.TranslationsResource;
 public class TopicSync extends BaseZanataSync {
     private static final String XML_ENCODING = "UTF-8";
     private static final Logger log = LoggerFactory.getLogger("ZanataTopicSync");
+    protected final XMLFormatProperties xmlFormatProperties = new XMLFormatProperties();
 
     public TopicSync(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface) {
         super(providerFactory, zanataInterface);
+
+        final StringConstantWrapper xmlElementsProperties = providerFactory.getProvider(StringConstantProvider.class).getStringConstant(
+                CommonConstants.XML_ELEMENTS_STRING_CONSTANT_ID);
+
+        /*
+         * Get the XML formatting details. These are used to pretty-print the XML when it is converted into a String.
+         */
+        final Properties prop = new Properties();
+        try {
+            prop.load(new StringReader(xmlElementsProperties.getValue()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        final String verbatimElementsString = prop.getProperty(CommonConstants.VERBATIM_XML_ELEMENTS_PROPERTY_KEY);
+        final String inlineElementsString = prop.getProperty(CommonConstants.INLINE_XML_ELEMENTS_PROPERTY_KEY);
+        final String contentsInlineElementsString = prop.getProperty(CommonConstants.CONTENTS_INLINE_XML_ELEMENTS_PROPERTY_KEY);
+
+        xmlFormatProperties.setVerbatimElements(CollectionUtilities.toArrayList(verbatimElementsString.split("[\\s]*,[\\s]*")));
+        xmlFormatProperties.setInlineElements(CollectionUtilities.toArrayList(inlineElementsString.split("[\\s]*,[\\s]*")));
+        xmlFormatProperties.setContentsInlineElements(CollectionUtilities.toArrayList(contentsInlineElementsString.split("[\\s]*,[\\s]*")));
     }
 
     @Override
     public void processZanataResources(final Set<String> zanataIds, final List<LocaleId> locales) {
+        if (zanataIds == null || zanataIds.isEmpty()) {
+            return;
+        }
+
         final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
         final double resourceSize = zanataIds.size();
         double resourceCount = 0;
@@ -358,7 +392,8 @@ public class TopicSync extends BaseZanataSync {
             // Replace the translated strings, and save the result into the TranslatedTopicData entity
             if (xml != null) {
                 XMLUtilities.replaceTranslatedStrings(xml, translations, stringToNodeCollections);
-                translatedTopic.setXml(XMLUtilities.convertDocumentToString(xml, XML_ENCODING));
+                translatedTopic.setXml(XMLUtilities.convertNodeToString(xml, xmlFormatProperties.getVerbatimElements(),
+                        xmlFormatProperties.getInlineElements(), xmlFormatProperties.getContentsInlineElements(), true));
             }
         }
 
