@@ -38,6 +38,10 @@ public class ContentSpecSync extends BaseZanataSync {
 
     @Override
     public void processZanataResources(final Set<String> zanataIds, final List<LocaleId> locales) {
+        if (zanataIds == null || zanataIds.isEmpty() || locales == null || locales.isEmpty()) {
+            return;
+        }
+
         final TranslatedContentSpecProvider translatedContentSpecProvider = getProviderFactory().getProvider(TranslatedContentSpecProvider
                 .class);
         final ContentSpecProvider contentSpecProvider = getProviderFactory().getProvider(ContentSpecProvider.class);
