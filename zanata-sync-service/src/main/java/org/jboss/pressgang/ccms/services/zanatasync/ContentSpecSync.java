@@ -6,14 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jboss.pressgang.ccms.contentspec.structures.StringToCSNodeCollection;
 import org.jboss.pressgang.ccms.contentspec.utils.TranslationUtilities;
 import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeStringProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedContentSpecProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
-import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.ContentSpecWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeStringWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
@@ -67,13 +65,8 @@ public class ContentSpecSync extends BaseZanataSync {
                         contentSpecProvider, zanataId);
                 boolean newTranslation = translatedContentSpec.getId() == null;
 
-                // Get the translatable nodes and source strings.
-                final List<StringToCSNodeCollection> stringToNodeCollections = TranslationUtilities.getTranslatableStrings(
-                        translatedContentSpec.getContentSpec(), false);
-
                 // Get the matching TranslatedCSNodes for the translatable CSNodes
-                final List<TranslatedCSNodeWrapper> translatableNodes = getTranslatableCSNodes(translatedContentSpec,
-                        stringToNodeCollections);
+                final List<TranslatedCSNodeWrapper> translatableNodes = getTranslatableCSNodes(translatedContentSpec);
 
 
                 boolean changed = false;
@@ -138,7 +131,8 @@ public class ContentSpecSync extends BaseZanataSync {
             final ContentSpecProvider contentSpecProvider, final String zanataId) {
         // Get the translated topic in the CCMS
         final CollectionWrapper<TranslatedContentSpecWrapper> translatedContentSpecs = translatedContentSpecProvider
-                .getTranslatedContentSpecsWithQuery("query;" + CommonFilterConstants.ZANATA_IDS_FILTER_VAR + "=" + zanataId);
+                .getTranslatedContentSpecsWithQuery(
+                "query;" + CommonFilterConstants.ZANATA_IDS_FILTER_VAR + "=" + zanataId);
 
         final TranslatedContentSpecWrapper translatedContentSpec;
         if (translatedContentSpecs.getItems().size() != 0) {
@@ -165,22 +159,14 @@ public class ContentSpecSync extends BaseZanataSync {
      * @param stringToNodeCollections
      * @return
      */
-    protected List<TranslatedCSNodeWrapper> getTranslatableCSNodes(
-            final TranslatedContentSpecWrapper translatedContentSpec, final List<StringToCSNodeCollection> stringToNodeCollections) {
+    protected List<TranslatedCSNodeWrapper> getTranslatableCSNodes(final TranslatedContentSpecWrapper translatedContentSpec) {
         final List<TranslatedCSNodeWrapper> retValue = new ArrayList<TranslatedCSNodeWrapper>();
 
-        // Iterate over the translatable nodes and find or create the matching TranslatedCSNode
-        for (final StringToCSNodeCollection stringToCSNodeCollection : stringToNodeCollections) {
-            for (final CSNodeWrapper csNode : stringToCSNodeCollection.getNodeCollections()) {
-                // Try and find an existing matching translated node
-                final List<TranslatedCSNodeWrapper> translatedCSNodes = translatedContentSpec.getTranslatedNodes().getItems();
-                for (final TranslatedCSNodeWrapper translatedCSNode : translatedCSNodes) {
-                    if (translatedCSNode.getNodeId().equals(csNode.getId()) && translatedCSNode.getNodeRevision().equals(
-                            csNode.getRevision())) {
-                        retValue.add(translatedCSNode);
-                        break;
-                    }
-                }
+        // Try and find an existing matching translated node
+        final List<TranslatedCSNodeWrapper> translatedCSNodes = translatedContentSpec.getTranslatedNodes().getItems();
+        for (final TranslatedCSNodeWrapper translatedCSNode : translatedCSNodes) {
+            if (translatedCSNode.getOriginalString() != null) {
+                retValue.add(translatedCSNode);
             }
         }
 
