@@ -75,29 +75,26 @@ public class TopicSync extends BaseZanataSync {
         }
 
         final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
-        final double resourceSize = zanataIds.size();
+        final double resourceSize = zanataIds.size() * locales.size();
         double resourceCount = 0;
 
         for (final String zanataId : zanataIds) {
             try {
-                // Work out progress
-                setProgress(Math.round(resourceCount / resourceSize * 100.0));
-                resourceCount++;
-
-                if (!zanataId.matches("^\\d+-\\d+(-\\d+)?$")) continue;
+                if (!zanataId.matches("^\\d+-\\d+(-\\d+)?$")) {
+                    log.info(getProgress() + "% Skipping " + zanataId + " as it isn't a Translated Topic");
+                    resourceCount += locales.size();
+                    continue;
+                }
 
                 // The original Zanata Document Text Resources. This will be populated later.
                 Resource originalTextResource = null;
 
-                final int localesSize = locales.size();
-                int localeCount = 0;
-
                 for (final LocaleId locale : locales) {
                     try {
                         // Work out progress
-                        long localeProgress = Math.round(resourceCount + (localeCount / localesSize * 100.0 / resourceSize));
+                        long localeProgress = Math.round(resourceCount / resourceSize * 100.0);
                         setProgress(localeProgress);
-                        ++localeCount;
+                        resourceCount++;
 
                         log.info(localeProgress + "% Synchronising " + zanataId + " for locale " + locale.toString());
 
