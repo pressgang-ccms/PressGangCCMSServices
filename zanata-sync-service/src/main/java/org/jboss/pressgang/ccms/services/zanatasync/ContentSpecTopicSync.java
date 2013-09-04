@@ -71,33 +71,10 @@ public class ContentSpecTopicSync extends TopicSync {
 
             // We need to get the Condition, however it could be inherited so look up the parent nodes as required
             final CSNodeWrapper csNode = translatedCSNode.getCSNode();
-            final String condition = getCSNodeCondition(csNode);
-            translatedTopic.setTranslatedXMLCondition(condition);
+            translatedTopic.setTranslatedXMLCondition(csNode.getInheritedCondition());
         }
 
         return translatedTopic;
-    }
-
-    /**
-     * Get the condition for a Content Spec Node. This involves looking up the nodes parents incase the condition is inherited.
-     *
-     * @param csNode
-     * @return
-     */
-    protected String getCSNodeCondition(final CSNodeWrapper csNode) {
-        String condition = csNode.getCondition();
-        // If the condition is null then we need to look at the parent nodes
-        if (condition == null) {
-            // If the node has no parent, then it is a top level node so get the content spec condition.
-            // Otherwise try and get the condition from the nodes parent.
-            if (csNode.getParent() == null) {
-                return csNode.getContentSpec().getCondition();
-            } else {
-                return getCSNodeCondition(csNode.getParent());
-            }
-        } else {
-            return condition;
-        }
     }
 
     @Override
