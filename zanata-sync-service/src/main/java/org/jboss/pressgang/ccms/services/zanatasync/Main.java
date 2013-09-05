@@ -193,7 +193,7 @@ public class Main {
         Integer contentSpecRevision = Integer.parseInt(vars[1]);
 
         final ContentSpecWrapper contentSpecEntity = contentSpecProvider.getContentSpec(contentSpecId, contentSpecRevision);
-        final ContentSpec contentSpec = CSTransformer.transform(contentSpecEntity, providerFactory);
+        final ContentSpec contentSpec = CSTransformer.transform(contentSpecEntity, providerFactory, false);
 
         final Set<String> zanataIds = new HashSet<String>();
 
