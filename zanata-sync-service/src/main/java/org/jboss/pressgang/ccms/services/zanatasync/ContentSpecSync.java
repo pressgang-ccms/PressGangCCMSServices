@@ -209,7 +209,6 @@ public class ContentSpecSync extends BaseZanataSync {
                         translatedNodes.addUpdateItem(translatedCSNode);
                     }
                 }
-                break;
             }
         }
 
