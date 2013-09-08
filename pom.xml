@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jboss.pressgang.ccms.services</groupId>
     <artifactId>services-parent</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>1.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>PressGang CCMS Services</name>
 
@@ -66,7 +66,7 @@
     </build>
 
     <properties>
-        <pressgang.ccms.version>1.1-SNAPSHOT</pressgang.ccms.version>
+        <pressgang.ccms.version>1.2-SNAPSHOT</pressgang.ccms.version>
         <jackson.version>1.9.8</jackson.version>
         <resteasy.version>2.3.4.Final</resteasy.version>
         <log4j.version>1.2.16</log4j.version>
@@ -133,10 +133,10 @@
     </dependencies>
 
     <modules>
-        <module>bugzilla-sync-service</module>
+        <!--<module>bugzilla-sync-service</module>
         <module>docbook-builder-component</module>
         <module>rendering-component</module>
-        <module>Spell-Check-Service</module>
+        <module>Spell-Check-Service</module>-->
         <module>zanata-sync-service</module>
     </modules>
 </project>
