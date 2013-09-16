@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.beust.jcommander.IVariableArity;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import org.jboss.pressgang.ccms.contentspec.ContentSpec;
@@ -30,7 +31,7 @@ import org.w3c.dom.Node;
 import org.zanata.common.LocaleId;
 import org.zanata.rest.dto.resource.ResourceMeta;
 
-public class Main {
+public class Main implements IVariableArity {
     private static final Logger log = LoggerFactory.getLogger("ZanataSyncService");
 
     /**
@@ -190,7 +191,7 @@ public class Main {
 
         String[] vars = contentSpecIdString.split("-");
         Integer contentSpecId = Integer.parseInt(vars[0]);
-        Integer contentSpecRevision = Integer.parseInt(vars[1]);
+        Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
 
         final ContentSpecWrapper contentSpecEntity = contentSpecProvider.getContentSpec(contentSpecId, contentSpecRevision);
         final ContentSpec contentSpec = CSTransformer.transform(contentSpecEntity, providerFactory, false);
@@ -226,5 +227,14 @@ public class Main {
         }
 
         return zanataId;
+    }
+
+    @Override
+    public int processVariableArity(String optionName, String[] options) {
+        int i = 0;
+        while (i < options.length && !options[i].startsWith("-")) {
+            i++;
+        }
+        return i;
     }
 }
