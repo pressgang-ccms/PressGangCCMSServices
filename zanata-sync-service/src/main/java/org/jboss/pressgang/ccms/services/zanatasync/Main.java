@@ -3,31 +3,32 @@ package org.jboss.pressgang.ccms.services.zanatasync;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.beust.jcommander.IVariableArity;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import org.jboss.pressgang.ccms.contentspec.ContentSpec;
-import org.jboss.pressgang.ccms.contentspec.SpecTopic;
-import org.jboss.pressgang.ccms.contentspec.utils.CSTransformer;
-import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
+import org.jboss.pressgang.ccms.contentspec.utils.EntityUtilities;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTProviderFactory;
+import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
 import org.jboss.pressgang.ccms.provider.StringConstantProvider;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
+import org.jboss.pressgang.ccms.provider.exception.NotFoundException;
 import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
-import org.jboss.pressgang.ccms.utils.common.DocBookUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
+import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.ContentSpecWrapper;
 import org.jboss.pressgang.ccms.wrapper.StringConstantWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
+import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
+import org.jboss.pressgang.ccms.wrapper.TranslatedContentSpecWrapper;
+import org.jboss.pressgang.ccms.wrapper.TranslatedTopicWrapper;
+import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
 import org.jboss.pressgang.ccms.zanata.ZanataConstants;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
 import org.zanata.common.LocaleId;
 import org.zanata.rest.dto.resource.ResourceMeta;
 
@@ -90,6 +91,7 @@ public class Main implements IVariableArity {
         if (!checkEnvironment()) return;
 
         providerFactory = RESTProviderFactory.create(PRESS_GANG_SERVER);
+        providerFactory.getProvider(RESTTopicProvider.class).setExpandTranslations(true);
         zanataInterface = new ZanataInterface(zanataRESTCallInterval);
 
         // Get the possible locales from the server
@@ -106,9 +108,7 @@ public class Main implements IVariableArity {
         if (!syncAll) {
             // Add the content spec and it's topics
             if (!contentSpecIds.isEmpty()) {
-                for (final String contentSpecStringId : contentSpecIds) {
-                    zanataResources.addAll(getContentSpecZanataResources(providerFactory, contentSpecStringId));
-                }
+                zanataResources.addAll(getContentSpecZanataResources(providerFactory, contentSpecIds));
             }
 
             // Add any topics to be synced
@@ -185,48 +185,85 @@ public class Main implements IVariableArity {
         return retValue;
     }
 
-    private Set<String> getContentSpecZanataResources(final DataProviderFactory providerFactory, final String contentSpecIdString) {
-        final ContentSpecProvider contentSpecProvider = providerFactory.getProvider(ContentSpecProvider.class);
-        final TopicProvider topicProvider = providerFactory.getProvider(TopicProvider.class);
+    /**
+     * Get the Zanata IDs to be synced from a list of content specifications.
+     *
+     * @param providerFactory
+     * @param contentSpecIds  The list of Content Spec IDs to sync.
+     * @return A Set of Zanata IDs that represent the topics to be synced from the list of Content Specs.
+     */
+    protected Set<String> getContentSpecZanataResources(final DataProviderFactory providerFactory, final List<String> contentSpecIds) {
+        final List<TranslatedContentSpecWrapper> translatedContentSpecs = new ArrayList<TranslatedContentSpecWrapper>();
+        for (final String contentSpecIdString : contentSpecIds) {
+            final String[] vars = contentSpecIdString.split("-");
+            final Integer contentSpecId = Integer.parseInt(vars[0]);
+            final Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
 
-        String[] vars = contentSpecIdString.split("-");
-        Integer contentSpecId = Integer.parseInt(vars[0]);
-        Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
+            // Get the latest pushed content spec
+            ContentSpecWrapper contentSpecEntity = null;
+            try {
+                final TranslatedContentSpecWrapper translatedContentSpec = EntityUtilities.getClosestTranslatedContentSpecById(
+                        providerFactory, contentSpecId, contentSpecRevision);
+                if (translatedContentSpec != null) {
+                    contentSpecEntity = translatedContentSpec.getContentSpec();
+                    translatedContentSpecs.add(translatedContentSpec);
+                } else {
+                    // If we don't have a translation then move onto the next content spec
+                    log.info("Ignoring " + contentSpecIdString + " because it doesn't have any translations.");
+                    continue;
+                }
+            } catch (NotFoundException e) {
+                // Do nothing as this is handled below
+            }
 
-        final ContentSpecWrapper contentSpecEntity = contentSpecProvider.getContentSpec(contentSpecId, contentSpecRevision);
-        final ContentSpec contentSpec = CSTransformer.transform(contentSpecEntity, providerFactory, false);
-
-        final Set<String> zanataIds = new HashSet<String>();
-
-        final List<SpecTopic> specTopics = contentSpec.getSpecTopics();
-        for (final SpecTopic specTopic : specTopics) {
-            final TopicWrapper topic = topicProvider.getTopic(specTopic.getDBId(), specTopic.getRevision());
-            specTopic.setTopic(topic);
-            zanataIds.add(getTopicZanataId(specTopic));
+            if (contentSpecEntity == null) {
+                log.info("Ignoring " + contentSpecIdString + " because it doesn't have any translations.");
+                continue;
+            }
         }
 
-        return zanataIds;
+        return getZanataIds(providerFactory, translatedContentSpecs);
     }
 
     /**
-     * Gets the Zanata ID for a topic based on whether or not the topic has any conditional text.
+     * Get the Zanata IDs that represent a Collection of Content Specs and their Topics.
      *
-     * @param specTopic The topic to create the Zanata ID for.
-     * @return The unique Zanata ID that can be used to create a document in Zanata.
+     * @param providerFactory
+     * @param translatedContentSpecs
+     * @return The Set of Zanata IDs that represent the content specs and topics.
      */
-    private String getTopicZanataId(final SpecTopic specTopic) {
-        final TopicWrapper topic = (TopicWrapper) specTopic.getTopic();
-        Map<Node, List<String>> conditionNodes = DocBookUtilities.getConditionNodes(specTopic.getXMLDocument());
+    protected Set<String> getZanataIds(final DataProviderFactory providerFactory,
+            final List<TranslatedContentSpecWrapper> translatedContentSpecs) {
+        final TopicProvider topicProvider = providerFactory.getProvider(TopicProvider.class);
+        final Set<String> zanataIds = new HashSet<String>();
 
-        // Create the zanata id based on whether a condition has been specified or not
-        final String zanataId;
-        if (specTopic.getConditionStatement(true) != null && !conditionNodes.isEmpty()) {
-            zanataId = topic.getId() + "-" + topic.getRevision() + "-" + specTopic.getUniqueId();
-        } else {
-            zanataId = topic.getId() + "-" + topic.getRevision();
+        // Get the zanata ids for each content spec
+        for (final TranslatedContentSpecWrapper translatedContentSpec : translatedContentSpecs) {
+            zanataIds.add(translatedContentSpec.getZanataId());
+
+            final CollectionWrapper<TranslatedCSNodeWrapper> translatedCSNodes = translatedContentSpec.getTranslatedNodes();
+            for (final TranslatedCSNodeWrapper translatedCSNode : translatedCSNodes.getItems()) {
+                final CSNodeWrapper csNode = translatedCSNode.getCSNode();
+                // Make sure the node is a topic
+                if (EntityUtilities.isNodeATopic(csNode)) {
+                    final TopicWrapper topic = topicProvider.getTopic(csNode.getEntityId(), csNode.getEntityRevision());
+
+                    // Try and see if it was pushed with a condition
+                    TranslatedTopicWrapper pushedTopic = EntityUtilities.returnPushedTranslatedTopic(topic, translatedCSNode);
+                    // If pushed topic is null then it means no condition was used
+                    if (pushedTopic == null) {
+                        pushedTopic = EntityUtilities.returnPushedTranslatedTopic(topic);
+                    }
+
+                    // If a pushed topic was found then add it
+                    if (pushedTopic != null) {
+                        zanataIds.add(pushedTopic.getZanataId());
+                    }
+                }
+            }
         }
 
-        return zanataId;
+        return zanataIds;
     }
 
     @Override

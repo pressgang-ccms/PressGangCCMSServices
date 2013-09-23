@@ -67,6 +67,7 @@
 
     <properties>
         <pressgang.ccms.version>1.1-SNAPSHOT</pressgang.ccms.version>
+        <pressgang.ccms.contentspec.version>1.1.2-SNAPSHOT</pressgang.ccms.contentspec.version>
         <jackson.version>1.9.8</jackson.version>
         <resteasy.version>2.3.4.Final</resteasy.version>
         <log4j.version>1.2.16</log4j.version>
@@ -95,7 +96,7 @@
         <dependency>
             <groupId>org.jboss.pressgang.ccms</groupId>
             <artifactId>pressgang-ccms-contentspec</artifactId>
-            <version>${pressgang.ccms.version}</version>
+            <version>${pressgang.ccms.contentspec.version}</version>
         </dependency>
 
         <dependency>
