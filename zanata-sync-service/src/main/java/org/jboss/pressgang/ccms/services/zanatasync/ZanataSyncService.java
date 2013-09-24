@@ -37,26 +37,33 @@ public class ZanataSyncService {
         final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface);
 
         // Sync the zanata resources to the CCMS
-        zanataSync.processZanataResources(zanataResources, locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() :
-                locales);
+        zanataSync.processZanataResources(zanataResources,
+                locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() : locales);
     }
 
     public void sync(final Set<String> contentSpecIds, final Set<String> topicIds, final List<LocaleId> locales) {
-        final Set<String> zanataResources = new HashSet<String>();
         final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface);
-        // Add the content spec and it's topics
+
+        // Sync all the topics
+        if (topicIds != null && !topicIds.isEmpty()) {
+            // Sync the zanata resources to the CCMS
+            zanataSync.processZanataResources(topicIds,
+                    locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() : locales);
+        }
+
+        // Sync each content spec one at a time
         if (contentSpecIds != null && !contentSpecIds.isEmpty()) {
-            zanataResources.addAll(getContentSpecZanataResources(providerFactory, contentSpecIds));
-        }
+            for (final String contentSpecIdString : contentSpecIds) {
+                final Set<String> zanataResources = getContentSpecZanataResource(providerFactory, contentSpecIdString);
 
-        // Add any topics to be synced
-        if (topicIds!= null && !topicIds.isEmpty()) {
-            zanataResources.addAll(topicIds);
+                if (zanataResources != null && !zanataResources.isEmpty()) {
+                    log.info("Syncing " + zanataResources.size() + " translations for content spec " + contentSpecIdString + ".");
+                    // Sync the zanata resources to the CCMS
+                    zanataSync.processZanataResources(zanataResources,
+                            locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() : locales);
+                }
+            }
         }
-
-        // Sync the zanata resources to the CCMS
-        zanataSync.processZanataResources(zanataResources, locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() :
-                locales);
     }
 
     /**
@@ -83,30 +90,28 @@ public class ZanataSyncService {
      * Get the Zanata IDs to be synced from a list of content specifications.
      *
      * @param providerFactory
-     * @param contentSpecIds  The list of Content Spec IDs to sync.
+     * @param contentSpecIdString The Content Spec ID to sync.
      * @return A Set of Zanata IDs that represent the topics to be synced from the list of Content Specs.
      */
-    protected Set<String> getContentSpecZanataResources(final DataProviderFactory providerFactory, final Set<String> contentSpecIds) {
+    protected Set<String> getContentSpecZanataResource(final DataProviderFactory providerFactory, final String contentSpecIdString) {
         final List<TranslatedContentSpecWrapper> translatedContentSpecs = new ArrayList<TranslatedContentSpecWrapper>();
-        for (final String contentSpecIdString : contentSpecIds) {
-            final String[] vars = contentSpecIdString.split("-");
-            final Integer contentSpecId = Integer.parseInt(vars[0]);
-            final Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
+        final String[] vars = contentSpecIdString.split("-");
+        final Integer contentSpecId = Integer.parseInt(vars[0]);
+        final Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
 
-            // Get the latest pushed content spec
-            try {
-                final TranslatedContentSpecWrapper translatedContentSpec = EntityUtilities.getClosestTranslatedContentSpecById(
-                        providerFactory, contentSpecId, contentSpecRevision);
-                if (translatedContentSpec != null) {
-                    translatedContentSpecs.add(translatedContentSpec);
-                } else {
-                    // If we don't have a translation then move onto the next content spec
-                    log.info("Ignoring " + contentSpecIdString + " because it doesn't have any translations.");
-                    continue;
-                }
-            } catch (NotFoundException e) {
-                // Do nothing as this is handled below
+        // Get the latest pushed content spec
+        try {
+            final TranslatedContentSpecWrapper translatedContentSpec = EntityUtilities.getClosestTranslatedContentSpecById(providerFactory,
+                    contentSpecId, contentSpecRevision);
+            if (translatedContentSpec != null) {
+                translatedContentSpecs.add(translatedContentSpec);
+            } else {
+                // If we don't have a translation then move onto the next content spec
+                log.info("Ignoring " + contentSpecIdString + " because it doesn't have any translations.");
+                return new HashSet<String>();
             }
+        } catch (NotFoundException e) {
+            // Do nothing as this is handled below
         }
 
         return getZanataIds(providerFactory, translatedContentSpecs);
