@@ -133,10 +133,10 @@
     </dependencies>
 
     <modules>
-        <!--<module>bugzilla-sync-service</module>
+        <module>bugzilla-sync-service</module>
         <module>docbook-builder-component</module>
         <module>rendering-component</module>
-        <module>Spell-Check-Service</module>-->
+        <module>Spell-Check-Service</module>
         <module>zanata-sync-service</module>
     </modules>
 </project>

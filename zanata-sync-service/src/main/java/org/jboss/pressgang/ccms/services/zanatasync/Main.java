@@ -3,33 +3,23 @@ package org.jboss.pressgang.ccms.services.zanatasync;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.beust.jcommander.IVariableArity;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import org.jboss.pressgang.ccms.contentspec.ContentSpec;
-import org.jboss.pressgang.ccms.contentspec.SpecTopic;
-import org.jboss.pressgang.ccms.contentspec.utils.CSTransformer;
-import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTProviderFactory;
+import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
 import org.jboss.pressgang.ccms.provider.StringConstantProvider;
-import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
-import org.jboss.pressgang.ccms.utils.common.DocBookUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
-import org.jboss.pressgang.ccms.wrapper.ContentSpecWrapper;
 import org.jboss.pressgang.ccms.wrapper.StringConstantWrapper;
-import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.zanata.ZanataConstants;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
 import org.zanata.common.LocaleId;
-import org.zanata.rest.dto.resource.ResourceMeta;
 
 public class Main implements IVariableArity {
     private static final Logger log = LoggerFactory.getLogger("ZanataSyncService");
@@ -50,14 +40,14 @@ public class Main implements IVariableArity {
             DEFAULT_ZANATA_CALL_INTERVAL.toString());
 
     @Parameter(names = {"--topics", "-t"}, description = "Sync a single or list of Topics from Zanata to PressGang.", variableArity = true)
-    private List<String> topicIds = new ArrayList<String>();
+    private Set<String> topicIds = new HashSet<String>();
 
     @Parameter(names = {"--all", "-a"}, description = "Sync all documents in Zanata to PressGang.")
     private boolean syncAll = false;
 
     @Parameter(names = {"--content-specs", "-c"}, description = "Sync a single or list of Content Specs from Zanata to PressGang.",
             variableArity = true)
-    private List<String> contentSpecIds = new ArrayList<String>();
+    private Set<String> contentSpecIds = new HashSet<String>();
 
     @Parameter(names = "--locales", variableArity = true, converter = LocaleIdConverter.class)
     private List<LocaleId> locales = new ArrayList<LocaleId>();
@@ -68,6 +58,7 @@ public class Main implements IVariableArity {
     private Double zanataRESTCallInterval = null;
     private ZanataInterface zanataInterface = null;
     private DataProviderFactory providerFactory = null;
+    private ZanataSyncService syncService = null;
 
     public static void main(final String[] args) {
         final Main main = new Main();
@@ -90,7 +81,9 @@ public class Main implements IVariableArity {
         if (!checkEnvironment()) return;
 
         providerFactory = RESTProviderFactory.create(PRESS_GANG_SERVER);
+        providerFactory.getProvider(RESTTopicProvider.class).setExpandTranslations(true);
         zanataInterface = new ZanataInterface(zanataRESTCallInterval);
+        syncService = new ZanataSyncService(providerFactory, zanataInterface);
 
         // Get the possible locales from the server
         final List<LocaleId> locales = getLocales(providerFactory);
@@ -101,26 +94,11 @@ public class Main implements IVariableArity {
     }
 
     private void process() {
-        final Set<String> zanataResources = new HashSet<String>();
-        final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface);
         if (!syncAll) {
-            // Add the content spec and it's topics
-            if (!contentSpecIds.isEmpty()) {
-                for (final String contentSpecStringId : contentSpecIds) {
-                    zanataResources.addAll(getContentSpecZanataResources(providerFactory, contentSpecStringId));
-                }
-            }
-
-            // Add any topics to be synced
-            if (!topicIds.isEmpty()) {
-                zanataResources.addAll(topicIds);
-            }
+            syncService.sync(contentSpecIds, topicIds, locales);
         } else {
-            zanataResources.addAll(getAllZanataResources(zanataInterface));
+            syncService.syncAll(locales);
         }
-
-        // Sync the zanata resources to the CCMS
-        zanataSync.processZanataResources(zanataResources, this.locales.isEmpty() ? zanataInterface.getZanataLocales() : this.locales);
     }
 
     /**
@@ -163,70 +141,6 @@ public class Main implements IVariableArity {
         }
 
         return localeIds;
-    }
-
-    /**
-     * Gets the zanata translated resources
-     *
-     * @return
-     */
-    private Set<String> getAllZanataResources(final ZanataInterface zanataInterface) {
-        /* Get the Zanata resources */
-        final List<ResourceMeta> zanataResources = zanataInterface.getZanataResources();
-        final int numberZanataTopics = zanataResources.size();
-
-        System.out.println("Found " + numberZanataTopics + " topics in Zanata.");
-
-        final Set<String> retValue = new HashSet<String>();
-        for (final ResourceMeta resourceMeta : zanataResources) {
-            retValue.add(resourceMeta.getName());
-        }
-
-        return retValue;
-    }
-
-    private Set<String> getContentSpecZanataResources(final DataProviderFactory providerFactory, final String contentSpecIdString) {
-        final ContentSpecProvider contentSpecProvider = providerFactory.getProvider(ContentSpecProvider.class);
-        final TopicProvider topicProvider = providerFactory.getProvider(TopicProvider.class);
-
-        String[] vars = contentSpecIdString.split("-");
-        Integer contentSpecId = Integer.parseInt(vars[0]);
-        Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
-
-        final ContentSpecWrapper contentSpecEntity = contentSpecProvider.getContentSpec(contentSpecId, contentSpecRevision);
-        final ContentSpec contentSpec = CSTransformer.transform(contentSpecEntity, providerFactory, false);
-
-        final Set<String> zanataIds = new HashSet<String>();
-
-        final List<SpecTopic> specTopics = contentSpec.getSpecTopics();
-        for (final SpecTopic specTopic : specTopics) {
-            final TopicWrapper topic = topicProvider.getTopic(specTopic.getDBId(), specTopic.getRevision());
-            specTopic.setTopic(topic);
-            zanataIds.add(getTopicZanataId(specTopic));
-        }
-
-        return zanataIds;
-    }
-
-    /**
-     * Gets the Zanata ID for a topic based on whether or not the topic has any conditional text.
-     *
-     * @param specTopic The topic to create the Zanata ID for.
-     * @return The unique Zanata ID that can be used to create a document in Zanata.
-     */
-    private String getTopicZanataId(final SpecTopic specTopic) {
-        final TopicWrapper topic = (TopicWrapper) specTopic.getTopic();
-        Map<Node, List<String>> conditionNodes = DocBookUtilities.getConditionNodes(specTopic.getXMLDocument());
-
-        // Create the zanata id based on whether a condition has been specified or not
-        final String zanataId;
-        if (specTopic.getConditionStatement(true) != null && !conditionNodes.isEmpty()) {
-            zanataId = topic.getId() + "-" + topic.getRevision() + "-" + specTopic.getUniqueId();
-        } else {
-            zanataId = topic.getId() + "-" + topic.getRevision();
-        }
-
-        return zanataId;
     }
 
     @Override
