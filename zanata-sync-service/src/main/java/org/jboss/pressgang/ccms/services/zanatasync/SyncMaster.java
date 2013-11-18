@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
+import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.zanata.common.LocaleId;
 
@@ -21,12 +22,13 @@ public class SyncMaster extends BaseZanataSync {
     private ContentSpecSync contentSpecSync;
     private ContentSpecTopicSync contentSpecTopicSync;
 
-    public SyncMaster(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface) {
+    public SyncMaster(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface,
+            final ServerSettingsWrapper serverSettings) {
         super(providerFactory, zanataInterface);
         try {
-            topicSync = new TopicSync(providerFactory, zanataInterface);
+            topicSync = new TopicSync(providerFactory, zanataInterface, serverSettings);
             contentSpecSync = new ContentSpecSync(providerFactory, zanataInterface);
-            contentSpecTopicSync = new ContentSpecTopicSync(providerFactory, zanataInterface);
+            contentSpecTopicSync = new ContentSpecTopicSync(providerFactory, zanataInterface, serverSettings);
         } catch (final Exception ex) {
             log.error("", ex);
         }

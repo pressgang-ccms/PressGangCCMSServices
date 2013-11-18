@@ -10,6 +10,7 @@ import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
 import org.jboss.pressgang.ccms.utils.common.DocBookUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
+import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicWrapper;
@@ -22,8 +23,9 @@ import org.zanata.common.LocaleId;
 
 public class ContentSpecTopicSync extends TopicSync {
 
-    public ContentSpecTopicSync(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface) {
-        super(providerFactory, zanataInterface);
+    public ContentSpecTopicSync(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface,
+            final ServerSettingsWrapper serverSettings) {
+        super(providerFactory, zanataInterface, serverSettings);
     }
 
     @Override

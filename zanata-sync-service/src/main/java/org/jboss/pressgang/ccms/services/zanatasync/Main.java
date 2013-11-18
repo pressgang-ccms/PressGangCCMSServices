@@ -11,10 +11,9 @@ import com.beust.jcommander.Parameter;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
-import org.jboss.pressgang.ccms.provider.StringConstantProvider;
-import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
+import org.jboss.pressgang.ccms.provider.ServerSettingsProvider;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
-import org.jboss.pressgang.ccms.wrapper.StringConstantWrapper;
+import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.zanata.ZanataConstants;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.slf4j.Logger;
@@ -59,6 +58,7 @@ public class Main implements IVariableArity {
     private ZanataInterface zanataInterface = null;
     private DataProviderFactory providerFactory = null;
     private ZanataSyncService syncService = null;
+    private ServerSettingsWrapper serverSettings = null;
 
     public static void main(final String[] args) {
         final Main main = new Main();
@@ -83,14 +83,15 @@ public class Main implements IVariableArity {
         providerFactory = RESTProviderFactory.create(PRESS_GANG_SERVER);
         providerFactory.getProvider(RESTTopicProvider.class).setExpandTranslations(true);
         zanataInterface = new ZanataInterface(zanataRESTCallInterval);
-        syncService = new ZanataSyncService(providerFactory, zanataInterface);
+        serverSettings = providerFactory.getProvider(ServerSettingsProvider.class).getServerSettings();
+        syncService = new ZanataSyncService(providerFactory, zanataInterface, serverSettings);
 
         // Get the possible locales from the server
-        final List<LocaleId> locales = getLocales(providerFactory);
+        final List<LocaleId> locales = getLocales(serverSettings);
         zanataInterface.getLocaleManager().setLocales(locales);
 
         // Remove the default locale as it won't have any translations
-        zanataInterface.getLocaleManager().removeLocale(new LocaleId(CommonConstants.DEFAULT_LOCALE));
+        zanataInterface.getLocaleManager().removeLocale(new LocaleId(serverSettings.getDefaultLocale()));
     }
 
     private void process() {
@@ -111,7 +112,6 @@ public class Main implements IVariableArity {
         log.info("Zanata Token: " + ZANATA_TOKEN);
         log.info("Zanata Project: " + ZANATA_PROJECT);
         log.info("Zanata Project Version: " + ZANATA_VERSION);
-        log.info("Default Locale: " + CommonConstants.DEFAULT_LOCALE);
         log.info("Rate Limiting: " + zanataRESTCallInterval + " seconds per REST call");
 
         // Some sanity checking
@@ -129,12 +129,9 @@ public class Main implements IVariableArity {
         return true;
     }
 
-    private List<LocaleId> getLocales(final DataProviderFactory providerFactory) {
+    private List<LocaleId> getLocales(final ServerSettingsWrapper serverSettings) {
         // Get the Locale constants
-        final StringConstantWrapper localeConstant = providerFactory.getProvider(StringConstantProvider.class).getStringConstant(
-                CommonConstants.LOCALES_STRING_CONSTANT_ID);
-        final List<String> locales = CollectionUtilities.replaceStrings(CollectionUtilities.sortAndReturn(
-                CollectionUtilities.toArrayList(localeConstant.getValue().split("[\\s\r\n]*,[\\s\r\n]*"))), "_", "-");
+        final List<String> locales = serverSettings.getLocales();
         final List<LocaleId> localeIds = new ArrayList<LocaleId>();
         for (final String locale : locales) {
             localeIds.add(LocaleId.fromJavaName(locale));

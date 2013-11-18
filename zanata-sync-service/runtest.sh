@@ -18,12 +18,12 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 cd ${DIR}
 
-java -DtopicIndex.zanataServer=${ZANATA_SERVER} \
--DtopicIndex.zanataUsername=${USERNAME} \
--DtopicIndex.zanataToken=${TOKEN} \
--DtopicIndex.zanataProject=${PROJECT} \
--DtopicIndex.zanataProjectVersion=${PROJECT_VERSION} \
--DtopicIndex.skynetServer=${REST_SERVER} \
--DtopicIndex.defaultLocale=${DEFAULT_LOCALE} \
--DtopicIndex.minZanataCallInterval=${MIN_ZANATA_CALL_INTERVAL} \
+java -Dpressgang.zanataServer=${ZANATA_SERVER} \
+-Dpressgang.zanataUsername=${USERNAME} \
+-Dpressgang.zanataToken=${TOKEN} \
+-Dpressgang.zanataProject=${PROJECT} \
+-Dpressgang.zanataProjectVersion=${PROJECT_VERSION} \
+-Dpressgang.restServer=${REST_SERVER} \
+-Dpressgang.defaultLocale=${DEFAULT_LOCALE} \
+-Dpressgang.minZanataCallInterval=${MIN_ZANATA_CALL_INTERVAL} \
 -cp target/classes:target/lib/* ${MAINCLASS}

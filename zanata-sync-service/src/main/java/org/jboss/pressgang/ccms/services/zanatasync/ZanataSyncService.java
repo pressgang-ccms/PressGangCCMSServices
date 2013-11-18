@@ -10,6 +10,7 @@ import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.exception.NotFoundException;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
+import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedContentSpecWrapper;
@@ -26,15 +27,18 @@ public class ZanataSyncService {
 
     private final DataProviderFactory providerFactory;
     private final ZanataInterface zanataInterface;
+    private final ServerSettingsWrapper serverSettings;
 
-    public ZanataSyncService(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface) {
+    public ZanataSyncService(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface,
+            final ServerSettingsWrapper serverSettings) {
         this.providerFactory = providerFactory;
         this.zanataInterface = zanataInterface;
+        this.serverSettings = serverSettings;
     }
 
     public void syncAll(final List<LocaleId> locales) {
         final Set<String> zanataResources = getAllZanataResources(zanataInterface);
-        final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface);
+        final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface, serverSettings);
 
         // Sync the zanata resources to the CCMS
         zanataSync.processZanataResources(zanataResources,
@@ -42,7 +46,7 @@ public class ZanataSyncService {
     }
 
     public void sync(final Set<String> contentSpecIds, final Set<String> topicIds, final List<LocaleId> locales) {
-        final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface);
+        final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface, serverSettings);
 
         // Sync all the topics
         if (topicIds != null && !topicIds.isEmpty()) {

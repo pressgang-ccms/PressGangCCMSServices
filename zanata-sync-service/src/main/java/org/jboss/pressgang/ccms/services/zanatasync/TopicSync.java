@@ -20,6 +20,7 @@ import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.utils.structures.StringToNodeCollection;
+import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.StringConstantWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicStringWrapper;
@@ -43,11 +44,12 @@ public class TopicSync extends BaseZanataSync {
     private static final Logger log = LoggerFactory.getLogger("ZanataTopicSync");
     protected final XMLFormatProperties xmlFormatProperties = new XMLFormatProperties();
 
-    public TopicSync(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface) {
+    public TopicSync(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface,
+            final ServerSettingsWrapper serverSettings) {
         super(providerFactory, zanataInterface);
 
         final StringConstantWrapper xmlElementsProperties = providerFactory.getProvider(StringConstantProvider.class).getStringConstant(
-                CommonConstants.XML_ELEMENTS_STRING_CONSTANT_ID);
+                serverSettings.getEntities().getXmlFormattingStringConstantId());
 
         /*
          * Get the XML formatting details. These are used to pretty-print the XML when it is converted into a String.
