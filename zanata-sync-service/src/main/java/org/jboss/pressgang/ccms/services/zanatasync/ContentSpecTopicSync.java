@@ -1,7 +1,11 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
+import java.util.List;
 import java.util.Map;
 
+import org.jboss.pressgang.ccms.contentspec.utils.TranslationUtilities;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeProvider;
@@ -18,6 +22,7 @@ import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.pressgang.ccms.zanata.ZanataTranslation;
 import org.w3c.dom.Document;
+import org.w3c.dom.Entity;
 import org.xml.sax.SAXException;
 import org.zanata.common.LocaleId;
 
@@ -86,7 +91,15 @@ public class ContentSpecTopicSync extends TopicSync {
         final Document xml = XMLUtilities.convertStringToDocument(translatedTopic.getTopic().getXml());
 
         // Clean the XML of all conditions
-        DocBookUtilities.processConditions(translatedTopic.getTranslatedXMLCondition(), xml, "default");
+        if (!isNullOrEmpty(translatedTopic.getTranslatedXMLCondition())) {
+            DocBookUtilities.processConditions(translatedTopic.getTranslatedXMLCondition(), xml, "default");
+        }
+
+        // Remove any custom entities, since they cause massive translation issues.
+        final List<Entity> entities = XMLUtilities.parseEntitiesFromString(translatedTopic.getCustomEntities());
+        if (!entities.isEmpty()) {
+            TranslationUtilities.resolveCustomEntities(entities, xml);
+        }
 
         return super.processTranslatedTopicXML(translatedTopic, xml, translationDetails, translations);
     }
