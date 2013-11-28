@@ -1,5 +1,6 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,9 @@ import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeStringProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedContentSpecProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
+import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
+import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
+import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.ContentSpecWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeStringWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
@@ -21,6 +25,7 @@ import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.pressgang.ccms.zanata.ZanataTranslation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Entity;
 import org.zanata.common.LocaleId;
 import org.zanata.rest.dto.resource.Resource;
 import org.zanata.rest.dto.resource.TextFlow;
@@ -138,14 +143,35 @@ public class ContentSpecSync extends BaseZanataSync {
             final Integer contentSpecId = Integer.parseInt(zanataNameSplit[0]);
             final Integer contentSpecRevision = Integer.parseInt(zanataNameSplit[1]);
 
-            // We need the historical content spec
+            // We need the historical content spec to create the translated content spec
             final ContentSpecWrapper historicalContentSpec = contentSpecProvider.getContentSpec(contentSpecId, contentSpecRevision);
 
+            // Resolve any custom entities
+            final List<Entity> entities = getEntities(historicalContentSpec);
+            TranslationUtilities.resolveCustomContentSpecEntities(entities, historicalContentSpec);
+
             translatedContentSpec = TranslationUtilities.createTranslatedContentSpec(getProviderFactory(), historicalContentSpec);
-            translatedContentSpec.setContentSpec(historicalContentSpec);
         }
 
         return translatedContentSpec;
+    }
+
+    /**
+     * Gets and parses the entities defined in the parsed content spec.
+     *
+     * @param contentSpec The content spec to get the entities from.
+     * @return A list of DOM Entity elements, or an empty list if no entities exist.
+     */
+    protected List<Entity> getEntities(final ContentSpecWrapper contentSpec) {
+        if (contentSpec.getChildren() != null) {
+            for (final CSNodeWrapper csNode : contentSpec.getChildren().getItems()) {
+                if (CommonConstants.CS_ENTITIES_TITLE.equals(csNode.getTitle())) {
+                    return XMLUtilities.parseEntitiesFromString(csNode.getAdditionalText());
+                }
+            }
+        }
+
+        return new ArrayList<Entity>();
     }
 
     /**

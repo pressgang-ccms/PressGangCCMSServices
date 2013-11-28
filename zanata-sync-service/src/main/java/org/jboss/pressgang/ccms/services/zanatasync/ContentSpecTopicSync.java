@@ -98,7 +98,7 @@ public class ContentSpecTopicSync extends TopicSync {
         // Remove any custom entities, since they cause massive translation issues.
         final List<Entity> entities = XMLUtilities.parseEntitiesFromString(translatedTopic.getCustomEntities());
         if (!entities.isEmpty()) {
-            TranslationUtilities.resolveCustomEntities(entities, xml);
+            TranslationUtilities.resolveCustomTopicEntities(entities, xml);
         }
 
         return super.processTranslatedTopicXML(translatedTopic, xml, translationDetails, translations);
