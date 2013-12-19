@@ -10,7 +10,6 @@ import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
-import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
 import org.jboss.pressgang.ccms.utils.common.DocBookUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
@@ -18,7 +17,6 @@ import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicWrapper;
-import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.pressgang.ccms.zanata.ZanataTranslation;
 import org.w3c.dom.Document;
@@ -34,52 +32,33 @@ public class ContentSpecTopicSync extends TopicSync {
     }
 
     @Override
-    protected TranslatedTopicWrapper getTranslatedTopic(final DataProviderFactory providerFactory, final String zanataId,
-            final LocaleId locale) {
-        final TranslatedTopicProvider translatedTopicProvider = providerFactory.getProvider(TranslatedTopicProvider.class);
-        final TopicProvider topicProvider = providerFactory.getProvider(TopicProvider.class);
-        final TranslatedCSNodeProvider translatedCSNodeProvider = providerFactory.getProvider(TranslatedCSNodeProvider.class);
+    protected TranslatedTopicWrapper createTranslatedTopic(final String zanataId, final LocaleId locale) {
+        final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
+        final TopicProvider topicProvider = getProviderFactory().getProvider(TopicProvider.class);
+        final TranslatedCSNodeProvider translatedCSNodeProvider = getProviderFactory().getProvider(TranslatedCSNodeProvider.class);
 
-        // Get the translated topic in the CCMS
-        final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider.getTranslatedTopicsWithQuery(
-                "query;" + CommonFilterConstants.ZANATA_IDS_FILTER_VAR + "=" + zanataId);
+        // Get the id and revision from the zanata id
+        final String[] zanataNameSplit = zanataId.split("-");
+        final Integer topicId = Integer.parseInt(zanataNameSplit[0]);
+        final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
 
-        TranslatedTopicWrapper translatedTopic = null;
-        if (translatedTopics.getItems().size() != 0) {
-            // Find the original translation (the query results will return all locales)
-            for (final TranslatedTopicWrapper transTopic : translatedTopics.getItems()) {
-                if (transTopic.getLocale().equals(locale.toString())) {
-                    translatedTopic = transTopic;
-                    break;
-                }
-            }
-        }
+        // Get the associated Translated Node
+        final TranslatedCSNodeWrapper translatedCSNode = translatedCSNodeProvider.getTranslatedCSNode(Integer.parseInt(zanataNameSplit[2]));
 
-        // If the TranslatedTopic doesn't exist in PressGang then we need to create it
-        if (translatedTopic == null) {
-            final String[] zanataNameSplit = zanataId.split("-");
-            final Integer topicId = Integer.parseInt(zanataNameSplit[0]);
-            final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
+        // We need the historical topic here as well.
+        final TopicWrapper historicalTopic = topicProvider.getTopic(topicId, topicRevision);
 
-            // Get the associated Translated Node
-            final TranslatedCSNodeWrapper translatedCSNode = translatedCSNodeProvider.getTranslatedCSNode(
-                    Integer.parseInt(zanataNameSplit[2]));
+        final TranslatedTopicWrapper translatedTopic = translatedTopicProvider.newTranslatedTopic();
+        translatedTopic.setLocale(locale.toString());
+        translatedTopic.setTopicId(topicId);
+        translatedTopic.setTopicRevision(topicRevision);
+        translatedTopic.setTopic(historicalTopic);
+        translatedTopic.setTags(historicalTopic.getTags());
+        translatedTopic.setTranslatedCSNode(translatedCSNode);
 
-            // We need the historical topic here as well.
-            final TopicWrapper historicalTopic = topicProvider.getTopic(topicId, topicRevision);
-
-            translatedTopic = translatedTopicProvider.newTranslatedTopic();
-            translatedTopic.setLocale(locale.toString());
-            translatedTopic.setTopicId(topicId);
-            translatedTopic.setTopicRevision(topicRevision);
-            translatedTopic.setTopic(historicalTopic);
-            translatedTopic.setTags(historicalTopic.getTags());
-            translatedTopic.setTranslatedCSNode(translatedCSNode);
-
-            // We need to get the Condition, however it could be inherited so look up the parent nodes as required
-            final CSNodeWrapper csNode = translatedCSNode.getCSNode();
-            translatedTopic.setTranslatedXMLCondition(csNode.getInheritedCondition());
-        }
+        // We need to get the Condition, however it could be inherited so look up the parent nodes as required
+        final CSNodeWrapper csNode = translatedCSNode.getCSNode();
+        translatedTopic.setTranslatedXMLCondition(csNode.getInheritedCondition());
 
         return translatedTopic;
     }

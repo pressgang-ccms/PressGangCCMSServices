@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -16,6 +18,7 @@ import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicStringProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
+import org.jboss.pressgang.ccms.rest.v1.query.RESTTranslatedTopicQueryBuilderV1;
 import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
@@ -40,14 +43,16 @@ import org.zanata.rest.dto.resource.TextFlowTarget;
 import org.zanata.rest.dto.resource.TranslationsResource;
 
 public class TopicSync extends BaseZanataSync {
-    private static final String XML_ENCODING = "UTF-8";
+    private static int MAX_DOWNLOAD_SIZE = 250;
     private static final Logger log = LoggerFactory.getLogger("ZanataTopicSync");
     protected final XMLFormatProperties xmlFormatProperties = new XMLFormatProperties();
+    private final int contentSpecTagId;
 
     public TopicSync(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface,
             final ServerSettingsWrapper serverSettings) {
         super(providerFactory, zanataInterface);
 
+        contentSpecTagId = serverSettings.getEntities().getContentSpecTagId();
         final StringConstantWrapper xmlElementsProperties = providerFactory.getProvider(StringConstantProvider.class).getStringConstant(
                 serverSettings.getEntities().getXmlFormattingStringConstantId());
 
@@ -76,21 +81,22 @@ public class TopicSync extends BaseZanataSync {
             return;
         }
 
+        // Validate and remove any invalid zanata ids
+        validateZanataIds(zanataIds);
+
         final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
         final double resourceSize = zanataIds.size() * locales.size();
         double resourceCount = 0;
 
+        // Get all the existing translated topics for the zanata ids
+        final Map<String, Map<LocaleId, TranslatedTopicWrapper>> allTranslatedTopics = getTranslatedTopics(zanataIds, locales);
+
         for (final String zanataId : zanataIds) {
             try {
-                if (!zanataId.matches("^\\d+-\\d+(-\\d+)?$")) {
-                    log.info(getProgress() + "% Skipping " + zanataId + " as it isn't a Translated Topic");
-                    resourceCount += locales.size();
-                    continue;
-                }
-
                 // The original Zanata Document Text Resources. This will be populated later.
                 Resource originalTextResource = null;
 
+                final Map<LocaleId, TranslatedTopicWrapper> translatedTopics = allTranslatedTopics.get(zanataId);
                 for (final LocaleId locale : locales) {
                     try {
                         // Work out progress
@@ -100,7 +106,7 @@ public class TopicSync extends BaseZanataSync {
 
                         log.info(localeProgress + "% Synchronising " + zanataId + " for locale " + locale.toString());
 
-                        // find a translation
+                        // Find a translation
                         final TranslationsResource translationsResource = getZanataInterface().getTranslations(zanataId, locale);
 
                         // Check that a translation exists
@@ -111,7 +117,12 @@ public class TopicSync extends BaseZanataSync {
                             }
 
                             // The translated topic to store the results
-                            final TranslatedTopicWrapper translatedTopic = getTranslatedTopic(getProviderFactory(), zanataId, locale);
+                            final TranslatedTopicWrapper translatedTopic;
+                            if (translatedTopics != null && translatedTopics.containsKey(locale)) {
+                                translatedTopic = translatedTopics.get(locale);
+                            } else {
+                                translatedTopic = createTranslatedTopic(zanataId, locale);
+                            }
                             boolean newTranslation = translatedTopic.getId() == null;
 
                             if (translatedTopic != null) {
@@ -159,6 +170,22 @@ public class TopicSync extends BaseZanataSync {
         log.info("100% Finished synchronising all Topic translations");
     }
 
+    /**
+     * Validate and remove any invalid zanata ids
+     *
+     * @param zanataIds The set of zanata ids to be validated
+     */
+    protected void validateZanataIds(final Set<String> zanataIds) {
+        final Iterator<String> iter = zanataIds.iterator();
+        while (iter.hasNext()) {
+            final String zanataId = iter.next();
+            if (!zanataId.matches("^\\d+-\\d+(-\\d+)?$")) {
+                log.info("Skipping " + zanataId + " as it isn't a Translated Topic");
+                iter.remove();
+            }
+        }
+    }
+
     protected boolean syncTranslatedTopic(final TranslatedTopicWrapper translatedTopic, final Resource originalTextResource,
             final TranslationsResource translationsResource) throws SAXException {
         boolean changed = false;
@@ -197,7 +224,7 @@ public class TopicSync extends BaseZanataSync {
         }
 
         // Process the Translations and apply the changes to the XML
-        if (translatedTopic.hasTag(268)) {
+        if (translatedTopic.hasTag(contentSpecTagId)) {
             // Ignore syncing Content Specs
             return false;
         } else {
@@ -214,42 +241,85 @@ public class TopicSync extends BaseZanataSync {
         return changed;
     }
 
-    protected TranslatedTopicWrapper getTranslatedTopic(final DataProviderFactory providerFactory, final String zanataId,
-            final LocaleId locale) {
-        final TranslatedTopicProvider translatedTopicProvider = providerFactory.getProvider(TranslatedTopicProvider.class);
-        final TopicProvider topicProvider = providerFactory.getProvider(TopicProvider.class);
+    /**
+     * Get all the Translated Topics for a list of Zanata Ids and Locales.
+     *
+     * @param zanataIds A list of Zanata Ids to get existing translated topics for.
+     * @param locales   A list of locales to get Translated Topics for.
+     * @return A list of Translated Topics that match the Zanata ID/Locale search criteria.
+     */
+    protected Map<String, Map<LocaleId, TranslatedTopicWrapper>> getTranslatedTopics(final Set<String> zanataIds,
+            final List<LocaleId> locales) {
+        log.info("Downloading all the existing translated topics from PressGang...");
+        final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
 
-        // Get the translated topic in the CCMS
-        final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider.getTranslatedTopicsWithQuery(
-                "query;" + CommonFilterConstants.ZANATA_IDS_FILTER_VAR + "=" + zanataId);
-
-        TranslatedTopicWrapper translatedTopic = null;
-        if (translatedTopics.getItems().size() != 0) {
-            // Find the original translation (the query results will return all locales)
-            for (final TranslatedTopicWrapper transTopic : translatedTopics.getItems()) {
-                if (transTopic.getLocale().equals(locale.toString())) {
-                    translatedTopic = transTopic;
-                    break;
+        // Get the translated topics in the CCMS
+        final List<TranslatedTopicWrapper> allTranslatedTopics = new ArrayList<TranslatedTopicWrapper>();
+        final RESTTranslatedTopicQueryBuilderV1 queryBuilder = new RESTTranslatedTopicQueryBuilderV1();
+        for (final LocaleId localeId : locales) {
+            queryBuilder.setLocale(localeId.toString(), CommonFilterConstants.MATCH_LOCALE_STATE);
+        }
+        if (zanataIds.size() > MAX_DOWNLOAD_SIZE) {
+            int start = 0;
+            while (start < zanataIds.size()) {
+                final List<String> subList = new LinkedList<String>(zanataIds).subList(start, Math.min(start + MAX_DOWNLOAD_SIZE,
+                        zanataIds.size()));
+                queryBuilder.setZanataIds(subList);
+                final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider.getTranslatedTopicsWithQuery(
+                        queryBuilder.getQuery());
+                if (translatedTopics != null) {
+                    allTranslatedTopics.addAll(translatedTopics.getItems());
                 }
+
+                start += MAX_DOWNLOAD_SIZE;
+            }
+        } else {
+            queryBuilder.setZanataIds(zanataIds);
+            final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider.getTranslatedTopicsWithQuery(
+                    queryBuilder.getQuery());
+            if (translatedTopics != null) {
+                allTranslatedTopics.addAll(translatedTopics.getItems());
             }
         }
 
-        // If the TranslatedTopic doesn't exist in PressGang then we need to create it
-        if (translatedTopic == null) {
-            final String[] zanataNameSplit = zanataId.split("-");
-            final Integer topicId = Integer.parseInt(zanataNameSplit[0]);
-            final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
-
-            // We need the historical topic here as well.
-            final TopicWrapper historicalTopic = topicProvider.getTopic(topicId, topicRevision);
-
-            translatedTopic = translatedTopicProvider.newTranslatedTopic();
-            translatedTopic.setLocale(locale.toString());
-            translatedTopic.setTopicId(topicId);
-            translatedTopic.setTopicRevision(topicRevision);
-            translatedTopic.setTopic(historicalTopic);
-            translatedTopic.setTags(historicalTopic.getTags());
+        // Populate the return value
+        final Map<String, Map<LocaleId, TranslatedTopicWrapper>> retValue = new HashMap<String, Map<LocaleId, TranslatedTopicWrapper>>();
+        for (final TranslatedTopicWrapper transTopic : allTranslatedTopics) {
+            final String zanataId = transTopic.getZanataId();
+            if (!retValue.containsKey(zanataId)) {
+                retValue.put(zanataId, new HashMap<LocaleId, TranslatedTopicWrapper>());
+            }
+            retValue.get(zanataId).put(LocaleId.fromJavaName(transTopic.getLocale()), transTopic);
         }
+
+        return retValue;
+    }
+
+    /**
+     * Create a new Translated Topic from a Zanata ID and Locale.
+     *
+     * @param zanataId The Zanata ID the Translated Topic should be created from.
+     * @param locale   The Locale for the new Translated Topic.
+     * @return A new Translated Topic for the specified Zanata ID and Locale.
+     */
+    protected TranslatedTopicWrapper createTranslatedTopic(final String zanataId, final LocaleId locale) {
+        final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
+        final TopicProvider topicProvider = getProviderFactory().getProvider(TopicProvider.class);
+
+        // Get the id and revision from the zanata id
+        final String[] zanataNameSplit = zanataId.split("-");
+        final Integer topicId = Integer.parseInt(zanataNameSplit[0]);
+        final Integer topicRevision = Integer.parseInt(zanataNameSplit[1]);
+
+        // We need the historical topic here as well.
+        final TopicWrapper historicalTopic = topicProvider.getTopic(topicId, topicRevision);
+
+        final TranslatedTopicWrapper translatedTopic = translatedTopicProvider.newTranslatedTopic();
+        translatedTopic.setLocale(locale.toString());
+        translatedTopic.setTopicId(topicId);
+        translatedTopic.setTopicRevision(topicRevision);
+        translatedTopic.setTopic(historicalTopic);
+        translatedTopic.setTags(historicalTopic.getTags());
 
         return translatedTopic;
     }
