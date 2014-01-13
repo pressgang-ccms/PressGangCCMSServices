@@ -1,9 +1,8 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.beust.jcommander.IVariableArity;
 import com.beust.jcommander.JCommander;
@@ -39,14 +38,14 @@ public class Main implements IVariableArity {
             DEFAULT_ZANATA_CALL_INTERVAL.toString());
 
     @Parameter(names = {"--topics", "-t"}, description = "Sync a single or list of Topics from Zanata to PressGang.", variableArity = true)
-    private Set<String> topicIds = new HashSet<String>();
+    private LinkedHashSet<String> topicIds = new LinkedHashSet<String>();
 
     @Parameter(names = {"--all", "-a"}, description = "Sync all documents in Zanata to PressGang.")
     private boolean syncAll = false;
 
     @Parameter(names = {"--content-specs", "-c"}, description = "Sync a single or list of Content Specs from Zanata to PressGang.",
             variableArity = true)
-    private Set<String> contentSpecIds = new HashSet<String>();
+    private LinkedHashSet<String> contentSpecIds = new LinkedHashSet<String>();
 
     @Parameter(names = "--locales", variableArity = true, converter = LocaleIdConverter.class)
     private List<LocaleId> locales = new ArrayList<LocaleId>();
@@ -120,9 +119,9 @@ public class Main implements IVariableArity {
                 ZANATA_PROJECT == null || ZANATA_PROJECT.trim().isEmpty() || ZANATA_VERSION == null || ZANATA_VERSION.trim().isEmpty()) {
             log.error(
                     "The " + CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY + ", " +
-                            "" + ZanataConstants.ZANATA_TOKEN_PROPERTY + ", " + ZanataConstants.ZANATA_USERNAME_PROPERTY + ", " +
-                            "" + ZanataConstants.ZANATA_SERVER_PROPERTY + " and " + ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY + " " +
-                            "system properties need to be defined.");
+                            ZanataConstants.ZANATA_TOKEN_PROPERTY + ", " + ZanataConstants.ZANATA_USERNAME_PROPERTY + ", " +
+                            ZanataConstants.ZANATA_SERVER_PROPERTY + " and " + ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY +
+                            " system properties need to be defined.");
             return false;
         }
 
