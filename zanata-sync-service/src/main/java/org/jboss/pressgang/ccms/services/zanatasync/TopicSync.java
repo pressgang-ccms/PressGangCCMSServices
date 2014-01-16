@@ -30,6 +30,7 @@ import org.jboss.pressgang.ccms.wrapper.TranslatedTopicStringWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
 import org.jboss.pressgang.ccms.wrapper.collection.UpdateableCollectionWrapper;
+import org.jboss.pressgang.ccms.zanata.NotModifiedException;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.pressgang.ccms.zanata.ZanataTranslation;
 import org.slf4j.Logger;
@@ -107,7 +108,14 @@ public class TopicSync extends BaseZanataSync {
                         log.info(localeProgress + "% Synchronising " + zanataId + " for locale " + locale.toString());
 
                         // Find a translation
-                        final TranslationsResource translationsResource = getZanataInterface().getTranslations(zanataId, locale);
+                        final TranslationsResource translationsResource;
+                        try {
+                            translationsResource = getZanataInterface().getTranslations(zanataId, locale);
+                        } catch (NotModifiedException e) {
+                            // The translation hasn't been modified so move to the next locale
+                            log.info(localeProgress + "% No changes were found for " + zanataId + " locale " + locale);
+                            continue;
+                        }
 
                         // Check that a translation exists
                         if (translationsResource != null) {

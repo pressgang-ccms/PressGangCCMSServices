@@ -1,5 +1,7 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -13,11 +15,14 @@ import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
 import org.jboss.pressgang.ccms.provider.ServerSettingsProvider;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
+import org.jboss.pressgang.ccms.zanata.ETagCache;
+import org.jboss.pressgang.ccms.zanata.ETagInterceptor;
 import org.jboss.pressgang.ccms.zanata.ZanataConstants;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zanata.common.LocaleId;
+import org.zanata.rest.client.ISourceDocResource;
 
 public class Main implements IVariableArity {
     private static final Logger log = LoggerFactory.getLogger("ZanataSyncService");
@@ -26,6 +31,12 @@ public class Main implements IVariableArity {
      * The Default amount of time that should be waited between Zanata REST API Calls.
      */
     private static final Double DEFAULT_ZANATA_CALL_INTERVAL = 0.2;
+
+    private static final List<Class<?>> IGNORED_RESOURCES = new ArrayList<Class<?>>() {
+        {
+            add(ISourceDocResource.class);
+        }
+    };
 
     /* Get the system properties */
     private static final String PRESS_GANG_SERVER = System.getProperty(CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY);
@@ -50,6 +61,9 @@ public class Main implements IVariableArity {
     @Parameter(names = "--locales", variableArity = true, converter = LocaleIdConverter.class)
     private List<LocaleId> locales = new ArrayList<LocaleId>();
 
+    final ETagCache eTagCache = new ETagCache();
+    final File eTagCacheFile = new File(".zanata-cache");
+
     /**
      * The minimum amount of time in seconds between calls to the Zanata REST API
      */
@@ -64,6 +78,7 @@ public class Main implements IVariableArity {
         final JCommander jCommander = new JCommander(main, args);
         main.setUp();
         main.process();
+        main.cleanUp();
     }
 
     public Main() {
@@ -79,9 +94,18 @@ public class Main implements IVariableArity {
         // Exit if the system properties have not been set
         if (!checkEnvironment()) return;
 
+        // Load the cache data
+        try {
+            eTagCache.load(eTagCacheFile);
+        } catch (IOException e) {
+            log.error("Failed to load the ETag cache data from file", e);
+        }
+
         providerFactory = RESTProviderFactory.create(PRESS_GANG_SERVER);
         providerFactory.getProvider(RESTTopicProvider.class).setExpandTranslations(true);
         zanataInterface = new ZanataInterface(zanataRESTCallInterval);
+        final ETagInterceptor interceptor = new ETagInterceptor(eTagCache, IGNORED_RESOURCES);
+        zanataInterface.getProxyFactory().registerPrefixInterceptor(interceptor);
         serverSettings = providerFactory.getProvider(ServerSettingsProvider.class).getServerSettings();
         syncService = new ZanataSyncService(providerFactory, zanataInterface, serverSettings);
 
@@ -98,6 +122,14 @@ public class Main implements IVariableArity {
             syncService.sync(contentSpecIds, topicIds, locales);
         } else {
             syncService.syncAll(locales);
+        }
+    }
+
+    private void cleanUp() {
+        try {
+            eTagCache.save(eTagCacheFile);
+        } catch (IOException e) {
+            log.error("Failed to save the ETag Cache to file", e);
         }
     }
 
