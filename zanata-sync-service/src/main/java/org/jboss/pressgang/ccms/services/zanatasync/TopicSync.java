@@ -90,7 +90,13 @@ public class TopicSync extends BaseZanataSync {
         double resourceCount = 0;
 
         // Get all the existing translated topics for the zanata ids
-        final Map<String, Map<LocaleId, TranslatedTopicWrapper>> allTranslatedTopics = getTranslatedTopics(zanataIds, locales);
+        Map<String, Map<LocaleId, TranslatedTopicWrapper>> allTranslatedTopics = null;
+        try {
+            allTranslatedTopics = getTranslatedTopics(zanataIds, locales);
+        } catch (Exception e) {
+            log.debug("Failed to download all the existing translated topics", e);
+            return;
+        }
 
         for (final String zanataId : zanataIds) {
             try {
@@ -267,6 +273,7 @@ public class TopicSync extends BaseZanataSync {
         for (final LocaleId localeId : locales) {
             queryBuilder.setLocale(localeId.toString(), CommonFilterConstants.MATCH_LOCALE_STATE);
         }
+
         if (zanataIds.size() > MAX_DOWNLOAD_SIZE) {
             int start = 0;
             while (start < zanataIds.size()) {
