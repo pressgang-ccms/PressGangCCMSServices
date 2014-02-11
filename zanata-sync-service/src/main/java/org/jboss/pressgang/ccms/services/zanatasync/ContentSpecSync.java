@@ -1,18 +1,20 @@
 package org.jboss.pressgang.ccms.services.zanatasync;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.pressgang.ccms.contentspec.ContentSpec;
+import org.jboss.pressgang.ccms.contentspec.KeyValueNode;
+import org.jboss.pressgang.ccms.contentspec.utils.CSTransformer;
+import org.jboss.pressgang.ccms.contentspec.utils.ContentSpecUtilities;
 import org.jboss.pressgang.ccms.contentspec.utils.TranslationUtilities;
 import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeStringProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedContentSpecProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
-import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.ContentSpecWrapper;
@@ -170,15 +172,18 @@ public class ContentSpecSync extends BaseZanataSync {
      * @return A list of DOM Entity elements, or an empty list if no entities exist.
      */
     protected List<Entity> getEntities(final ContentSpecWrapper contentSpec) {
+        final ContentSpec tempSpec = new ContentSpec();
+
         if (contentSpec.getChildren() != null) {
             for (final CSNodeWrapper csNode : contentSpec.getChildren().getItems()) {
-                if (CommonConstants.CS_ENTITIES_TITLE.equals(csNode.getTitle())) {
-                    return XMLUtilities.parseEntitiesFromString(csNode.getAdditionalText());
+                if (csNode.getNodeType() == CommonConstants.CS_NODE_META_DATA) {
+                    KeyValueNode<?> keyValueNode = CSTransformer.transformMetaData(csNode);
+                    tempSpec.appendKeyValueNode(keyValueNode);
                 }
             }
         }
 
-        return new ArrayList<Entity>();
+        return ContentSpecUtilities.getContentSpecEntities(tempSpec);
     }
 
     /**
