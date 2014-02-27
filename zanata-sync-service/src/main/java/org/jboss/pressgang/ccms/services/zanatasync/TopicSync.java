@@ -20,6 +20,7 @@ import org.jboss.pressgang.ccms.provider.TranslatedTopicStringProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
 import org.jboss.pressgang.ccms.rest.v1.query.RESTTranslatedTopicQueryBuilderV1;
 import org.jboss.pressgang.ccms.utils.common.CollectionUtilities;
+import org.jboss.pressgang.ccms.utils.common.DocBookUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.utils.structures.StringToNodeCollection;
@@ -380,8 +381,8 @@ public class TopicSync extends BaseZanataSync {
         boolean changed = false;
 
         if (xml != null) {
-            final List<StringToNodeCollection> stringToNodeCollectionsV2 = XMLUtilities.getTranslatableStringsV2(xml, false);
-            final List<StringToNodeCollection> stringToNodeCollectionsV1 = XMLUtilities.getTranslatableStringsV1(xml, false);
+            final List<StringToNodeCollection> stringToNodeCollectionsV2 = DocBookUtilities.getTranslatableStringsV2(xml, false);
+            final List<StringToNodeCollection> stringToNodeCollectionsV1 = DocBookUtilities.getTranslatableStringsV1(xml, false);
 
             // Used to hold the list of StringToNode's that match the translations pulled form Zanata
             final List<StringToNodeCollection> stringToNodeCollections = new ArrayList<StringToNodeCollection>();
@@ -475,7 +476,7 @@ public class TopicSync extends BaseZanataSync {
 
             // Replace the translated strings, and save the result into the TranslatedTopicData entity
             if (xml != null) {
-                XMLUtilities.replaceTranslatedStrings(xml, translations, stringToNodeCollections);
+                DocBookUtilities.replaceTranslatedStrings(xml, translations, stringToNodeCollections);
                 translatedTopic.setXml(XMLUtilities.convertNodeToString(xml, xmlFormatProperties.getVerbatimElements(),
                         xmlFormatProperties.getInlineElements(), xmlFormatProperties.getContentsInlineElements(), true));
             }
