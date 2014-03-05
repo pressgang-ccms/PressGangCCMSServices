@@ -112,6 +112,11 @@ public class TopicSync extends BaseZanataSync {
                         setProgress(localeProgress);
                         resourceCount++;
 
+                        // Check that the locale is still valid. ie It hasn't been removed in the locale manager
+                        if (!getZanataInterface().getZanataLocales().contains(locale)) {
+                            continue;
+                        }
+
                         log.info(localeProgress + "% Synchronising " + zanataId + " for locale " + locale.toString());
 
                         // Find a translation

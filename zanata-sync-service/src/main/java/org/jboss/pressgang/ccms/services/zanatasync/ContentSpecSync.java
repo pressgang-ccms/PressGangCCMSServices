@@ -75,6 +75,11 @@ public class ContentSpecSync extends BaseZanataSync {
 
                 boolean changed = false;
                 for (final LocaleId locale : locales) {
+                    // Check that the locale is still valid. ie It hasn't been removed in the locale manager
+                    if (!getZanataInterface().getZanataLocales().contains(locale)) {
+                        continue;
+                    }
+
                     try {
                         // Find a translation
                         final TranslationsResource translationsResource;
@@ -149,7 +154,7 @@ public class ContentSpecSync extends BaseZanataSync {
             translatedContentSpec = translatedContentSpecs.getItems().get(0);
         } else {
             final String[] zanataNameSplit = zanataId.split("-");
-            final Integer contentSpecId = Integer.parseInt(zanataNameSplit[0]);
+            final Integer contentSpecId = Integer.parseInt(zanataNameSplit[0].replace("CS", ""));
             final Integer contentSpecRevision = Integer.parseInt(zanataNameSplit[1]);
 
             // We need the historical content spec to create the translated content spec

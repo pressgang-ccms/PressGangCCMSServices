@@ -13,16 +13,20 @@ import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
 import org.jboss.pressgang.ccms.provider.ServerSettingsProvider;
+import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTBaseInterfaceV1;
+import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.zanata.ETagCache;
 import org.jboss.pressgang.ccms.zanata.ETagInterceptor;
 import org.jboss.pressgang.ccms.zanata.ZanataConstants;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zanata.common.LocaleId;
 import org.zanata.rest.client.ISourceDocResource;
+import org.zanata.rest.service.SourceDocResource;
 
 public class Main implements IVariableArity {
     private static final Logger log = LoggerFactory.getLogger("ZanataSyncService");
@@ -35,6 +39,9 @@ public class Main implements IVariableArity {
     private static final List<Class<?>> IGNORED_RESOURCES = new ArrayList<Class<?>>() {
         {
             add(ISourceDocResource.class);
+            add(SourceDocResource.class);
+            add(RESTBaseInterfaceV1.class);
+            add(RESTInterfaceV1.class);
         }
     };
 
@@ -103,15 +110,15 @@ public class Main implements IVariableArity {
 
         providerFactory = RESTProviderFactory.create(PRESS_GANG_SERVER);
         providerFactory.getProvider(RESTTopicProvider.class).setExpandTranslations(true);
-        zanataInterface = new ZanataInterface(zanataRESTCallInterval);
         final ETagInterceptor interceptor = new ETagInterceptor(eTagCache, IGNORED_RESOURCES);
-        zanataInterface.getProxyFactory().registerPrefixInterceptor(interceptor);
+        ResteasyProviderFactory.getInstance().getClientExecutionInterceptorRegistry().register(interceptor);
+        zanataInterface = new ZanataInterface(zanataRESTCallInterval);
         serverSettings = providerFactory.getProvider(ServerSettingsProvider.class).getServerSettings();
         syncService = new ZanataSyncService(providerFactory, zanataInterface, serverSettings);
 
-        // Get the possible locales from the server
-        final List<LocaleId> locales = getLocales(serverSettings);
-        zanataInterface.getLocaleManager().setLocales(locales);
+        // Initialise the locales to use
+        initLocales(serverSettings);
+        zanataInterface.getLocaleManager().setLocales(new ArrayList<LocaleId>(locales));
 
         // Remove the default locale as it won't have any translations
         zanataInterface.getLocaleManager().removeLocale(new LocaleId(serverSettings.getDefaultLocale()));
@@ -160,15 +167,14 @@ public class Main implements IVariableArity {
         return true;
     }
 
-    private List<LocaleId> getLocales(final ServerSettingsWrapper serverSettings) {
-        // Get the Locale constants
-        final List<String> locales = serverSettings.getLocales();
-        final List<LocaleId> localeIds = new ArrayList<LocaleId>();
-        for (final String locale : locales) {
-            localeIds.add(LocaleId.fromJavaName(locale));
+    private void initLocales(final ServerSettingsWrapper serverSettings) {
+        if (locales.isEmpty()) {
+            // Get the Locale constants
+            final List<String> locales = serverSettings.getLocales();
+            for (final String locale : locales) {
+                this.locales.add(LocaleId.fromJavaName(locale));
+            }
         }
-
-        return localeIds;
     }
 
     @Override
