@@ -46,7 +46,7 @@ import org.zanata.rest.dto.resource.TranslationsResource;
 
 public class TopicSync extends BaseZanataSync {
     private static int MAX_DOWNLOAD_SIZE = 250;
-    private static final Logger log = LoggerFactory.getLogger("ZanataTopicSync");
+    private static final Logger log = LoggerFactory.getLogger(TopicSync.class);
     protected final XMLFormatProperties xmlFormatProperties = new XMLFormatProperties();
     private final int contentSpecTagId;
 

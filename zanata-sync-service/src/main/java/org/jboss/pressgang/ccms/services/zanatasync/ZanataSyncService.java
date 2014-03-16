@@ -23,7 +23,7 @@ import org.zanata.common.LocaleId;
 import org.zanata.rest.dto.resource.ResourceMeta;
 
 public class ZanataSyncService {
-    private static final Logger log = LoggerFactory.getLogger("ZanataSyncService");
+    private static final Logger log = LoggerFactory.getLogger(ZanataSyncService.class);
 
     private final DataProviderFactory providerFactory;
     private final ZanataInterface zanataInterface;

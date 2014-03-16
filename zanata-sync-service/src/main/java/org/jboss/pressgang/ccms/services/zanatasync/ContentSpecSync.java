@@ -36,7 +36,7 @@ import org.zanata.rest.dto.resource.TextFlowTarget;
 import org.zanata.rest.dto.resource.TranslationsResource;
 
 public class ContentSpecSync extends BaseZanataSync {
-    private static final Logger log = LoggerFactory.getLogger("ZanataContentSpecSync");
+    private static final Logger log = LoggerFactory.getLogger(ContentSpecSync.class);
 
     public ContentSpecSync(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface) {
         super(providerFactory, zanataInterface);
