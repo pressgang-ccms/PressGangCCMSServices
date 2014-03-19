@@ -3,6 +3,7 @@ package org.jboss.pressgang.ccms.services.zanatasync;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -13,8 +14,6 @@ import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
 import org.jboss.pressgang.ccms.provider.ServerSettingsProvider;
-import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTBaseInterfaceV1;
-import org.jboss.pressgang.ccms.rest.v1.jaxrsinterfaces.RESTInterfaceV1;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.zanata.ETagCache;
@@ -25,8 +24,8 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zanata.common.LocaleId;
-import org.zanata.rest.client.ISourceDocResource;
-import org.zanata.rest.service.SourceDocResource;
+import org.zanata.rest.client.ITranslatedDocResource;
+import org.zanata.rest.service.TranslatedDocResource;
 
 public class Main implements IVariableArity {
     private static final Logger log = LoggerFactory.getLogger("ZanataSyncService");
@@ -36,14 +35,8 @@ public class Main implements IVariableArity {
      */
     private static final Double DEFAULT_ZANATA_CALL_INTERVAL = 0.2;
 
-    private static final List<Class<?>> IGNORED_RESOURCES = new ArrayList<Class<?>>() {
-        {
-            add(ISourceDocResource.class);
-            add(SourceDocResource.class);
-            add(RESTBaseInterfaceV1.class);
-            add(RESTInterfaceV1.class);
-        }
-    };
+    private static final List<Class<?>> ALLOWED_RESOURCES = Arrays.<Class<?>>asList(ITranslatedDocResource.class,
+            TranslatedDocResource.class);
 
     /* Get the system properties */
     private static final String PRESS_GANG_SERVER = System.getProperty(CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY);
@@ -110,7 +103,7 @@ public class Main implements IVariableArity {
 
         providerFactory = RESTProviderFactory.create(PRESS_GANG_SERVER);
         providerFactory.getProvider(RESTTopicProvider.class).setExpandTranslations(true);
-        final ETagInterceptor interceptor = new ETagInterceptor(eTagCache, IGNORED_RESOURCES);
+        final ETagInterceptor interceptor = new ETagInterceptor(eTagCache, ALLOWED_RESOURCES);
         ResteasyProviderFactory.getInstance().getClientExecutionInterceptorRegistry().register(interceptor);
         zanataInterface = new ZanataInterface(zanataRESTCallInterval);
         serverSettings = providerFactory.getProvider(ServerSettingsProvider.class).getServerSettings();
