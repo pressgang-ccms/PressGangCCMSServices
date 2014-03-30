@@ -9,6 +9,7 @@ import org.jboss.pressgang.ccms.contentspec.utils.EntityUtilities;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.exception.NotFoundException;
+import org.jboss.pressgang.ccms.wrapper.CSInfoNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
@@ -142,14 +143,20 @@ public class ZanataSyncService {
                 final CSNodeWrapper csNode = translatedCSNode.getCSNode();
                 // Make sure the node is a topic
                 if (EntityUtilities.isNodeATopic(csNode)) {
-                    final TopicWrapper topic = topicProvider.getTopic(csNode.getEntityId(), csNode.getEntityRevision());
+                    final TranslatedTopicWrapper pushedTopic = getTranslatedTopic(topicProvider, csNode.getEntityId(),
+                            csNode.getEntityRevision(), translatedCSNode);
 
-                    // Try and see if it was pushed with a condition
-                    TranslatedTopicWrapper pushedTopic = EntityUtilities.returnPushedTranslatedTopic(topic, translatedCSNode);
-                    // If pushed topic is null then it means no condition was used
-                    if (pushedTopic == null) {
-                        pushedTopic = EntityUtilities.returnPushedTranslatedTopic(topic);
+                    // If a pushed topic was found then add it
+                    if (pushedTopic != null) {
+                        zanataIds.add(pushedTopic.getZanataId());
                     }
+                }
+
+                // Add the info topic if one exists
+                if (csNode.getInfoTopicNode() != null) {
+                    final CSInfoNodeWrapper csNodeInfo = csNode.getInfoTopicNode();
+                    final TranslatedTopicWrapper pushedTopic = getTranslatedTopic(topicProvider, csNodeInfo.getTopicId(),
+                            csNodeInfo.getTopicRevision(), translatedCSNode);
 
                     // If a pushed topic was found then add it
                     if (pushedTopic != null) {
@@ -160,5 +167,19 @@ public class ZanataSyncService {
         }
 
         return zanataIds;
+    }
+
+    protected TranslatedTopicWrapper getTranslatedTopic(final TopicProvider topicProvider, final Integer topicId,
+            final Integer topicRevision, final TranslatedCSNodeWrapper translatedCSNode) {
+        final TopicWrapper topic = topicProvider.getTopic(topicId, topicRevision);
+
+        // Try and see if it was pushed with a condition
+        TranslatedTopicWrapper pushedTopic = EntityUtilities.returnPushedTranslatedTopic(topic, translatedCSNode);
+        // If pushed topic is null then it means no condition was used
+        if (pushedTopic == null) {
+            pushedTopic = EntityUtilities.returnPushedTranslatedTopic(topic);
+        }
+
+        return pushedTopic;
     }
 }
