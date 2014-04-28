@@ -359,6 +359,10 @@ public class TopicSync extends BaseZanataSync {
             final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations) throws SAXException {
         // Get a Document from the stored historical XML
         final Document xml = XMLUtilities.convertStringToDocument(translatedTopic.getTopic().getXml());
+
+        // Process any conditions
+        DocBookUtilities.processConditions(translatedTopic.getTranslatedXMLCondition(), xml);
+
         return processTranslatedTopicXML(translatedTopic, xml, translationDetails, translations);
     }
 
