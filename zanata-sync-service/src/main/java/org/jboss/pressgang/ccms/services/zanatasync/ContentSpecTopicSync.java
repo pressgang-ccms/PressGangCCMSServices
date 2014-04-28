@@ -80,6 +80,6 @@ public class ContentSpecTopicSync extends TopicSync {
             TranslationUtilities.resolveCustomTopicEntities(entities, xml);
         }
 
-        return super.processTranslatedTopicXML(translatedTopic, xml, translationDetails, translations);
+        return processTranslatedTopicXML(translatedTopic, xml, translationDetails, translations);
     }
 }
