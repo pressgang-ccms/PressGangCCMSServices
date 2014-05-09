@@ -390,6 +390,7 @@ public class TopicSync extends BaseZanataSync {
         boolean changed = false;
 
         if (xml != null) {
+            final List<StringToNodeCollection> stringToNodeCollectionsV3 = DocBookUtilities.getTranslatableStringsV3(xml, false);
             final List<StringToNodeCollection> stringToNodeCollectionsV2 = DocBookUtilities.getTranslatableStringsV2(xml, false);
             final List<StringToNodeCollection> stringToNodeCollectionsV1 = DocBookUtilities.getTranslatableStringsV1(xml, false);
 
@@ -398,17 +399,28 @@ public class TopicSync extends BaseZanataSync {
             // Used to hold a duplicate list of StringToNode's so we can remove the originals from the above List
             final List<StringToNodeCollection> tempStringToNodeCollection = new ArrayList<StringToNodeCollection>();
 
-            // Add any StringToNode's that match the original translations */
+            // Add any StringToNode's that match the original translations
+            for (final StringToNodeCollection stringToNodeCollectionV3 : stringToNodeCollectionsV3) {
+                for (final String originalString : translations.keySet()) {
+                    if (originalString.equals(stringToNodeCollectionV3.getTranslationString())) {
+                        stringToNodeCollections.add(stringToNodeCollectionV3);
+                        tempStringToNodeCollection.add(stringToNodeCollectionV3);
+                    }
+                }
+            }
+
+            // Add any StringToNode's that match the original translations and weren't added already by the V3 method
             for (final StringToNodeCollection stringToNodeCollectionV2 : stringToNodeCollectionsV2) {
                 for (final String originalString : translations.keySet()) {
-                    if (originalString.equals(stringToNodeCollectionV2.getTranslationString())) {
+                    if (originalString.equals(stringToNodeCollectionV2.getTranslationString()) && !stringToNodeCollections.contains(
+                            stringToNodeCollectionV2)) {
                         stringToNodeCollections.add(stringToNodeCollectionV2);
                         tempStringToNodeCollection.add(stringToNodeCollectionV2);
                     }
                 }
             }
 
-            // Add any StringToNode's that match the original translations and weren't added already by the V2 method
+            // Add any StringToNode's that match the original translations and weren't added already by the V2/V3 method
             for (final StringToNodeCollection stringToNodeCollectionV1 : stringToNodeCollectionsV1) {
                 for (final String originalString : translations.keySet()) {
                     if (originalString.equals(stringToNodeCollectionV1.getTranslationString()) && !stringToNodeCollections.contains(
