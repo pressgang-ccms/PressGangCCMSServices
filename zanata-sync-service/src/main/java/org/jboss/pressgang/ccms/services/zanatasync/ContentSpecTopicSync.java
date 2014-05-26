@@ -5,6 +5,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.pressgang.ccms.contentspec.utils.EntityUtilities;
 import org.jboss.pressgang.ccms.contentspec.utils.TranslationUtilities;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
@@ -12,6 +13,7 @@ import org.jboss.pressgang.ccms.provider.TranslatedCSNodeProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
 import org.jboss.pressgang.ccms.utils.common.DocBookUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
+import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
@@ -48,6 +50,10 @@ public class ContentSpecTopicSync extends TopicSync {
         // We need the historical topic here as well.
         final TopicWrapper historicalTopic = topicProvider.getTopic(topicId, topicRevision);
 
+        // Try to find one that might already exist
+        TranslatedTopicWrapper existingPushedTranslatedTopic = EntityUtilities.returnPushedTranslatedTopic(historicalTopic,
+                translatedCSNode);
+
         final TranslatedTopicWrapper translatedTopic = translatedTopicProvider.newTranslatedTopic();
         translatedTopic.setLocale(locale.toString());
         translatedTopic.setTopicId(topicId);
@@ -56,9 +62,17 @@ public class ContentSpecTopicSync extends TopicSync {
         translatedTopic.setTags(historicalTopic.getTags());
         translatedTopic.setTranslatedCSNode(translatedCSNode);
 
-        // We need to get the Condition, however it could be inherited so look up the parent nodes as required
-        final CSNodeWrapper csNode = translatedCSNode.getCSNode();
-        translatedTopic.setTranslatedXMLCondition(csNode.getInheritedCondition());
+        if (existingPushedTranslatedTopic == null) {
+            final CSNodeWrapper csNode = translatedCSNode.getCSNode();
+            translatedTopic.setTranslatedXMLCondition(csNode.getInheritedCondition());
+            final CSNodeWrapper entityNode = csNode.getContentSpec().getMetaData(CommonConstants.CS_ENTITIES_TITLE);
+            if (entityNode != null) {
+                translatedTopic.setCustomEntities(entityNode.getAdditionalText());
+            }
+        } else {
+            translatedTopic.setTranslatedXMLCondition(existingPushedTranslatedTopic.getTranslatedXMLCondition());
+            translatedTopic.setCustomEntities(existingPushedTranslatedTopic.getCustomEntities());
+        }
 
         return translatedTopic;
     }
