@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jboss.pressgang.ccms.services</groupId>
     <artifactId>services-parent</artifactId>
-    <version>1.6</version>
+    <version>1.6.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>PressGang CCMS Services</name>
 
@@ -67,6 +67,7 @@
 
     <properties>
         <pressgang.ccms.version>1.6</pressgang.ccms.version>
+        <pressgang.ccms.hotfix.version>1.6.1-SNAPSHOT</pressgang.ccms.hotfix.version>
         <log4j.version>1.2.16</log4j.version>
         <slf4j.version>1.6.4</slf4j.version>
         <dependencyplugin.version>2.4</dependencyplugin.version>
@@ -77,7 +78,7 @@
         <dependency>
             <groupId>org.jboss.pressgang.ccms</groupId>
             <artifactId>pressgang-ccms-utils</artifactId>
-            <version>${pressgang.ccms.version}</version>
+            <version>${pressgang.ccms.hotfix.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.pressgang.ccms</groupId>
