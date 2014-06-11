@@ -137,8 +137,14 @@ public class ZanataSyncService {
         // Get the zanata ids for each content spec
         for (final TranslatedContentSpecWrapper translatedContentSpec : translatedContentSpecs) {
             zanataIds.add(translatedContentSpec.getZanataId());
-
             final CollectionWrapper<TranslatedCSNodeWrapper> translatedCSNodes = translatedContentSpec.getTranslatedNodes();
+
+            log.info("Downloading topics...");
+            final int showPercent = 10;
+            final float total = translatedCSNodes.getItems().size();
+            float current = 0;
+            int lastPercent = 0;
+
             for (final TranslatedCSNodeWrapper translatedCSNode : translatedCSNodes.getItems()) {
                 final CSNodeWrapper csNode = translatedCSNode.getCSNode();
                 // Make sure the node is a topic
@@ -162,6 +168,13 @@ public class ZanataSyncService {
                     if (pushedTopic != null) {
                         zanataIds.add(pushedTopic.getZanataId());
                     }
+                }
+
+                ++current;
+                final int percent = Math.round(current / total * 100);
+                if (percent - lastPercent >= showPercent) {
+                    lastPercent = percent;
+                    log.info("Downloading topics {}% Done", percent);
                 }
             }
         }
