@@ -12,6 +12,7 @@ import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
 import org.jboss.pressgang.ccms.utils.common.DocBookUtilities;
+import org.jboss.pressgang.ccms.utils.common.TopicUtilities;
 import org.jboss.pressgang.ccms.utils.common.XMLUtilities;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
@@ -81,7 +82,8 @@ public class ContentSpecTopicSync extends TopicSync {
     protected boolean processTranslatedTopicXML(final TranslatedTopicWrapper translatedTopic,
             final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations) throws SAXException {
         // Get a Document from the stored historical XML
-        final Document xml = XMLUtilities.convertStringToDocument(translatedTopic.getTopic().getXml());
+        final Document xml = TopicUtilities.convertXMLStringToDocument(translatedTopic.getTopic().getXml(),
+                translatedTopic.getTopic().getXmlFormat());
 
         // Clean the XML of all conditions
         if (!isNullOrEmpty(translatedTopic.getTranslatedXMLCondition())) {
