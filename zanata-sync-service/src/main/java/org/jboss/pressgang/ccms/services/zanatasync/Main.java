@@ -30,11 +30,14 @@ import com.beust.jcommander.IVariableArity;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
+import org.jboss.pressgang.ccms.provider.LocaleProvider;
 import org.jboss.pressgang.ccms.provider.RESTProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
 import org.jboss.pressgang.ccms.provider.ServerSettingsProvider;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
+import org.jboss.pressgang.ccms.wrapper.LocaleWrapper;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
+import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
 import org.jboss.pressgang.ccms.zanata.ETagCache;
 import org.jboss.pressgang.ccms.zanata.ETagInterceptor;
 import org.jboss.pressgang.ccms.zanata.ZanataConstants;
@@ -129,11 +132,11 @@ public class Main implements IVariableArity {
         syncService = new ZanataSyncService(providerFactory, zanataInterface, serverSettings);
 
         // Initialise the locales to use
-        initLocales(serverSettings);
+        initLocales(providerFactory);
         zanataInterface.getLocaleManager().setLocales(new ArrayList<LocaleId>(locales));
 
         // Remove the default locale as it won't have any translations
-        zanataInterface.getLocaleManager().removeLocale(new LocaleId(serverSettings.getDefaultLocale()));
+        zanataInterface.getLocaleManager().removeLocale(new LocaleId(serverSettings.getDefaultLocale().getTranslationValue()));
     }
 
     private void process() {
@@ -179,12 +182,12 @@ public class Main implements IVariableArity {
         return true;
     }
 
-    private void initLocales(final ServerSettingsWrapper serverSettings) {
+    private void initLocales(final DataProviderFactory providerFactory) {
         if (locales.isEmpty()) {
-            // Get the Locale constants
-            final List<String> locales = serverSettings.getLocales();
-            for (final String locale : locales) {
-                this.locales.add(LocaleId.fromJavaName(locale));
+            // Get the Locales
+            final CollectionWrapper<LocaleWrapper> locales = providerFactory.getProvider(LocaleProvider.class).getLocales();
+            for (final LocaleWrapper locale : locales.getItems()) {
+                this.locales.add(LocaleId.fromJavaName(locale.getTranslationValue()));
             }
         }
     }

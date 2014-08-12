@@ -28,9 +28,11 @@ import org.jboss.pressgang.ccms.contentspec.ContentSpec;
 import org.jboss.pressgang.ccms.contentspec.KeyValueNode;
 import org.jboss.pressgang.ccms.contentspec.utils.CSTransformer;
 import org.jboss.pressgang.ccms.contentspec.utils.ContentSpecUtilities;
+import org.jboss.pressgang.ccms.contentspec.utils.EntityUtilities;
 import org.jboss.pressgang.ccms.contentspec.utils.TranslationUtilities;
 import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
+import org.jboss.pressgang.ccms.provider.LocaleProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeStringProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedContentSpecProvider;
 import org.jboss.pressgang.ccms.rest.v1.constants.CommonFilterConstants;
@@ -286,11 +288,12 @@ public class ContentSpecSync extends BaseZanataSync {
             final LocaleId locale) {
         final TranslatedCSNodeStringProvider translatedCSNodeStringProvider = getProviderFactory().getProvider(
                 TranslatedCSNodeStringProvider.class);
+        final LocaleProvider localeProvider = getProviderFactory().getProvider(LocaleProvider.class);
         TranslatedCSNodeStringWrapper translatedCSNodeString = null;
 
         // Check if a Translated String already exists
         for (final TranslatedCSNodeStringWrapper existingTranslatedCSNodeString : translatedCSNode.getTranslatedStrings().getItems()) {
-            if (existingTranslatedCSNodeString.getLocale().equals(locale.toString())) {
+            if (existingTranslatedCSNodeString.getLocale().getTranslationValue().equals(locale.toString())) {
                 translatedCSNodeString = existingTranslatedCSNodeString;
                 break;
             }
@@ -300,7 +303,7 @@ public class ContentSpecSync extends BaseZanataSync {
         if (translatedCSNodeString == null) {
             translatedCSNodeString = translatedCSNodeStringProvider.newTranslatedCSNodeString(translatedCSNode);
             translatedCSNodeString.setFuzzy(false);
-            translatedCSNodeString.setLocale(locale.toString());
+            translatedCSNodeString.setLocale(EntityUtilities.findTranslationLocaleFromString(localeProvider, locale.toString()));
         }
 
         return translatedCSNodeString;

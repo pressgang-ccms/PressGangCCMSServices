@@ -27,6 +27,7 @@ import java.util.Map;
 import org.jboss.pressgang.ccms.contentspec.utils.EntityUtilities;
 import org.jboss.pressgang.ccms.contentspec.utils.TranslationUtilities;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
+import org.jboss.pressgang.ccms.provider.LocaleProvider;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedCSNodeProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
@@ -58,6 +59,7 @@ public class ContentSpecTopicSync extends TopicSync {
         final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
         final TopicProvider topicProvider = getProviderFactory().getProvider(TopicProvider.class);
         final TranslatedCSNodeProvider translatedCSNodeProvider = getProviderFactory().getProvider(TranslatedCSNodeProvider.class);
+        final LocaleProvider localeProvider = getProviderFactory().getProvider(LocaleProvider.class);
 
         // Get the id and revision from the zanata id
         final String[] zanataNameSplit = zanataId.split("-");
@@ -75,7 +77,7 @@ public class ContentSpecTopicSync extends TopicSync {
                 translatedCSNode);
 
         final TranslatedTopicWrapper translatedTopic = translatedTopicProvider.newTranslatedTopic();
-        translatedTopic.setLocale(locale.toString());
+        translatedTopic.setLocale(EntityUtilities.findTranslationLocaleFromString(localeProvider, locale.toString()));
         translatedTopic.setTopicId(topicId);
         translatedTopic.setTopicRevision(topicRevision);
         translatedTopic.setTopic(historicalTopic);

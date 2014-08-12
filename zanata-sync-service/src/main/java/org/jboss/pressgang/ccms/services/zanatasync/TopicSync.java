@@ -31,7 +31,9 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.jboss.pressgang.ccms.contentspec.structures.XMLFormatProperties;
+import org.jboss.pressgang.ccms.contentspec.utils.EntityUtilities;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
+import org.jboss.pressgang.ccms.provider.LocaleProvider;
 import org.jboss.pressgang.ccms.provider.StringConstantProvider;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.TranslatedTopicProvider;
@@ -330,7 +332,7 @@ public class TopicSync extends BaseZanataSync {
             if (!retValue.containsKey(zanataId)) {
                 retValue.put(zanataId, new HashMap<LocaleId, TranslatedTopicWrapper>());
             }
-            retValue.get(zanataId).put(LocaleId.fromJavaName(transTopic.getLocale()), transTopic);
+            retValue.get(zanataId).put(LocaleId.fromJavaName(transTopic.getLocale().getTranslationValue()), transTopic);
         }
 
         return retValue;
@@ -346,6 +348,7 @@ public class TopicSync extends BaseZanataSync {
     protected TranslatedTopicWrapper createTranslatedTopic(final String zanataId, final LocaleId locale) {
         final TranslatedTopicProvider translatedTopicProvider = getProviderFactory().getProvider(TranslatedTopicProvider.class);
         final TopicProvider topicProvider = getProviderFactory().getProvider(TopicProvider.class);
+        final LocaleProvider localeProvider = getProviderFactory().getProvider(LocaleProvider.class);
 
         // Get the id and revision from the zanata id
         final String[] zanataNameSplit = zanataId.split("-");
@@ -356,7 +359,7 @@ public class TopicSync extends BaseZanataSync {
         final TopicWrapper historicalTopic = topicProvider.getTopic(topicId, topicRevision);
 
         final TranslatedTopicWrapper translatedTopic = translatedTopicProvider.newTranslatedTopic();
-        translatedTopic.setLocale(locale.toString());
+        translatedTopic.setLocale(EntityUtilities.findTranslationLocaleFromString(localeProvider, locale.toString()));
         translatedTopic.setTopicId(topicId);
         translatedTopic.setTopicRevision(topicRevision);
         translatedTopic.setTopic(historicalTopic);
