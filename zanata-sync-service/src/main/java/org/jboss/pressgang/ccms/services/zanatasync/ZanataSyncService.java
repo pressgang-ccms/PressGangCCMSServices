@@ -19,23 +19,34 @@
 
 package org.jboss.pressgang.ccms.services.zanatasync;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.pressgang.ccms.contentspec.utils.EntityUtilities;
+import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
 import org.jboss.pressgang.ccms.provider.TopicProvider;
 import org.jboss.pressgang.ccms.provider.exception.NotFoundException;
 import org.jboss.pressgang.ccms.wrapper.CSInfoNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.CSNodeWrapper;
+import org.jboss.pressgang.ccms.wrapper.CSTranslationDetailWrapper;
+import org.jboss.pressgang.ccms.wrapper.ContentSpecWrapper;
+import org.jboss.pressgang.ccms.wrapper.LocaleWrapper;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.TopicWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedCSNodeWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedContentSpecWrapper;
 import org.jboss.pressgang.ccms.wrapper.TranslatedTopicWrapper;
+import org.jboss.pressgang.ccms.wrapper.TranslationServerExtendedWrapper;
+import org.jboss.pressgang.ccms.wrapper.TranslationServerWrapper;
 import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
+import org.jboss.pressgang.ccms.zanata.ZanataDetails;
 import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,17 +57,30 @@ public class ZanataSyncService {
     private static final Logger log = LoggerFactory.getLogger(ZanataSyncService.class);
 
     private final DataProviderFactory providerFactory;
-    private final ZanataInterface zanataInterface;
     private final ServerSettingsWrapper serverSettings;
+    private final double zanataRESTCallInterval;
+    private final ZanataDetails defaultZanataDetails;
+    private final Map<ZanataDetails, ZanataInterface> cachedZanataInterface = new HashMap<ZanataDetails, ZanataInterface>();
 
-    public ZanataSyncService(final DataProviderFactory providerFactory, final ZanataInterface zanataInterface,
-            final ServerSettingsWrapper serverSettings) {
+    public ZanataSyncService(final DataProviderFactory providerFactory, final ServerSettingsWrapper serverSettings,
+            double zanataRESTCallInterval) {
+        this(providerFactory, serverSettings, zanataRESTCallInterval, null);
+    }
+
+    public ZanataSyncService(final DataProviderFactory providerFactory, final ServerSettingsWrapper serverSettings,
+            double zanataRESTCallInterval, final ZanataDetails defaultZanataDetails) {
         this.providerFactory = providerFactory;
-        this.zanataInterface = zanataInterface;
         this.serverSettings = serverSettings;
+        this.zanataRESTCallInterval = zanataRESTCallInterval;
+        this.defaultZanataDetails = defaultZanataDetails;
     }
 
     public void syncAll(final List<LocaleId> locales) {
+        if (defaultZanataDetails == null) {
+            throw new IllegalArgumentException("No Zanata Details provided");
+        }
+
+        final ZanataInterface zanataInterface = initZanataInterface(defaultZanataDetails);
         final Set<String> zanataResources = getAllZanataResources(zanataInterface);
         final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface, serverSettings);
 
@@ -65,7 +89,12 @@ public class ZanataSyncService {
                 locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() : locales);
     }
 
-    public void sync(final Set<String> contentSpecIds, final Set<String> topicIds, final List<LocaleId> locales) {
+    public void syncTopics(final Set<String> topicIds, final List<LocaleId> locales) {
+        if (defaultZanataDetails == null) {
+            throw new IllegalArgumentException("No Zanata Details provided");
+        }
+
+        final ZanataInterface zanataInterface = initZanataInterface(defaultZanataDetails);
         final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface, serverSettings);
 
         // Sync all the topics
@@ -74,20 +103,84 @@ public class ZanataSyncService {
             zanataSync.processZanataResources(topicIds,
                     locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() : locales);
         }
+    }
 
+    public void syncContentSpecs(final Set<String> contentSpecIds, final List<LocaleId> locales) {
         // Sync each content spec one at a time
         if (contentSpecIds != null && !contentSpecIds.isEmpty()) {
             for (final String contentSpecIdString : contentSpecIds) {
-                final Set<String> zanataResources = getContentSpecZanataResource(providerFactory, contentSpecIdString);
+                final String[] vars = contentSpecIdString.split("-");
+                final Integer contentSpecId = Integer.parseInt(vars[0]);
+                final Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
 
-                if (zanataResources != null && !zanataResources.isEmpty()) {
-                    log.info("Syncing " + zanataResources.size() + " translations for content spec " + contentSpecIdString + ".");
-                    // Sync the zanata resources to the CCMS
-                    zanataSync.processZanataResources(zanataResources,
-                            locales == null || locales.isEmpty() ? zanataInterface.getZanataLocales() : locales);
+                final ContentSpecWrapper contentSpec = providerFactory.getProvider(ContentSpecProvider.class).getContentSpec
+                        (contentSpecId, contentSpecRevision);
+                final CSTranslationDetailWrapper translationDetails = contentSpec.getTranslationDetails();
+
+                if (translationDetails != null && translationDetails.getTranslationServer() != null) {
+                    // Initial the zanata details and connection
+                    final ZanataDetails zanataDetails = generateZanataDetailsFromCSTranslationDetail(translationDetails);
+                    final ZanataInterface zanataInterface = initZanataInterface(zanataDetails);
+                    final BaseZanataSync zanataSync = new SyncMaster(providerFactory, zanataInterface, serverSettings);
+
+                    // Get the content specs zanata resource ids
+                    final Set<String> zanataResources = getContentSpecZanataResource(providerFactory, contentSpecId, contentSpecRevision);
+
+                    if (zanataResources != null && !zanataResources.isEmpty()) {
+                        log.info("Syncing " + zanataResources.size() + " translations for content spec " + contentSpecIdString + ".");
+
+                        // Find the actual locales to use
+                        final List<LocaleId> contentSpecLocales = initLocales(translationDetails.getLocales());
+                        final List<LocaleId> fixedLocales;
+                        if (locales == null || locales.isEmpty()) {
+                            fixedLocales = contentSpecLocales;
+                        } else {
+                            fixedLocales = new ArrayList<LocaleId>();
+                            for (final LocaleId locale : locales) {
+                                if (contentSpecLocales.contains(locale)) {
+                                    fixedLocales.add(locale);
+                                }
+                            }
+                        }
+
+                        // Sync the zanata resources to the CCMS
+                        zanataSync.processZanataResources(zanataResources, fixedLocales);
+                    }
+                } else {
+                    log.info("Skipping " + contentSpecIdString + " because it has missing or incorrect translation details");
                 }
             }
         }
+    }
+
+    /**
+     * Generates the Zanata details from a content specifications translation properties.
+     *
+     * @param translationDetail
+     * @return
+     */
+    protected ZanataDetails generateZanataDetailsFromCSTranslationDetail(CSTranslationDetailWrapper translationDetail) {
+        final ZanataDetails zanataDetails;
+        if (defaultZanataDetails == null) {
+            zanataDetails = new ZanataDetails();
+        } else {
+            zanataDetails = new ZanataDetails(defaultZanataDetails);
+        }
+
+        if (translationDetail.getTranslationServer() != null) {
+            zanataDetails.setServer(translationDetail.getTranslationServer().getUrl());
+
+            final TranslationServerExtendedWrapper extendedTranslationServer = getExtendedTranslationServer(serverSettings,
+                    translationDetail.getTranslationServer());
+            if (!isNullOrEmpty(extendedTranslationServer.getUsername()) && !isNullOrEmpty(extendedTranslationServer.getApiKey())) {
+                zanataDetails.setUsername(extendedTranslationServer.getUsername());
+                zanataDetails.setToken(extendedTranslationServer.getApiKey());
+            }
+        }
+        zanataDetails.setProject(translationDetail.getProject());
+        zanataDetails.setVersion(translationDetail.getProjectVersion());
+
+        return zanataDetails;
     }
 
     /**
@@ -114,14 +207,13 @@ public class ZanataSyncService {
      * Get the Zanata IDs to be synced from a list of content specifications.
      *
      * @param providerFactory
-     * @param contentSpecIdString The Content Spec ID to sync.
+     * @param contentSpecId       The Content Spec ID to sync.
+     * @param contentSpecRevision The Content Spec revision to sync.
      * @return A Set of Zanata IDs that represent the topics to be synced from the list of Content Specs.
      */
-    protected Set<String> getContentSpecZanataResource(final DataProviderFactory providerFactory, final String contentSpecIdString) {
+    protected Set<String> getContentSpecZanataResource(final DataProviderFactory providerFactory, final Integer contentSpecId,
+            final Integer contentSpecRevision) {
         final List<TranslatedContentSpecWrapper> translatedContentSpecs = new ArrayList<TranslatedContentSpecWrapper>();
-        final String[] vars = contentSpecIdString.split("-");
-        final Integer contentSpecId = Integer.parseInt(vars[0]);
-        final Integer contentSpecRevision = vars.length > 1 ? Integer.parseInt(vars[1]) : null;
 
         // Get the latest pushed content spec
         try {
@@ -131,7 +223,11 @@ public class ZanataSyncService {
                 translatedContentSpecs.add(translatedContentSpec);
             } else {
                 // If we don't have a translation then move onto the next content spec
-                log.info("Ignoring " + contentSpecIdString + " because it doesn't have any translations.");
+                if (contentSpecRevision != null) {
+                    log.info("Ignoring " + contentSpecId + "-" + contentSpecRevision + " because it doesn't have any translations.");
+                } else {
+                    log.info("Ignoring " + contentSpecId + " because it doesn't have any translations.");
+                }
                 return new HashSet<String>();
             }
         } catch (NotFoundException e) {
@@ -213,5 +309,46 @@ public class ZanataSyncService {
         }
 
         return pushedTopic;
+    }
+
+    private ZanataInterface initZanataInterface(final ZanataDetails zanataDetails) {
+        if (cachedZanataInterface.containsKey(zanataDetails)) {
+            return cachedZanataInterface.get(zanataDetails);
+        } else {
+            final ZanataInterface zanataInterface = new ZanataInterface(zanataRESTCallInterval, zanataDetails);
+
+            // Initialise the locales to use
+            final List<LocaleId> locales = initLocales(serverSettings.getLocales());
+            zanataInterface.getLocaleManager().setLocales(new ArrayList<LocaleId>(locales));
+
+            // Remove the default locale as it won't have any translations
+            zanataInterface.getLocaleManager().removeLocale(new LocaleId(serverSettings.getDefaultLocale().getTranslationValue()));
+
+            // Cache the interface and return
+            cachedZanataInterface.put(zanataDetails, zanataInterface);
+            return zanataInterface;
+        }
+    }
+
+    private List<LocaleId> initLocales(final CollectionWrapper<LocaleWrapper> locales) {
+        final List<LocaleId> retValue = new ArrayList<LocaleId>();
+
+        // Get the Locales
+        for (final LocaleWrapper locale : locales.getItems()) {
+            retValue.add(LocaleId.fromJavaName(locale.getTranslationValue()));
+        }
+
+        return retValue;
+    }
+
+    private TranslationServerExtendedWrapper getExtendedTranslationServer(final ServerSettingsWrapper serverSettings,
+            final TranslationServerWrapper translationServer) {
+        for (final TranslationServerExtendedWrapper translationServerExtended : serverSettings.getTranslationServers().getItems()) {
+            if (translationServer.getId().equals(translationServerExtended.getId())) {
+                return translationServerExtended;
+            }
+        }
+
+        return null;
     }
 }

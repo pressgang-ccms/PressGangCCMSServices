@@ -21,31 +21,30 @@ package org.jboss.pressgang.ccms.services.zanatasync;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.beust.jcommander.IVariableArity;
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
+import org.jboss.pressgang.ccms.provider.ContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.DataProviderFactory;
-import org.jboss.pressgang.ccms.provider.LocaleProvider;
+import org.jboss.pressgang.ccms.provider.RESTContentSpecProvider;
 import org.jboss.pressgang.ccms.provider.RESTProviderFactory;
 import org.jboss.pressgang.ccms.provider.RESTTopicProvider;
 import org.jboss.pressgang.ccms.provider.ServerSettingsProvider;
+import org.jboss.pressgang.ccms.rest.v1.query.RESTContentSpecQueryBuilderV1;
 import org.jboss.pressgang.ccms.utils.constants.CommonConstants;
-import org.jboss.pressgang.ccms.wrapper.LocaleWrapper;
+import org.jboss.pressgang.ccms.wrapper.ContentSpecWrapper;
 import org.jboss.pressgang.ccms.wrapper.ServerSettingsWrapper;
 import org.jboss.pressgang.ccms.wrapper.collection.CollectionWrapper;
 import org.jboss.pressgang.ccms.zanata.ETagCache;
 import org.jboss.pressgang.ccms.zanata.ETagInterceptor;
 import org.jboss.pressgang.ccms.zanata.ZanataConstants;
-import org.jboss.pressgang.ccms.zanata.ZanataInterface;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zanata.common.LocaleId;
 import org.zanata.rest.client.ITranslatedDocResource;
 import org.zanata.rest.service.TranslatedDocResource;
 
@@ -62,26 +61,8 @@ public class Main implements IVariableArity {
 
     /* Get the system properties */
     private static final String PRESS_GANG_SERVER = System.getProperty(CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY);
-    private static final String ZANATA_SERVER = System.getProperty(ZanataConstants.ZANATA_SERVER_PROPERTY);
-    private static final String ZANATA_TOKEN = System.getProperty(ZanataConstants.ZANATA_TOKEN_PROPERTY);
-    private static final String ZANATA_USERNAME = System.getProperty(ZanataConstants.ZANATA_USERNAME_PROPERTY);
-    private static final String ZANATA_PROJECT = System.getProperty(ZanataConstants.ZANATA_PROJECT_PROPERTY);
-    private static final String ZANATA_VERSION = System.getProperty(ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY);
     private static final String MIN_ZANATA_CALL_INTERVAL = System.getProperty(ZanataConstants.MIN_ZANATA_CALL_INTERNAL_PROPERTY,
             DEFAULT_ZANATA_CALL_INTERVAL.toString());
-
-    @Parameter(names = {"--topics", "-t"}, description = "Sync a single or list of Topics from Zanata to PressGang.", variableArity = true)
-    private LinkedHashSet<String> topicIds = new LinkedHashSet<String>();
-
-    @Parameter(names = {"--all", "-a"}, description = "Sync all documents in Zanata to PressGang.")
-    private boolean syncAll = false;
-
-    @Parameter(names = {"--content-specs", "-c"}, description = "Sync a single or list of Content Specs from Zanata to PressGang.",
-            variableArity = true)
-    private LinkedHashSet<String> contentSpecIds = new LinkedHashSet<String>();
-
-    @Parameter(names = "--locales", variableArity = true, converter = LocaleIdConverter.class)
-    private List<LocaleId> locales = new ArrayList<LocaleId>();
 
     final ETagCache eTagCache = new ETagCache();
     final File eTagCacheFile = new File(".zanata-cache");
@@ -90,7 +71,6 @@ public class Main implements IVariableArity {
      * The minimum amount of time in seconds between calls to the Zanata REST API
      */
     private Double zanataRESTCallInterval = null;
-    private ZanataInterface zanataInterface = null;
     private DataProviderFactory providerFactory = null;
     private ZanataSyncService syncService = null;
     private ServerSettingsWrapper serverSettings = null;
@@ -125,26 +105,29 @@ public class Main implements IVariableArity {
 
         providerFactory = RESTProviderFactory.create(PRESS_GANG_SERVER);
         providerFactory.getProvider(RESTTopicProvider.class).setExpandTranslations(true);
+        providerFactory.getProvider(RESTContentSpecProvider.class).setExpandTranslationDetails(true);
         final ETagInterceptor interceptor = new ETagInterceptor(eTagCache, ALLOWED_RESOURCES);
         ResteasyProviderFactory.getInstance().getClientExecutionInterceptorRegistry().register(interceptor);
-        zanataInterface = new ZanataInterface(zanataRESTCallInterval);
         serverSettings = providerFactory.getProvider(ServerSettingsProvider.class).getServerSettings();
-        syncService = new ZanataSyncService(providerFactory, zanataInterface, serverSettings);
-
-        // Initialise the locales to use
-        initLocales(providerFactory);
-        zanataInterface.getLocaleManager().setLocales(new ArrayList<LocaleId>(locales));
-
-        // Remove the default locale as it won't have any translations
-        zanataInterface.getLocaleManager().removeLocale(new LocaleId(serverSettings.getDefaultLocale().getTranslationValue()));
+        syncService = new ZanataSyncService(providerFactory, serverSettings, zanataRESTCallInterval);
     }
 
     private void process() {
-        if (!syncAll) {
-            syncService.sync(contentSpecIds, topicIds, locales);
-        } else {
-            syncService.syncAll(locales);
+        final ContentSpecProvider contentSpecProvider = providerFactory.getProvider(ContentSpecProvider.class);
+
+        // Build the query to find the translations
+        final RESTContentSpecQueryBuilderV1 queryBuilder = new RESTContentSpecQueryBuilderV1();
+        queryBuilder.setContentSpecTranslationEnabled(true);
+
+        // Get the content specs to sync
+        final CollectionWrapper<ContentSpecWrapper> contentSpecs = contentSpecProvider.getContentSpecsWithQuery(queryBuilder.getQuery());
+        final Set<String> contentSpecIds = new HashSet<String>();
+        for (final ContentSpecWrapper contentSpec : contentSpecs.getItems()) {
+            contentSpecIds.add(contentSpec.getId().toString());
         }
+
+        // Sync the translations
+        syncService.syncContentSpecs(contentSpecIds, null);
     }
 
     private void cleanUp() {
@@ -160,36 +143,15 @@ public class Main implements IVariableArity {
      */
     private boolean checkEnvironment() {
         log.info("PressGang REST: " + PRESS_GANG_SERVER);
-        log.info("Zanata Server: " + ZANATA_SERVER);
-        log.info("Zanata Username: " + ZANATA_USERNAME);
-        log.info("Zanata Token: " + ZANATA_TOKEN);
-        log.info("Zanata Project: " + ZANATA_PROJECT);
-        log.info("Zanata Project Version: " + ZANATA_VERSION);
         log.info("Rate Limiting: " + zanataRESTCallInterval + " seconds per REST call");
 
         // Some sanity checking
-        if (PRESS_GANG_SERVER == null || PRESS_GANG_SERVER.trim().isEmpty() || ZANATA_SERVER == null || ZANATA_SERVER.trim().isEmpty() ||
-                ZANATA_TOKEN == null || ZANATA_TOKEN.trim().isEmpty() || ZANATA_USERNAME == null || ZANATA_USERNAME.trim().isEmpty() ||
-                ZANATA_PROJECT == null || ZANATA_PROJECT.trim().isEmpty() || ZANATA_VERSION == null || ZANATA_VERSION.trim().isEmpty()) {
-            log.error(
-                    "The " + CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY + ", " + ZanataConstants.ZANATA_SERVER_PROPERTY + ", " +
-                            ZanataConstants.ZANATA_TOKEN_PROPERTY + ", " + ZanataConstants.ZANATA_USERNAME_PROPERTY + ", " +
-                            ZanataConstants.ZANATA_SERVER_PROPERTY + " and " + ZanataConstants.ZANATA_PROJECT_VERSION_PROPERTY +
-                            " system properties need to be defined.");
+        if (PRESS_GANG_SERVER == null || PRESS_GANG_SERVER.trim().isEmpty()) {
+            log.error("The " + CommonConstants.PRESS_GANG_REST_SERVER_SYSTEM_PROPERTY + " system property need to be defined.");
             return false;
         }
 
         return true;
-    }
-
-    private void initLocales(final DataProviderFactory providerFactory) {
-        if (locales.isEmpty()) {
-            // Get the Locales
-            final CollectionWrapper<LocaleWrapper> locales = providerFactory.getProvider(LocaleProvider.class).getLocales();
-            for (final LocaleWrapper locale : locales.getItems()) {
-                this.locales.add(LocaleId.fromJavaName(locale.getTranslationValue()));
-            }
-        }
     }
 
     @Override
