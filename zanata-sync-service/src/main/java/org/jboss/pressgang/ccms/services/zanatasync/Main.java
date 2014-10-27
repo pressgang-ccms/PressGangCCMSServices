@@ -22,9 +22,9 @@ package org.jboss.pressgang.ccms.services.zanatasync;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.beust.jcommander.IVariableArity;
 import com.beust.jcommander.JCommander;
@@ -121,7 +121,7 @@ public class Main implements IVariableArity {
 
         // Get the content specs to sync
         final CollectionWrapper<ContentSpecWrapper> contentSpecs = contentSpecProvider.getContentSpecsWithQuery(queryBuilder.getQuery());
-        final Set<String> contentSpecIds = new HashSet<String>();
+        final Set<String> contentSpecIds = new TreeSet<String>(new ZanataIdSort());
         for (final ContentSpecWrapper contentSpec : contentSpecs.getItems()) {
             contentSpecIds.add(contentSpec.getId().toString());
         }
