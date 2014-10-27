@@ -101,7 +101,7 @@ public class ContentSpecTopicSync extends TopicSync {
 
     @Override
     protected boolean processTranslatedTopicXML(final TranslatedTopicWrapper translatedTopic,
-            final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations) throws SAXException {
+            final Map<String, ZanataTranslation> translationDetails) throws SAXException {
         // Get a Document from the stored historical XML
         final Document xml = TopicUtilities.convertXMLStringToDocument(translatedTopic.getTopic().getXml(),
                 translatedTopic.getTopic().getXmlFormat());
@@ -117,6 +117,6 @@ public class ContentSpecTopicSync extends TopicSync {
             TranslationUtilities.resolveCustomTopicEntities(entities, xml);
         }
 
-        return processTranslatedTopicXML(translatedTopic, xml, translationDetails, translations);
+        return processTranslatedTopicXML(translatedTopic, xml, translationDetails);
     }
 }

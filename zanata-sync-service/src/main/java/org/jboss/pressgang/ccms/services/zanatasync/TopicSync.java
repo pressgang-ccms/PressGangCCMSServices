@@ -77,8 +77,8 @@ public class TopicSync extends BaseZanataSync {
         super(providerFactory, zanataInterface);
 
         contentSpecTagId = serverSettings.getEntities().getContentSpecTagId();
-        final StringConstantWrapper xmlElementsProperties = providerFactory.getProvider(StringConstantProvider.class).getStringConstant(
-                serverSettings.getEntities().getXmlFormattingStringConstantId());
+        final StringConstantWrapper xmlElementsProperties = providerFactory.getProvider(StringConstantProvider.class)
+                .getStringConstant(serverSettings.getEntities().getXmlFormattingStringConstantId());
 
         /*
          * Get the XML formatting details. These are used to pretty-print the XML when it is converted into a String.
@@ -237,7 +237,6 @@ public class TopicSync extends BaseZanataSync {
 
         // a mapping of the original strings to their translations
         final Map<String, ZanataTranslation> translationDetails = new HashMap<String, ZanataTranslation>();
-        final Map<String, String> translations = new HashMap<String, String>();
 
         final List<TextFlowTarget> textFlowTargets = translationsResource.getTextFlowTargets();
         final List<TextFlow> textFlows = originalTextResource.getTextFlows();
@@ -250,7 +249,6 @@ public class TopicSync extends BaseZanataSync {
             for (final TextFlowTarget textFlowTarget : textFlowTargets) {
                 if (textFlowTarget.getResId().equals(textFlow.getId()) && !textFlowTarget.getContent().isEmpty()) {
                     translationDetails.put(textFlow.getContent(), new ZanataTranslation(textFlowTarget));
-                    translations.put(textFlow.getContent(), textFlowTarget.getContent());
                     wordCount += textFlow.getContent().split(" ").length;
                     break;
                 }
@@ -270,7 +268,7 @@ public class TopicSync extends BaseZanataSync {
             // Ignore syncing Content Specs
             return false;
         } else {
-            if (processTranslatedTopicXML(translatedTopic, translationDetails, translations)) {
+            if (processTranslatedTopicXML(translatedTopic, translationDetails)) {
                 changed = true;
             }
         }
@@ -305,11 +303,11 @@ public class TopicSync extends BaseZanataSync {
         if (zanataIds.size() > MAX_DOWNLOAD_SIZE) {
             int start = 0;
             while (start < zanataIds.size()) {
-                final List<String> subList = new LinkedList<String>(zanataIds).subList(start, Math.min(start + MAX_DOWNLOAD_SIZE,
-                        zanataIds.size()));
+                final List<String> subList = new LinkedList<String>(zanataIds)
+                        .subList(start, Math.min(start + MAX_DOWNLOAD_SIZE, zanataIds.size()));
                 queryBuilder.setZanataIds(subList);
-                final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider.getTranslatedTopicsWithQuery(
-                        queryBuilder.getQuery());
+                final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider
+                        .getTranslatedTopicsWithQuery(queryBuilder.getQuery());
                 if (translatedTopics != null) {
                     allTranslatedTopics.addAll(translatedTopics.getItems());
                 }
@@ -318,8 +316,8 @@ public class TopicSync extends BaseZanataSync {
             }
         } else {
             queryBuilder.setZanataIds(zanataIds);
-            final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider.getTranslatedTopicsWithQuery(
-                    queryBuilder.getQuery());
+            final CollectionWrapper<TranslatedTopicWrapper> translatedTopics = translatedTopicProvider
+                    .getTranslatedTopicsWithQuery(queryBuilder.getQuery());
             if (translatedTopics != null) {
                 allTranslatedTopics.addAll(translatedTopics.getItems());
             }
@@ -374,20 +372,19 @@ public class TopicSync extends BaseZanataSync {
      *
      * @param translatedTopic    The Translated Topic to update.
      * @param translationDetails The mapping of Original Translation strings to Zanata Translation information.
-     * @param translations       A direct mapping of Original strings to Translation strings.
      * @return True if anything in the translated topic changed, otherwise false.
      * @throws org.xml.sax.SAXException Thrown if the XML in the historical topic has invalid XML and can't be parsed.
      */
     protected boolean processTranslatedTopicXML(final TranslatedTopicWrapper translatedTopic,
-            final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations) throws SAXException {
+            final Map<String, ZanataTranslation> translationDetails) throws SAXException {
         // Get a Document from the stored historical XML
-        final Document xml = TopicUtilities.convertXMLStringToDocument(translatedTopic.getTopic().getXml(),
-                translatedTopic.getTopic().getXmlFormat());
+        final Document xml = TopicUtilities
+                .convertXMLStringToDocument(translatedTopic.getTopic().getXml(), translatedTopic.getTopic().getXmlFormat());
 
         // Process any conditions
         DocBookUtilities.processConditions(translatedTopic.getTranslatedXMLCondition(), xml);
 
-        return processTranslatedTopicXML(translatedTopic, xml, translationDetails, translations);
+        return processTranslatedTopicXML(translatedTopic, xml, translationDetails);
     }
 
     /**
@@ -396,21 +393,19 @@ public class TopicSync extends BaseZanataSync {
      *
      * @param translatedTopic    The Translated Topic to update.
      * @param translationDetails The mapping of Original Translation strings to Zanata Translation information.
-     * @param translations       A direct mapping of Original strings to Translation strings.
      * @return True if anything in the translated topic changed, otherwise false.
      * @throws org.xml.sax.SAXException Thrown if the XML in the historical topic has invalid XML and can't be parsed.
      */
     @SuppressWarnings("deprecation")
     protected boolean processTranslatedTopicXML(final TranslatedTopicWrapper translatedTopic, final Document xml,
-            final Map<String, ZanataTranslation> translationDetails, final Map<String, String> translations) throws SAXException {
+            final Map<String, ZanataTranslation> translationDetails) throws SAXException {
         final TranslatedTopicStringProvider translatedTopicStringProvider = getProviderFactory().getProvider(TranslatedTopicStringProvider
                 .class);
 
         // The collection used to modify the TranslatedTopicString entities
         final UpdateableCollectionWrapper<TranslatedTopicStringWrapper> translatedTopicStrings =
                 (UpdateableCollectionWrapper<TranslatedTopicStringWrapper>) translatedTopicStringProvider
-                        .newTranslatedTopicStringCollection(
-                translatedTopic);
+                .newTranslatedTopicStringCollection(translatedTopic);
         boolean changed = false;
 
         if (xml != null) {
@@ -423,37 +418,12 @@ public class TopicSync extends BaseZanataSync {
             // Used to hold a duplicate list of StringToNode's so we can remove the originals from the above List
             final List<StringToNodeCollection> tempStringToNodeCollection = new ArrayList<StringToNodeCollection>();
 
-            // Add any StringToNode's that match the original translations
-            for (final StringToNodeCollection stringToNodeCollectionV3 : stringToNodeCollectionsV3) {
-                for (final String originalString : translations.keySet()) {
-                    if (originalString.equals(stringToNodeCollectionV3.getTranslationString())) {
-                        stringToNodeCollections.add(stringToNodeCollectionV3);
-                        tempStringToNodeCollection.add(stringToNodeCollectionV3);
-                    }
-                }
-            }
-
-            // Add any StringToNode's that match the original translations and weren't added already by the V3 method
-            for (final StringToNodeCollection stringToNodeCollectionV2 : stringToNodeCollectionsV2) {
-                for (final String originalString : translations.keySet()) {
-                    if (originalString.equals(stringToNodeCollectionV2.getTranslationString()) && !stringToNodeCollections.contains(
-                            stringToNodeCollectionV2)) {
-                        stringToNodeCollections.add(stringToNodeCollectionV2);
-                        tempStringToNodeCollection.add(stringToNodeCollectionV2);
-                    }
-                }
-            }
-
-            // Add any StringToNode's that match the original translations and weren't added already by the V2/V3 method
-            for (final StringToNodeCollection stringToNodeCollectionV1 : stringToNodeCollectionsV1) {
-                for (final String originalString : translations.keySet()) {
-                    if (originalString.equals(stringToNodeCollectionV1.getTranslationString()) && !stringToNodeCollections.contains(
-                            stringToNodeCollectionV1)) {
-                        stringToNodeCollections.add(stringToNodeCollectionV1);
-                        tempStringToNodeCollection.add(stringToNodeCollectionV1);
-                    }
-                }
-            }
+            // V3 Method
+            processNodes(stringToNodeCollectionsV3, translationDetails, stringToNodeCollections, tempStringToNodeCollection);
+            // V2 Method
+            processNodes(stringToNodeCollectionsV2, translationDetails, stringToNodeCollections, tempStringToNodeCollection);
+            // V1 Method
+            processNodes(stringToNodeCollectionsV1, translationDetails, stringToNodeCollections, tempStringToNodeCollection);
 
             // Remove or update any existing translation strings
             if (translatedTopic.getTranslatedTopicStrings() != null && translatedTopic.getTranslatedTopicStrings().getItems() != null) {
@@ -472,8 +442,8 @@ public class TopicSync extends BaseZanataSync {
                                 tempStringToNodeCollection.remove(original);
 
                                 // Check the translations still match
-                                if (!translation.getTranslation().equals(
-                                        existingString.getTranslatedString()) || translation.isFuzzy() != existingString.isFuzzy()) {
+                                if (!translation.getTranslation().equals(existingString.getTranslatedString()) ||
+                                        translation.isFuzzy() != existingString.isFuzzy()) {
                                     changed = true;
 
                                     existingString.setTranslatedString(translation.getTranslation());
@@ -504,8 +474,8 @@ public class TopicSync extends BaseZanataSync {
                 if (translation != null) {
                     changed = true;
 
-                    final TranslatedTopicStringWrapper translatedTopicString = translatedTopicStringProvider.newTranslatedTopicString(
-                            translatedTopic);
+                    final TranslatedTopicStringWrapper translatedTopicString = translatedTopicStringProvider
+                            .newTranslatedTopicString(translatedTopic);
                     translatedTopicString.setOriginalString(originalText);
                     translatedTopicString.setTranslatedString(translation.getTranslation());
                     translatedTopicString.setFuzzy(translation.isFuzzy());
@@ -521,6 +491,7 @@ public class TopicSync extends BaseZanataSync {
 
             // Replace the translated strings, and save the result into the TranslatedTopicData entity
             if (xml != null) {
+                final Map<String, String> translations = createTranslationMap(translationDetails);
                 DocBookUtilities.replaceTranslatedStrings(xml, translations, stringToNodeCollections);
 
                 // Remove content added for docbook 5
@@ -530,11 +501,93 @@ public class TopicSync extends BaseZanataSync {
                     xml.getDocumentElement().removeAttribute("version");
                 }
 
-                translatedTopic.setXml(XMLUtilities.convertNodeToString(xml, xmlFormatProperties.getVerbatimElements(),
-                        xmlFormatProperties.getInlineElements(), xmlFormatProperties.getContentsInlineElements(), true));
+                translatedTopic.setXml(XMLUtilities
+                        .convertNodeToString(xml, xmlFormatProperties.getVerbatimElements(), xmlFormatProperties.getInlineElements(),
+                                xmlFormatProperties.getContentsInlineElements(), true));
             }
         }
 
         return changed;
+    }
+
+    /**
+     * Process the string to node collections, to find any translations that exist for the original source content.
+     *
+     * @param sourceStringToNodeCollections The source string to nodes to check against.
+     * @param translationDetails The translations to check against.
+     * @param stringToNodeCollections A list of string to node collections that will be added to when new source nodes are matched.
+     * @param tempStringToNodeCollection
+     */
+    private void processNodes(final List<StringToNodeCollection> sourceStringToNodeCollections,
+            final Map<String, ZanataTranslation> translationDetails, final List<StringToNodeCollection> stringToNodeCollections,
+            final List<StringToNodeCollection> tempStringToNodeCollection) {
+        // Add any StringToNode's that match the original translations
+        for (final StringToNodeCollection stringToNodeCollection : sourceStringToNodeCollections) {
+            // Make sure the node hasn't already been processed
+            if (!stringToNodeCollections.contains(stringToNodeCollection)) {
+                final String source = stringToNodeCollection.getTranslationString();
+                final String alternate = getAlternateSourceString(source);
+                final String zanataSource = findTranslationSource(translationDetails, source, alternate);
+
+                if (zanataSource != null) {
+                    stringToNodeCollections.add(stringToNodeCollection);
+                    tempStringToNodeCollection.add(stringToNodeCollection);
+
+                    // If the string equalled the alternate, add it to the translation details
+                    if (zanataSource.equals(alternate)) {
+                        final ZanataTranslation translation = translationDetails.get(zanataSource);
+                        translationDetails.put(source, translation);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Finds the Zanata source string from the list translations fetched from Zanata for a PressGang input string.
+     *
+     * @param translationDetails
+     * @param source
+     * @param alternate
+     * @return
+     */
+    private String findTranslationSource(final Map<String, ZanataTranslation> translationDetails, final String source,
+            final String alternate) {
+        for (final String originalString : translationDetails.keySet()) {
+            if (originalString.equals(source) || originalString.equals(alternate)) {
+                return originalString;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets an alternate string that the source might have been sent to Zanata as. This is needed because of a bug that was encoding certain
+     * characters (see BZ#1156262).
+     *
+     * @param source The source string to get an alternate version of.
+     * @return The alternate source string
+     */
+    private String getAlternateSourceString(final String source) {
+        if (source == null) {
+            return null;
+        } else {
+            return source.replace(">", "&gt;").replace("<", "&lt;");
+        }
+    }
+
+    /**
+     * Creates a map of source to translation strings.
+     *
+     * @param translationDetails
+     * @return
+     */
+    protected Map<String, String> createTranslationMap(final Map<String, ZanataTranslation> translationDetails) {
+        final Map<String, String> translations = new HashMap<String, String>();
+        for (final Map.Entry<String, ZanataTranslation> entry : translationDetails.entrySet()) {
+            translations.put(entry.getKey(), entry.getValue().getTranslation());
+        }
+        return translations;
     }
 }
