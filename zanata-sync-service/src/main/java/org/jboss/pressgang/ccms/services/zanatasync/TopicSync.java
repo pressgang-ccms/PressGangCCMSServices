@@ -573,7 +573,45 @@ public class TopicSync extends BaseZanataSync {
         if (source == null) {
             return null;
         } else {
-            return source.replace(">", "&gt;").replace("<", "&lt;");
+            // Loop over and find all the XML Elements as they should remain untouched.
+            final LinkedList<String> elements = new LinkedList<String>();
+            if (source.indexOf('<') != -1) {
+                int index = -1;
+                while ((index = source.indexOf('<', index + 1)) != -1) {
+                    int endIndex = source.indexOf('>', index);
+                    int nextIndex = source.indexOf('<', index + 1);
+
+                    /*
+                      * If the next opening tag is less than the next ending tag, than the current opening tag isn't a match for the next
+                      * ending tag, so continue to the next one
+                      */
+                    if (endIndex == -1 || (nextIndex != -1 && nextIndex < endIndex)) {
+                        continue;
+                    } else if (index + 1 == endIndex) {
+                        // This is a <> sequence, so it should be ignored as well.
+                        continue;
+                    } else {
+                        elements.add(source.substring(index, endIndex + 1));
+                    }
+
+                }
+            }
+
+            // Find all the elements and replace them with a marker
+            String escapedSource = source;
+            for (int count = 0; count < elements.size(); count++) {
+                escapedSource = escapedSource.replace(elements.get(count), "###" + count + "###");
+            }
+
+            // Perform the replacements on what's left
+            escapedSource = escapedSource.replace("<", "&lt;").replace(">", "&gt;");
+
+            // Replace the markers
+            for (int count = 0; count < elements.size(); count++) {
+                escapedSource = escapedSource.replace("###" + count + "###", elements.get(count));
+            }
+
+            return escapedSource;
         }
     }
 
